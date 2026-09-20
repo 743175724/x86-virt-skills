@@ -105,7 +105,7 @@ This is the table the old skill never made actionable.
 - **Claim.** An APIC-write VM exit has basic exit reason 56 and is trap-like: the write has already been performed into the virtual-APIC page, and the exit qualification gives the offset of the register written, so the VMM never has to decode the instruction.  `[SDM 3D App.C]` `[SDM 3C §27.9.1]` `[2]` `[1]` `C:high` `V:durable`
 - **Claim.** For an APIC-access VM exit the exit qualification carries the offset within the APIC-access page in bits 11:0 and the access type in bits 15:12, distinguishing linear data reads, linear data writes, linear instruction fetches, accesses during event delivery and guest-physical accesses; the full encoding is owned by `05-vm-exit.md`.  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** Instruction fetches from the APIC-access page are never virtualized and always cause an APIC-access VM exit, so guest code can never execute out of its own APIC page.  `[SDM 3C Ch.32]` `[1]` `C:medium` `V:durable`
-- **Claim.** APIC-register virtualization applies only to naturally aligned 4-byte accesses; other widths and alignments fall back to an APIC-access VM exit.  `[SDM 3C Ch.32]` `[1]` `C:medium` `V:durable`
+- **Claim.** APIC-register virtualization applies to any access of at most 32 bits that lies **wholly within the low 4 bytes of a naturally aligned 16-byte region** of the virtual-APIC page — not only to naturally aligned 4-byte accesses; accesses outside that window fall back to an APIC-access VM exit.  `[SDM 3C Ch.32]` `[1]` `C:medium` `V:durable`
 
 The practical consequence: reason 44 means "you have to do the whole access", reason 56 means "the write already happened, go apply its side effects". A VMM's reason-56 handler reads the new value out of the virtual-APIC page at the offset the qualification gave it.
 
@@ -170,7 +170,8 @@ The following pseudocode follows the SDM's own formulation. All register names r
 
 ```
 TPR virtualization:
-    perform PPR virtualization                       # 7.6.2
+    if virtual-interrupt delivery = 1:               # PPR virtualization runs ONLY on this path
+        perform PPR virtualization                   # 7.6.2
     if "virtual-interrupt delivery" = 0:
         if TPR_threshold[3:0] > VTPR[7:4]:
             VM exit: TPR below threshold (reason 43)
@@ -178,7 +179,7 @@ TPR virtualization:
         evaluate pending virtual interrupts          # 7.6.3
 ```
 
-- **Claim.** TPR virtualization first performs PPR virtualization, then either checks the TPR threshold (when virtual-interrupt delivery is off) or re-evaluates pending virtual interrupts (when it is on).  `[SDM 3C Ch.32]` `[1]` `C:high` `V:durable`
+- **Claim.** TPR virtualization checks the TPR threshold when virtual-interrupt delivery is off; when it is on, it performs **PPR virtualization** and then re-evaluates pending virtual interrupts. PPR virtualization is **not** performed first or unconditionally — it belongs to the virtual-interrupt-delivery path only.  `[SDM 3C Ch.32]` `[1]` `C:high` `V:durable`
 
 ### 7.6.2 PPR virtualization
 
@@ -253,10 +254,11 @@ EOI virtualization:
 self-IPI virtualization:
     Vector <- value written to bits 7:0 of VICR_LO (or of the self-IPI register)
     VIRR[Vector] <- 1
+    RVI <- max(RVI, Vector)                           # required, SDM 3C 32.1.5
     evaluate pending virtual interrupts               # 7.6.3
 ```
 
-- **Claim.** Self-IPI virtualization sets the requested vector in VIRR and re-evaluates pending virtual interrupts; it requires virtual-interrupt delivery and produces no VM exit.  `[SDM 3C Ch.32]` `[1]` `C:high` `V:durable`
+- **Claim.** Self-IPI virtualization sets the requested vector in VIRR, **raises RVI to max(RVI, Vector)** and re-evaluates pending virtual interrupts; it requires virtual-interrupt delivery and produces no VM exit.  `[SDM 3C Ch.32]` `[1]` `C:high` `V:durable`
 
 ### 7.6.7 Where the algorithms are invoked
 
@@ -387,7 +389,7 @@ Even with the full APICv stack, a guest sending an IPI still exits: the ICR writ
 - **Claim.** IPI virtualization is enabled by a tertiary processor-based VM-execution control; with it, the processor emulates the APIC writes that would send an IPI — memory-mapped ICR writes, MSR-mapped ICR writes and SENDUIPI — by posting directly into the target vCPU's posted-interrupt descriptor. See `02-vmcs.md` for the control bit.  `[SDM 3C Ch.32]` `[1]` `[117]` `C:high` `V:durable`
 - **Claim.** The processor locates the target's posted-interrupt descriptor through a PID-pointer table indexed by the target vCPU's APIC ID, addressed by the PID-pointer table address field with its size bounded by the last PID-pointer index field; see `02-vmcs.md`.  `[SDM 3C Ch.32]` `[1]` `[117]` `C:high` `V:durable`
 - **Claim.** A PID-pointer table entry carries a valid bit in bit 0 alongside the 64-byte-aligned address of the descriptor, so a VMM can leave entries for vCPUs that do not exist marked invalid.  `[SDM 3C Ch.32]` `[1]` `[117]` `C:medium` `V:durable`
-- **Claim.** IPI virtualization covers only physical-addressing, flat-mode, unicast IPIs; logical addressing, broadcast and shorthand forms still produce a trap-like APIC-write VM exit for the VMM to emulate.  `[SDM 3C Ch.32]` `[1]` `[117]` `C:high` `V:durable`
+- **Claim.** IPI virtualization applies only when the write to ICR has destination shorthand 00B, **edge** trigger mode, bit 12 clear, **physical** destination mode, **fixed** delivery mode and vector ≥ 16; anything else — logical destination mode, level trigger, a shorthand, or a vector below 16 — still produces a trap-like APIC-write VM exit. (An earlier wording here said "flat-mode", which is wrong: flat mode is a *logical* addressing form and is not accelerated.)  `[SDM 3C Ch.32]` `[1]` `[117]` `C:high` `V:durable`
 - **Claim.** Once posted, the interrupt follows exactly the path of §7.8: the sending processor sets the PIR bit and sends the notification vector to NDST, and the receiving processor merges PIR into VIRR. IPI virtualization is posted interrupts with the lookup done in hardware.  `[SDM 3C Ch.32]` `[1]` `[117]` `C:high` `V:durable`
 
 ```

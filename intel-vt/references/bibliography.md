@@ -14,8 +14,8 @@ Document numbers and revisions below were read directly from the Intel PDF cover
 
 [1] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3C: System Programming Guide, Part 3. Order 326019-092US. Rev 092, June 2026. https://cdrdv2-public.intel.com/922489/326019-092-sdm-vol-3c.pdf — T1
 [2] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3D: System Programming Guide, Part 4. Order 332831. Rev 092, June 2026. https://cdrdv2.intel.com/v1/dl/getContent/671269 — T1
-[3] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A: System Programming Guide, Part 1. Order 253668. Rev 092, June 2026. https://cdrdv2.intel.com/v1/dl/getContent/671447 — T1
-[4] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3B: System Programming Guide, Part 2. Order 253669. Rev 092, June 2026. https://cdrdv2.intel.com/v1/dl/getContent/671447 — T1
+[3] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A: System Programming Guide, Part 1. Order 253668. Rev 092, June 2026. Served inside the Volume 3 combined PDF: https://cdrdv2.intel.com/v1/dl/getContent/671447 — T1 (same file as [4]; the two order numbers name different parts of one download, they are not independent sources)
+[4] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3B: System Programming Guide, Part 2. Order 253669. Rev 092, June 2026. Served inside the Volume 3 combined PDF: https://cdrdv2.intel.com/v1/dl/getContent/671447 — T1 (same file as [3])
 [5] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 4: Model-Specific Registers. Order 335592. Rev 092, June 2026. https://cdrdv2.intel.com/v1/dl/getContent/671098 — T1
 [6] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Combined Volumes. Order 325462-092US. Rev 092, June 2026. https://cdrdv2.intel.com/v1/dl/getContent/671200 — T1
 [7] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 2 (Instruction Set Reference, A-Z). Orders 253666 / 253667 / 326018 / 334569. Rev 092, June 2026. https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html — T1
@@ -192,6 +192,10 @@ Document numbers and revisions below were read directly from the Intel PDF cover
 [393] NVD. CVE-2021-28476 (Hyper-V `vmswitch.sys` remote code execution). https://nvd.nist.gov/vuln/detail/CVE-2021-28476 — T2
 [394] NVD. CVE-2020-14364 (QEMU USB emulation out-of-bounds read/write). https://nvd.nist.gov/vuln/detail/CVE-2020-14364 — T2
 [395] Microsoft Learn. Virtualization-based security (VBS) enclaves. https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves — T2
+[396] Intel Security Center. INTEL-SA-00233 (Microarchitectural Data Sampling; CVE-2018-12126, CVE-2018-12127, CVE-2018-12130, CVE-2019-11091). https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00233.html — T1 (page fetched 2026-09-20; the four CVEs above are the ones it lists)
+[397] Intel Security Center. INTEL-SA-00270 (TSX Asynchronous Abort; CVE-2019-11135). https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00270.html — T1 (page fetched 2026-09-20)
+[398] Intel Security Center. INTEL-SA-00320 (Special Register Buffer Data Sampling; CVE-2020-0543). https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00320.html — T1 (page fetched 2026-09-20)
+[399] Intel Security Center. INTEL-SA-00702 (Return Stack Buffer Underflow; CVE-2022-29901). https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00702.html — T1 (page fetched 2026-09-20; the advisory page itself lists only CVE-2022-29901 — CVE-2022-28693 appears in the advisory-guidance article [357], not on this page)
 
 ---
 

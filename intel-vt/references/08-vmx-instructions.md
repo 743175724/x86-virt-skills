@@ -160,35 +160,35 @@
 
 This is the table the audit found missing. Every one of these values can appear in the VM-instruction error field after ZF is set by a VMX instruction.
 
-- **Claim.** VM-instruction error 1: VMCALL executed in VMX root operation.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 2: VMCLEAR with invalid physical address.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 3: VMCLEAR with VMXON pointer.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 4: VMLAUNCH with non-clear VMCS.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 5: VMRESUME with non-launched VMCS.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 6: VMRESUME after VMXOFF — that is, VMXOFF and VMXON were executed between the VMRESUME and the corresponding VMLAUNCH.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 7: VM entry with invalid control field(s).  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 8: VM entry with invalid host-state field(s).  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 9: VMPTRLD with invalid physical address.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 10: VMPTRLD with VMXON pointer.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 11: VMPTRLD with incorrect VMCS revision identifier.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 12: VMREAD/VMWRITE from/to unsupported VMCS component.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 13: VMWRITE to read-only VMCS component.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 14 is not used.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 15: VMXON executed in VMX root operation.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 16: VM entry with invalid executive-VMCS pointer.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 17: VM entry with non-launched executive VMCS.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 18: VM entry with executive-VMCS pointer not VMXON pointer, reported when deactivating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 19: VMCALL with non-clear VMCS, reported when activating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 20: VMCALL with invalid VM-exit control fields.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 21 is not used.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 22: VMCALL with incorrect MSEG revision identifier, reported when activating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 23: VMXOFF under dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 24: VMCALL with invalid SMM-monitor features, reported when activating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 25: VM entry with invalid VM-execution control fields in executive VMCS, reported when returning from SMM (see chapter `09`).  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 26: VM entry with events blocked by MOV SS.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** VM-instruction error 27 is not used.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:medium` `V:durable`
-- **Claim.** VM-instruction error 28: invalid operand to INVEPT/INVVPID.  `[SDM 3C §27.9.5]` `[1]` `[150]` `C:high` `V:durable`
-- **Claim.** The error numbers form a single flat namespace that is entirely separate from the basic exit reason namespace; error 28 and exit reason 28 have nothing to do with each other.  `[SDM 3C §27.9.5]` `[1]` `[2]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 1: VMCALL executed in VMX root operation.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 2: VMCLEAR with invalid physical address.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 3: VMCLEAR with VMXON pointer.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 4: VMLAUNCH with non-clear VMCS.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 5: VMRESUME with non-launched VMCS.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 6: VMRESUME after VMXOFF — that is, VMXOFF and VMXON were executed between the VMRESUME and the corresponding VMLAUNCH.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 7: VM entry with invalid control field(s).  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 8: VM entry with invalid host-state field(s).  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 9: VMPTRLD with invalid physical address.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 10: VMPTRLD with VMXON pointer.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 11: VMPTRLD with incorrect VMCS revision identifier.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 12: VMREAD/VMWRITE from/to unsupported VMCS component.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 13: VMWRITE to read-only VMCS component.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 14 is not used.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 15: VMXON executed in VMX root operation.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 16: VM entry with invalid executive-VMCS pointer.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 17: VM entry with non-launched executive VMCS.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 18: VM entry with executive-VMCS pointer not VMXON pointer, reported when deactivating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 19: VMCALL with non-clear VMCS, reported when activating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 20: VMCALL with invalid VM-exit control fields.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 21 is not used.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 22: VMCALL with incorrect MSEG revision identifier, reported when activating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 23: VMXOFF under dual-monitor treatment of SMIs and SMM.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 24: VMCALL with invalid SMM-monitor features, reported when activating the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 25: VM entry with invalid VM-execution control fields in executive VMCS, reported when returning from SMM (see chapter `09`).  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 26: VM entry with events blocked by MOV SS.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** VM-instruction error 27 is not used.  `[SDM 3C §33.4]` `[1]` `[150]` `C:medium` `V:durable`
+- **Claim.** VM-instruction error 28: invalid operand to INVEPT/INVVPID.  `[SDM 3C §33.4]` `[1]` `[150]` `C:high` `V:durable`
+- **Claim.** The error numbers form a single flat namespace that is entirely separate from the basic exit reason namespace; error 28 and exit reason 28 have nothing to do with each other.  `[SDM 3C §33.4]` `[1]` `[2]` `C:high` `V:durable`
 
 **Reading the table for diagnosis.** Errors 1, 15 and 23 mean "the instruction was executed in the wrong operating mode". Errors 2, 3, 9, 10 and 11 mean "the physical address or the region's revision identifier is wrong". Errors 4, 5, 6 and 26 mean "the VMCS lifecycle or the instruction boundary is wrong". Errors 7 and 8 mean "the VMCS contents are wrong" and send you to `04-vm-entry.md`. Errors 16 through 25 occur only under the dual-monitor treatment of SMIs and SMM, described in chapter `09` (SMM and SEAM). Error 12, 13 and 28 are operand errors.
 

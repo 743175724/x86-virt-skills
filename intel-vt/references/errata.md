@@ -66,7 +66,7 @@
 - Misconception: "The well-known interrupt-remapping erratum was an AMD problem."
 
 - **Claim.** The documented interrupt-remapping erratum is **Intel's**: the 5520/5500 chipsets' **erratum #53**, for which Intel recommended disabling interrupt remapping in BIOS and for which Linux carried a 2013 quirk (revision 0x13 detection, `set_irq_remapping_broken`, warn and taint). The AMD-side pain points were different in kind — early AMD IOMMUs lacked interrupt remapping at all, and pre-Zen 3 IOMMUs did not support AVIC — which is feature absence, not an erratum.  `[611]` `C:high` `V:durable`
-- **Owner:** `11-vtd-interrupt-remapping.md`; the cross-vendor comparison → `18-comparison-amd-arm-riscv.md`.
+- **Owner:** `12-vtd-faults-bios-siov.md` §12.8 (the chipset erratum itself); interrupt-remapping mechanism → `11-vtd-interrupt-remapping.md`; cross-vendor comparison → `18-comparison-amd-arm-riscv.md`.
 
 ### E08 · AVIC default-off versus APICv shipped enabled
 

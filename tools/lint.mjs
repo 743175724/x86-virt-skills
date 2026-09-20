@@ -73,6 +73,14 @@ const MISCONCEPTIONS = [
     right: 'the current VT-d specification is Rev 5.20 (D51397-019, April 2026); Rev 4.1 is what the stale landing page serves' },
 ]
 
+// Subjects that appear nowhere in the Intel SDM. A claim about one of these
+// whose ONLY anchor is an SDM section is citation filler: the section number
+// resolves, but to an unrelated subject. This defect reached 44 claims in
+// chapter 15 before a PDF check caught it, because the authoring rule demanded
+// a Tier-1 anchor the subject could not honestly supply.
+const NON_INTEL_SUBJECTS = /\b(HVCI|VBS|VTL[0-9]?|trustlet|Credential Guard|securekernel|Kerberos|BitLocker|Hyper-V|WSL2?|WHPX?|Windows Sandbox|Defender|ZombieLoad|Downfall|Retbleed|retpoline|L1TF|Foreshadow|RIDL|Fallout|VENOM|CVE-\d{4}-\d+)\b/i
+const SDM_ONLY_ANCHOR = /^SDM 3[ABCD] /
+
 // Fact ownership: topic pattern -> the one file allowed to make claims about it.
 const OWNERSHIP = [
   { topic: /\bVMCS field encoding|VM-execution control field/i, owner: '02-vmcs.md' },
@@ -162,16 +170,18 @@ if (!existsSync(skillPath)) {
 
 const bibPath = join(REFS, 'bibliography.md')
 const bibIds = new Set()
+const bibText = new Map()
 const bibUsed = new Set()
 if (!existsSync(bibPath)) {
   err('references/bibliography.md', 'not found')
 } else {
   for (const line of readFileSync(bibPath, 'utf8').split('\n')) {
-    const m = /^\[(\d+)\]\s+\S/.exec(line)
+    const m = /^\[(\d+)\]\s+(\S.*)$/.exec(line)
     if (m) {
       const id = Number(m[1])
       if (bibIds.has(id)) err('references/bibliography.md', `duplicate citation ID [${id}]`)
       bibIds.add(id)
+      bibText.set(id, m[2])
     }
   }
 }
@@ -265,8 +275,21 @@ for (const file of chapterFiles) {
       }
     }
 
+    // 4b. citation filler: a non-Intel subject anchored only to the SDM
+    if (NON_INTEL_SUBJECTS.test(body)) {
+      const sdm = anchors.filter((a) => SDM_ONLY_ANCHOR.test(a))
+      const other = anchors.filter((a) => T1_PREFIX.test(a) && !SDM_ONLY_ANCHOR.test(a))
+      // A Microsoft / kernel.org / advisory / paper reference in `[N]` settles it.
+      const hasNonIntelSource = bibRefs.some((id) =>
+        /microsoft|learn\.microsoft|kernel\.org|lore\.kernel|security-center|INTEL-SA|nvd\.nist|cve\.org|arxiv|usenix|acm\.org|ieee/i.test(bibText.get(id) ?? ''))
+      if (sdm.length && !other.length && !hasNonIntelSource) {
+        const subject = NON_INTEL_SUBJECTS.exec(body)[0]
+        err(`${rel}:${n}`, `claim about "${subject}" is anchored only to \`[${sdm[0]}]\` — the SDM does not document it. Cite the advisory, Microsoft Learn or kernel.org instead, or drop the anchor and mark C:low`)
+      }
+    }
+
     // 4. architectural claims need a T1 anchor
-    if (isArch) {
+    if (isArch && !NON_INTEL_SUBJECTS.test(body)) {
       const hasT1 = anchors.some((a) => T1_PREFIX.test(a))
       if (!hasT1) err(`${rel}:${n}`, 'architectural claim has no Tier-1 Intel anchor')
     }

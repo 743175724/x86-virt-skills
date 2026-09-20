@@ -64,7 +64,7 @@ The EPTP names the root of the EPT hierarchy and carries the configuration of th
 - **Claim.** EPTP bits 51:12 hold the physical address of the root EPT paging structure; bits above the processor's physical-address width must be 0, and bits 11:8 are reserved and must be 0.  `[SDM 3C §27.6.11]` `[1]` `C:high` `V:durable`
 - **Claim.** The EPTP holds a physical address, not a guest-physical address: the VMM writes it before VM entry and the processor never translates it.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 
-The address portion of the EPTP, bits 51:12, is called the EP4TA and is the tag used for guest-physical and combined mappings — see §6.6.
+The address portion of the EPTP, bits 51:12, is called the **EPTRTA** and is the tag used for guest-physical and combined mappings — see §6.6.
 
 ### 6.2.1 Memory types under EPT
 
@@ -105,11 +105,13 @@ Three differences from IA-32e paging are worth stating explicitly, because they 
 | 58 | Paging-write access | leaf entries |
 | 60 | Supervisor shadow stack | leaf entries, when EPTP bit 7 is 1 |
 | 61 | Sub-page write permissions | leaf entry for a 4-KByte page |
-| 63 | Suppress #VE | leaf entries |
+| 63 | Suppress #VE | leaf entries, **and not-present entries at any level** (for a not-present entry the SDM ignores only bits 62:3) |
 
 - **Claim.** In every EPT paging-structure entry, bit 0 is read access, bit 1 is write access and bit 2 is execute access; when "mode-based execute control for EPT" is enabled, bit 2 grants execute access only for supervisor-mode linear addresses.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** Bit 10 of an EPT paging-structure entry is execute access for user-mode linear addresses; it has meaning only when "mode-based execute control for EPT" is enabled and is ignored otherwise.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
-- **Claim.** Mode-based execute control for EPT is enabled by a secondary processor-based VM-execution control (bit position owned by `02-vmcs.md`); the generation in which it first shipped is adjudicated in `errata.md` **E01** — **Kaby Lake**, not Skylake — and MBEC is the hardware accelerator behind Windows HVCI, covered in `15-security.md` §15.8.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
+- **Claim.** Mode-based execute control for EPT is enabled by a secondary processor-based VM-execution control (bit position owned by `02-vmcs.md`); the generation in which it first shipped is adjudicated in `errata.md` **E01** — **Kaby Lake**, not Skylake —.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
+
+MBEC is the hardware mechanism Windows HVCI relies on to keep kernel code pages non-writable while executable; that use is covered in `15-security.md` §15.8 and cited to Microsoft there.
 - **Claim.** With mode-based execute control enabled, a single EPT entry can grant execute permission to supervisor-mode linear addresses (bit 2) while denying it to user-mode linear addresses (bit 10) or the reverse, which is what lets a VMM enforce W^X across the guest's own privilege boundary.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** Bits 5:3 of an EPT leaf entry are the EPT memory type and bit 6 is "ignore PAT memory type"; both are defined only in entries that map a page, and in non-leaf entries bits 7:3 are reserved and must be 0.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** Bit 7 of an EPT PDPTE or an EPT PDE selects a leaf mapping: 1 in an EPT PDPTE maps a 1-GByte page and 1 in an EPT PDE maps a 2-MByte page; bit 7 is reserved and must be 0 in an EPT PML4E and is ignored in an EPT PTE.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
@@ -178,8 +180,8 @@ Further misconfiguration conditions exist for feature-specific bits — for exam
 | Exit qualification | defined, and reports the access type and the effective permissions | not defined for this exit |
 | Convertible to #VE | yes, subject to §6.11 | no |
 
-- **Claim.** EPT violations exit with basic exit reason 48 and EPT misconfigurations with basic exit reason 49; both record the offending address in the guest-physical address VM-exit information field (see `05-vm-exit.md` for the information-field inventory).  `[SDM 3C §27.9.1]` `[SDM 3D App.C]` `[1]` `[2]` `C:high` `V:durable`
-- **Claim.** An exit qualification is defined for EPT violations but not for EPT misconfigurations, which is why a misconfiguration gives the VMM no architectural hint beyond the guest-physical address (see `05-vm-exit.md`).  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** EPT violations exit with basic exit reason 48 and EPT misconfigurations with basic exit reason 49; both record the offending address in the guest-physical address VM-exit information field (see `05-vm-exit.md` for the information-field inventory).  `[SDM 3C §30.2.1]` `[SDM 3D App.C]` `[1]` `[2]` `C:high` `V:durable`
+- **Claim.** An exit qualification is defined for EPT violations but not for EPT misconfigurations, which is why a misconfiguration gives the VMM no architectural hint beyond the guest-physical address (see `05-vm-exit.md`).  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** A guest page fault caused by the guest's own paging structures is delivered to the guest as #PF (vector 14) and causes no VM exit unless the exception bitmap intercepts it; only the second-level translation produces EPT violations, so the guest cannot observe them.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** An EPT violation can occur while the processor is reading a *guest* paging-structure entry, not only while accessing the final data page, because the guest-physical address of every guest paging structure is itself translated through EPT.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** EPT violations and EPT misconfigurations are unconditional: unlike most VM exits they have no enabling control beyond "enable EPT" itself and cannot be masked, which is why every EPT-using VMM must implement both handlers.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
@@ -188,8 +190,8 @@ Further misconfiguration conditions exist for feature-specific bits — for exam
 
 `05-vm-exit.md` owns the complete layout. Two fields are so widely mis-stated that they are recorded here as corrections, and `errata.md` carries the matching entries.
 
-- **Claim.** In the exit qualification for an EPT violation, bit 7 reports that the guest-linear-address VM-exit information field is valid; it says nothing about the guest-physical-address field, which is always filled in on an EPT violation (full layout: see `05-vm-exit.md`).  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
-- **Claim.** In the exit qualification for an EPT violation, bit 6 is the logical-AND of the user-mode execute permission (bit 10) across the EPT paging-structure entries used to translate the guest-physical address, and it is meaningful only when "mode-based execute control for EPT" is enabled; it is not derived from the guest paging structures' execute-disable bit (see `05-vm-exit.md`).  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In the exit qualification for an EPT violation, bit 7 reports that the guest-linear-address VM-exit information field is valid; it says nothing about the guest-physical-address field, which is always filled in on an EPT violation (full layout: see `05-vm-exit.md`).  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In the exit qualification for an EPT violation, bit 6 is the logical-AND of the user-mode execute permission (bit 10) across the EPT paging-structure entries used to translate the guest-physical address, and it is meaningful only when "mode-based execute control for EPT" is enabled; it is not derived from the guest paging structures' execute-disable bit (see `05-vm-exit.md`).  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ### 6.4.4 Triaging the two exits in practice
 
@@ -248,12 +250,12 @@ The processor caches three kinds of translation, and the tagging rules differ:
 | Mapping | Translates | Tagged with |
 |---|---|---|
 | Linear mappings | guest-linear → physical | current VPID and current PCID |
-| Guest-physical mappings | guest-physical → physical | current EP4TA |
-| Combined mappings | guest-linear → physical, through both hierarchies | current VPID, current PCID and current EP4TA |
+| Guest-physical mappings | guest-physical → physical | current EPTRTA |
+| Combined mappings | guest-linear → physical, through both hierarchies | current VPID, current PCID and current EPTRTA |
 
-- **Claim.** VMX distinguishes linear mappings, guest-physical mappings and combined mappings; linear mappings are associated with the current VPID and PCID, guest-physical mappings with the current EP4TA, and combined mappings with all three.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
-- **Claim.** When EPT is in use the processor creates guest-physical and combined mappings rather than linear mappings, so a combined mapping created under one EPTP value cannot be used after the EP4TA changes.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
-- **Claim.** Because combined mappings are tagged with VPID, PCID and EP4TA simultaneously, switching EPTP with VMFUNC while VPID is enabled does not require a TLB flush; without VPID the switch invalidates combined mappings associated with VPID 0000H.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
+- **Claim.** VMX distinguishes linear mappings, guest-physical mappings and combined mappings; linear mappings are associated with the current VPID and PCID, guest-physical mappings with the current EPTRTA, and combined mappings with all three.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
+- **Claim.** When EPT is in use the processor creates guest-physical and combined mappings rather than linear mappings, so a combined mapping created under one EPTP value cannot be used after the EPTRTA changes.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
+- **Claim.** Because combined mappings are tagged with VPID, PCID and EPTRTA simultaneously, switching EPTP with VMFUNC while VPID is enabled does not require a TLB flush; without VPID the switch invalidates combined mappings associated with VPID 0000H.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
 - **Claim.** Intel provides two independent address-space identifiers: PCID tags translations per process inside one linear-address space, and VPID tags them per virtual processor; the assertion that Intel has no ASID-style mechanism is false.  `[SDM 3A Ch.5]` `[SDM 3C §27.6.12]` `[1]` `[3]` `C:high` `V:durable`
 - **Claim.** Intel measured a 25% vConsolidate improvement on Nehalem from enabling EPT and VPID together, relative to the same platform without them.  `[SDM 3C Ch.31]` `[124]` `C:medium` `V:durable`
 
@@ -261,7 +263,7 @@ A VMM must give each vCPU a distinct non-zero VPID, and must invalidate by VPID 
 
 | Situation | Required invalidation |
 |---|---|
-| EPT paging structures modified to be more restrictive | INVEPT for the affected EP4TA on every logical processor that may have cached it |
+| EPT paging structures modified to be more restrictive | INVEPT for the affected EPTRTA on every logical processor that may have cached it |
 | vCPU migrated to a different logical processor | INVVPID single-context for that VPID |
 | VPID recycled for a different vCPU or address space | INVVPID single-context before first use |
 | Guest executed INVLPG and the VMM is emulating it | INVVPID individual-address |
@@ -270,9 +272,9 @@ A VMM must give each vCPU a distinct non-zero VPID, and must invalidate by VPID 
 - **Claim.** With "enable VPID" set, VM entry and VM exit do not invalidate cached linear or combined mappings, so host and guest translations coexist in the TLB and the VMM becomes responsible for every invalidation that correctness requires.  `[SDM 3C §27.6.12]` `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** Making an EPT entry *more* permissive does not require invalidation, because the processor never caches a negative result; making it more restrictive, or changing the physical address it points to, does.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
 
-Two consequences are worth separating out, because they are the places where VPID and EPT interact rather than compose. First, guest-physical mappings are tagged by EP4TA only, so INVVPID can never remove them no matter which type is used — a VMM that changes EPT and invalidates only by VPID has a stale-translation bug. Second, combined mappings carry all three tags at once, so changing *either* the VPID or the EPTP is enough to stop the processor using an existing combined mapping, which is what makes multi-view EPT designs cheap.
+Two consequences are worth separating out, because they are the places where VPID and EPT interact rather than compose. First, guest-physical mappings are tagged by EPTRTA only, so INVVPID can never remove them no matter which type is used — a VMM that changes EPT and invalidates only by VPID has a stale-translation bug. Second, combined mappings carry all three tags at once, so changing *either* the VPID or the EPTP is enough to stop the processor using an existing combined mapping, which is what makes multi-view EPT designs cheap.
 
-- **Claim.** Guest-physical mappings carry no VPID tag, so no INVVPID type can invalidate them; conversely INVEPT does invalidate combined mappings, because those are tagged with an EP4TA as well.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
+- **Claim.** Guest-physical mappings carry no VPID tag, so no INVVPID type can invalidate them; conversely INVEPT does invalidate combined mappings, because those are tagged with an EPTRTA as well.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** Nested virtualization multiplies these hierarchies rather than adding to them, and the shadowing of an L1 EPT hierarchy into an L0-maintained one is owned by `14-nested-virtualization.md`.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
 
 ---
@@ -298,7 +300,7 @@ Two consequences are worth separating out, because they are the places where VPI
 
 - **Claim.** The INVEPT descriptor is 128 bits: bits 63:0 hold an EPT pointer and bits 127:64 are reserved and must be 0.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** The INVVPID descriptor is 128 bits: bits 15:0 hold a VPID, bits 63:16 are reserved and must be 0, and bits 127:64 hold a linear address.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
-- **Claim.** INVEPT defines type 1, single-context invalidation (invalidate guest-physical and combined mappings associated with the EP4TA in the descriptor), and type 2, all-context invalidation (invalidate them for all EP4TA values); see `08-vmx-instructions.md`.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
+- **Claim.** INVEPT defines type 1, single-context invalidation (invalidate guest-physical and combined mappings associated with the EPTRTA in the descriptor), and type 2, all-context invalidation (invalidate them for all EPTRTA values); see `08-vmx-instructions.md`.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** INVVPID defines type 0 individual-address, type 1 single-context, type 2 all-contexts, and type 3 single-context-retaining-globals; see `08-vmx-instructions.md`.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** INVVPID invalidates linear mappings and combined mappings tagged with the given VPID but never guest-physical mappings; removing a guest-physical mapping requires INVEPT.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 - **Claim.** INVVPID type 2 invalidates mappings for all VPID values except 0000H, which is why it cannot be used to flush VMX root operation's own translations.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
@@ -307,7 +309,7 @@ Two consequences are worth separating out, because they are the places where VPI
 Invalidation is per logical processor: after modifying EPT paging structures that other logical processors may be caching, the VMM must execute INVEPT on each of them.
 
 - **Claim.** Both instructions are valid only in VMX root operation, so a guest that needs an invalidation performed against its own EPT hierarchy must be served by the VMM; nested emulation of INVEPT and INVVPID is owned by `14-nested-virtualization.md`.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
-- **Claim.** INVEPT type 2 (all-context) invalidates guest-physical and combined mappings for every EP4TA and is the conservative choice when a VMM cannot enumerate which EPTP values are affected.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
+- **Claim.** INVEPT type 2 (all-context) invalidates guest-physical and combined mappings for every EPTRTA and is the conservative choice when a VMM cannot enumerate which EPTP values are affected.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 
 ---
 
@@ -383,7 +385,7 @@ The attack HLAT answers is specific. EPT protects *guest-physical* pages, but th
 - **Claim.** HLAT is enabled by an "enable HLAT" VM-execution control and roots its paging hierarchy at the HLAT pointer (HLATP), a VM-execution control field holding a guest-physical address; a companion HLAT prefix size field selects which linear addresses are translated through HLATP instead of CR3 (see `02-vmcs.md` for encodings).  `[SDM 3C §27.6.22]` `[SDM 3C §31.2]` `[1]` `C:high` `V:durable`
 - **Claim.** HLAT paging structures have the same format as ordinary paging structures except for bit 11, the restart bit: when the processor encounters a set restart bit during an HLAT walk it abandons HLAT and restarts the translation using ordinary CR3-rooted paging.  `[SDM 3A §5.5.1]` `[3]` `[112]` `[113]` `C:medium` `V:durable`
 - **Claim.** Bit 58 of an EPT leaf entry is paging-write access: it marks a page that the processor's paging hardware is permitted to write as a paging structure, and it is given meaning by the "EPT paging-write control" VM-execution control.  `[SDM 3C §31.2]` `[1]` `[112]` `C:medium` `V:durable`
-- **Claim.** Bit 57 of an EPT leaf entry is verify guest paging: when the "guest-paging verification" VM-execution control is enabled and this bit is set for the target page, the processor checks that every guest paging-structure entry used to reach that page lies in a page whose EPT leaf entry has the paging-write access bit set, and reports a failure as an EPT violation.  `[SDM 3C §31.2]` `[1]` `[112]` `C:medium` `V:durable`
+- **Claim.** Bit 57 of an EPT leaf entry is verify guest paging: when **both** the "guest-paging verification" and "EPT paging-write control" VM-execution controls are enabled and this bit is set in the EPT leaf entry for the **guest paging-structure page** (not the data page), the processor checks that every guest paging-structure entry used to reach that page lies in a page whose EPT leaf entry has the paging-write access bit set, and reports a failure as an EPT violation.  `[SDM 3C §31.2]` `[1]` `[112]` `C:medium` `V:durable`
 - **Claim.** Together, HLAT plus paging-write access plus guest-paging verification are the hardware under Microsoft's Hypervisor-enforced Paging Translation (HVPT); the vendor describes the HLAT prefix size check as the first step that decides whether an address is translated through the hypervisor-owned or the guest-owned hierarchy.  `[SDM 3C §31.2]` `[1]` `[113]` `C:medium` `V:durable`
 
 | Mechanism | Enabled by | State it adds | What it prevents |
@@ -401,7 +403,7 @@ The attack HLAT answers is specific. EPT protects *guest-physical* pages, but th
 A virtualization exception converts what would have been an EPT-violation VM exit into an exception delivered inside the guest, so guest-resident agents can handle their own second-level faults without a round trip to the VMM.
 
 - **Claim.** The virtualization exception is exception vector 20 (#VE) and is delivered in VMX non-root operation in place of an EPT-violation VM exit.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
-- **Claim.** An EPT violation is converted to a #VE only if all of the following hold: the "EPT-violation #VE" VM-execution control is 1, bit 63 (suppress-#VE) of the EPT leaf entry used in the translation is 0, and the 32-bit field at offset 4 of the virtualization-exception information area is 0.  `[SDM 3C §27.6.19]` `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
+- **Claim.** An EPT violation is converted to a #VE only if **all six** of the following hold (the list below is complete; two that are easy to miss are that CR0.PE must be 1 and that the processor must not be in the middle of delivering another event): the "EPT-violation #VE" VM-execution control is 1, bit 63 (suppress-#VE) of the EPT leaf entry used in the translation is 0, and the 32-bit field at offset 4 of the virtualization-exception information area is 0.  `[SDM 3C §27.6.19]` `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`
 - **Claim.** The virtualization-exception information address is a 64-bit VM-execution control field at VMCS field encoding 202AH that points to a 4-KByte virtualization-exception information area; see `02-vmcs.md`.  `[SDM 3C §27.6.19]` `[1]` `C:high` `V:durable`
 
 **Virtualization-exception information area**
@@ -443,7 +445,7 @@ Every architectural object this chapter describes, with the VMCS field or exit r
 | Object | Reached through | Exit reason it can produce |
 |---|---|---|
 | EPT hierarchy | EPTP (201AH) | 48 EPT violation, 49 EPT misconfiguration |
-| Guest-physical mappings | EP4TA (EPTP bits 51:12) | — (invalidated by INVEPT) |
+| Guest-physical mappings | EPTRTA (EPTP bits 51:12) | — (invalidated by INVEPT) |
 | Linear / combined mappings | VPID field | — (invalidated by INVVPID) |
 | Page-modification log | PML address (200EH), PML index (0812H) | 62 page-modification log full |
 | Sub-page permission table | SPPTP (2030H) | 66 SPP-related event, 48 EPT violation |

@@ -64,8 +64,8 @@
         "2.12 Software use of the VMCS",
         "2.13 Reading this chapter against a real machine"
       ],
-      "bytes": 55066,
-      "sha256": "249d14508688729713704e9f1909f2ccc568314b2f62a802370afdea015694a7"
+      "bytes": 55590,
+      "sha256": "a51c295b2955db35cd0053a8351c474ff197dd2cd02f03075f82d4b225352f1e"
     },
     {
       "path": "references/03-nonroot-operation.md",
@@ -113,8 +113,8 @@
         "4.11 Failure signatures seen in practice",
         "4.12 Cross-references"
       ],
-      "bytes": 51845,
-      "sha256": "2607dcf3a60495fa3ca43e7ad0a8d707063b0b657a61896aa8c6fce10742604d"
+      "bytes": 52096,
+      "sha256": "83e744e9d45833a910f67d51dbdc648cf29c7def1ce7139860ee447bba1fa242"
     },
     {
       "path": "references/05-vm-exit.md",
@@ -137,8 +137,8 @@
         "5.13 Two corrections carried by this chapter",
         "5.14 Cross-references"
       ],
-      "bytes": 48868,
-      "sha256": "14e26bb121ec10a146d345fcaef8615484af867729d1ae7f53d2ad5c7bfa81f8"
+      "bytes": 49888,
+      "sha256": "eb4cd4d77dd4fbd5c463df4730bf789ebdba891c8832c6357a5ee202bd9228b4"
     },
     {
       "path": "references/06-address-translation.md",
@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 52866,
-      "sha256": "e6d285a7d0028663fc8571fd0665cbce6fd07045688c60093a90cd1a6a0a0b3e"
+      "bytes": 53349,
+      "sha256": "083910d2a2cce4380351055447a0fdf34a3e8d751a36be9db2d120b943ce0bc8"
     },
     {
       "path": "references/07-apic-virtualization.md",
@@ -182,8 +182,8 @@
         "7.11 Chapter artifact index",
         "7.12 Open items"
       ],
-      "bytes": 42157,
-      "sha256": "94169b6d27437568ca8a1e177892f7d21406beda2b2c5f040e0b6af26736a94d"
+      "bytes": 42905,
+      "sha256": "d4737c0a0dbf0c8552165da1994b1f1ab3f07d0558ae4bd00e8515612cfe9e75"
     },
     {
       "path": "references/08-vmx-instructions.md",
@@ -201,8 +201,8 @@
         "8.8 Common pitfalls",
         "8.9 Cross-references"
       ],
-      "bytes": 42570,
-      "sha256": "31e414a3452e17c13405d94978ca3386a9c349a468c46d674259d477e321ea4a"
+      "bytes": 42512,
+      "sha256": "ac01dba922f0b7f00ee8d6dfef1384c1ba229b33c86344cc72135da98d2043ef"
     },
     {
       "path": "references/09-smm-seam.md",
@@ -282,8 +282,8 @@
         "12.8 Security considerations",
         "12.9 Pitfalls"
       ],
-      "bytes": 54246,
-      "sha256": "7642e1edbd7339ae68810d33cb2f2a6f8a0c24bcd9c847b6e3a78e99127852fe"
+      "bytes": 54753,
+      "sha256": "347325dd0a166e1c38a03e325bc2e7c2d7cc13de8fbe1720a898c24084cce83d"
     },
     {
       "path": "references/13-tdx.md",
@@ -314,8 +314,8 @@
         "13.21 Known vulnerabilities and public security research",
         "13.22 What this chapter deliberately does not state"
       ],
-      "bytes": 100338,
-      "sha256": "c265fbd30e46e9356ffe93dc5872269c00c06b247664d0fc35e1fdf8ed99e14a"
+      "bytes": 100385,
+      "sha256": "16936a76a5f31b8c4cf5d8f359a78c8fca268f4f1672e7668c632be0b9ff958a"
     },
     {
       "path": "references/14-nested-virtualization.md",
@@ -344,8 +344,8 @@
     {
       "path": "references/15-security.md",
       "title": "15. Security: Threat Model, Transient-Execution Defects, and Defensive Virtualization",
-      "summary_zh": "本章回答两个问题——VT 架构到底保证什么、不保证什么；以及当\"隔离\"在微架构层被绕过时，究竟有哪些**真实可写的控制位**可用。核心是一张 CVE → 机制 → 缓解位矩阵（L1TF/Foreshadow、MDS、TAA、SRBDS、Spectre v2/BHI、Retbleed、Downfall），每个 MSR 地址与位号都取自 SDM Vol.4 §2.1 表 2-2 原文。必须记住的区分：绝大多数\"虚拟机逃逸\"CVE 是 **VMM 软件缺陷**（QEMU/Hyper-V/VMware 的设备模拟），不是 VT 硬件缺陷；VT 硬件层的真实缺陷以瞬态执行侧信道形态出现。本章同时**独占** Windows 侧的防御性虚拟化：VBS（VTL0/VTL1、安全内核、IUM trustlet）、HVCI（用 EPT 强制内核代码页 W^X）、Credential Guard、Kernel DMA Protection 与 DRTM/Intel TXT。相邻章节：`12-vtd-faults-bios-siov.md`（VT-d 与 DMA 防护）、`14-nested-virtualization.md`（嵌套机制）、`90-dated-landscape.md`（产品与时效信息）。",
-      "maps_to": "no single SDM chapter. Normative anchors used here are SDM Vol.4 §2.1 \"Architectural MSRs\" (Table 2-2) , SDM Vol.3C §27.6.25 (virtualization of IA32_SPEC_CTRL) and Ch.31 (EPT) , and Intel Security Center advisories",
+      "summary_zh": "本章回答两个问题——VT 架构到底保证什么、不保证什么；以及当\"隔离\"在微架构层被绕过时，究竟有哪些**真实可写的控制位**可用。核心是一张 CVE → 机制 → 缓解位矩阵（L1TF/Foreshadow、MDS、TAA、SRBDS、Spectre v2/BHI、Retbleed、Downfall），每个 MSR 地址与位号都取自 SDM Vol.4 §2.1 表 2-2 原文。必须记住的区分：绝大多数\"虚拟机逃逸\"CVE 是 **VMM 软件缺陷**（QEMU/Hyper-V/VMware 的设备模拟），不是 VT 硬件缺陷；VT 硬件层的真实缺陷以瞬态执行侧信道形态出现。本章同时**独占** Windows 侧的防御性虚拟化：VBS（VTL0/VTL1、安全内核、IUM trustlet）、HVCI（用 EPT 强制内核代码页 W^X）、Credential Guard、Kernel DMA Protection 与 DRTM/Intel TXT。本章的 CVE 机制、缓解指引引用 Intel 安全指引文档与公告，Windows 事实引用 Microsoft Learn，Linux/KVM 开关引用 kernel.org——Vol.3C 完全不涉及这些主题，**不要给它们挂 SDM 章节号**。相邻章节：`12-vtd-faults-bios-siov.md`（VT-d 与 DMA 防护）、`14-nested-virtualization.md`（嵌套机制）、`90-dated-landscape.md`（产品与时效信息）。",
+      "maps_to": "no single SDM chapter, and most of this chapter deliberately carries no Intel anchor at all. The Vol.3C sections that genuinely apply here are §27.6.25 (virtualization of IA32_SPEC_CTRL), §28.1.2 (instructions that exit unconditionally), §28.3 (RDTSC under TSC offsetting), §31.3.2 (EPT entry formats, for the MBEC bits) and Ch.34 (SMM) . MSR addresses and bit positions come from SDM Vol.4 §2.1 \"Architectural MSRs\", Table 2-2 ; CVE mechanisms and mitigation guidance from Intel's security-guidance documents and advisories  – –; Windows behaviour from Microsoft Learn – ; Linux and KVM knobs from kernel.org –",
       "headings": [
         "15.1 What the VMX architecture guarantees — and what it does not",
         "15.2 Hardware defect or software defect? Reading \"VM escape\" correctly",
@@ -362,8 +362,8 @@
         "15.13 Reading the chapter as one picture",
         "15.14 Out of scope for this chapter"
       ],
-      "bytes": 50305,
-      "sha256": "a09f5eed8cc7512ba5fb29ce4c0966ddd5877a29494d4b7652443db2a4b1d6b1"
+      "bytes": 51362,
+      "sha256": "94a69ff7ed8f163c2d49af9924f7384f89ce4be6cc9ed5db84df263da33af097"
     },
     {
       "path": "references/16-performance.md",
@@ -429,8 +429,8 @@
         "18.12 Procedure for answering a cross-vendor question",
         "18.13 Out of scope for this chapter"
       ],
-      "bytes": 48744,
-      "sha256": "a8321f08ecfaaf20c3955d417d3ac0dd237474c082aec87edf4e935fd8b50ec7"
+      "bytes": 49093,
+      "sha256": "e3eb12fc124449f797dd136d692de22d1a0745e0e9e6b91a6063a4ec1be6ab83"
     },
     {
       "path": "references/90-dated-landscape.md",
@@ -465,8 +465,8 @@
         "550–599 · Dated landscape (90)",
         "600–649 · Errata"
       ],
-      "bytes": 69164,
-      "sha256": "1007a2a0f0972d570e1ea6cc0c3ee25d10b935493b297d8ca87128036ff6b641"
+      "bytes": 70452,
+      "sha256": "757d8787ccd0ca095dae7907ada69cac02e55f7811e874bc3050297ba1e40199"
     },
     {
       "path": "references/core-facts.md",
@@ -507,8 +507,8 @@
         "Settled corrections",
         "Open conflicts — do not pick a side"
       ],
-      "bytes": 23375,
-      "sha256": "a2776eaa61f726250fdd84545846add14a3cb6ffdac63aa5eb64a2cb891d5975"
+      "bytes": 23471,
+      "sha256": "96c2841b74959a41255d593bd785e1e2d0b465756e5c65317c6bacc77a0aac40"
     }
   ]
 }

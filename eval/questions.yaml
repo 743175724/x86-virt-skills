@@ -638,7 +638,7 @@
     - "software inside the partition, including the VTL0 kernel, cannot change those permissions"
     - "Microsoft implements up to 16 trust levels architecturally but ships two, VTL0 and VTL1"
     - "Isolated User Mode trustlets run at VTL1 in user mode and marshal system calls to the VTL0 kernel"
-  required_citation: "SDM 3C §31.3"
+  required_citation: "[380] Microsoft Learn — Virtual Secure Mode (Hypervisor TLFS)"  # was SDM 3C §31.3, which is the EPT chapter; Vol.3C rev 092 has zero occurrences of "VTL"
   notes: "Chapter 15 section 15.7; chapter 17 section 17.2.7 owns the partition-side mechanics. This is the same EPT permission machinery as 06, applied to trust levels rather than VMs."
 
 - id: tdx-tlb-tracking
@@ -903,7 +903,7 @@
     - "the guidance is a clear separation of data and code, and never modifying code pages directly"
     - "the permission decision lives in the EPT entry the hypervisor controls, not in the VTL0 page tables, so the kernel cannot grant the page execute rights"
     - "unsigned or improperly signed code fails for a second, separate reason: the integrity check that authorises the transition to executable runs in the secure environment"
-  required_citation: "SDM 3C §31.3.2"
+  required_citation: "[382] Microsoft Learn — Memory Integrity and VBS (Windows drivers)"  # was SDM 3C §31.3.2, an EPT section; Vol.3C rev 092 has zero occurrences of "HVCI"
   notes: "Chapter 15 section 15.8; chapter 17 sections 17.6 and 17.6.1. Quickref section 0.5 question 3."
 
 - id: hypervisor-works-linux-not-windows11
@@ -1033,7 +1033,7 @@
     - "all four are covered by INTEL-SA-00233"
   must_not_include:
     - "ZombieLoad is CVE-2019-11091"
-  required_citation: "SDM 3C §28.1.2"
+  required_citation: "[396] INTEL-SA-00233"  # was SDM 3C §28.1.2, the unconditional-exit instruction list, which says nothing about MDS
   notes: "errata E18. Chapter 15 section 15.5.2 states the correction explicitly and section 15.5 carries the full matrix."
 
 - id: trap-intel-asid

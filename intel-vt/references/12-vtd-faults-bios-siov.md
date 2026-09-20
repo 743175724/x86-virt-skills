@@ -35,7 +35,7 @@ GCMD_REG bits that drove it (29 and 28) and the CAP_REG capability bit (3) are n
 marked Deprecated — see `10-vtd-dma-remapping.md` §10.5.1 and §10.5.3.
 
 - **Claim.** The remapping architecture defines Primary Fault Logging as the default fault logging method that must be supported by all implementations of the architecture.  `[VT-d 5.20 §7.2]` `[8]` `C:high` `V:durable`
-- **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is reported by the **NFR (Number of Fault-recording Registers)** field of the Capability Register and whose base offset comes from **CAP_REG.FRO**; you cannot walk the fault ring without both → register layout in `10-vtd-dma-remapping.md` §10.5.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
+- **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is **CAP_REG.NFR + 1** (the NFR field reports N, not the count — a ring walk driven by NFR alone is short by one register) and whose base is **register-base + 16 × CAP_REG.FRO**, with FSTS_REG.FRI giving the index to start from; you cannot walk the fault ring without both → register layout in `10-vtd-dma-remapping.md` §10.5.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Hardware maintains an internal index referencing the Fault Recording Register in which the next non-recoverable fault will be recorded; the index resets to zero when both TES and IES are Clear in the Global Status Register, increments on each recorded fault, and wraps from N-1 to 0.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Hardware maintains the Primary Pending Fault (PPF) field in the Fault Status Register as the logical OR of the Fault (F) fields across all Fault Recording Registers, recomputed whenever any F field is updated by hardware or software.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** If the Fault Recording Register referenced by the internal index already has its F field Set, hardware sets the Primary Fault Overflow (PFO) field in the Fault Status Register and the new fault information is not recorded.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
@@ -92,6 +92,12 @@ Because FECTL_REG.IM defaults to 1, fault interrupts are masked out of reset; a 
 programs the fault event registers but never clears IM will silently log faults it never sees.
 
 ## 12.3 Fault reason codes
+
+> **Before decoding the reason, check RMRR.** A very common cause of a device faulting immediately
+> after assignment is not a wrong reason code but a missing reserved region: if the device is
+> covered by an RMRR in the ACPI DMAR table, the second-stage structures must provide an
+> **identity mapping with read and write permission** over that region, or legitimate firmware
+> DMA faults. RMRR structures are in §12.5.
 
 VT-d Table 30 assigns each fault condition both a mnemonic condition code and a numeric fault
 reason. The condition-code prefixes carve the space by structure: `L*` for legacy mode, `S*` for
