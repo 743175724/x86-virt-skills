@@ -1,0 +1,64 @@
+name: checks
+
+# What this guarantees, and what it does not.
+#
+# It runs the two mechanical gates on every push and pull request, so that
+# "lint clean" stays true for anyone who clones the repo rather than being a
+# claim about one machine at one moment. Both tools are zero-dependency Node,
+# so there is nothing to install and nothing to pin.
+#
+# It does NOT run the behavioural eval in eval/. That needs an agent to answer
+# 80 questions from the skill and a different agent to score them, which is not
+# something a CI runner can do. The eval is run by hand and its results are
+# committed under eval/<skill>/results/.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Two versions because the tools are plain ESM with no transpile step:
+        # 20 is the oldest LTS worth supporting, 24 is what they were written on.
+        node: ['20', '24']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: lint
+        # Schema, anchor grammar, bibliography resolution, dated-fact
+        # quarantine, routing integrity, misconceptions, ownership,
+        # cross-chapter value conflicts, the [no-spec] tally, and the
+        # Agent Skills frontmatter limits.
+        run: node tools/lint.mjs
+
+      - name: generated files are not stale
+        # index.json, agents/openai.yaml and AGENTS.md are derived from the
+        # chapters. A commit that edits a chapter without rebuilding them ships
+        # a routing table that disagrees with the corpus.
+        run: node tools/build.mjs --check
+
+      - name: install script works
+        # If this breaks, the skills cannot be consumed by any host, which no
+        # amount of clean lint would reveal.
+        run: |
+          node tools/install.mjs --copy
+          for skill in intel-vt amd-virtualization; do
+            for host in .agents .claude; do
+              test -f "$host/skills/$skill/SKILL.md" \
+                || { echo "missing $host/skills/$skill/SKILL.md"; exit 1; }
+            done
+          done
+          node tools/install.mjs --uninstall

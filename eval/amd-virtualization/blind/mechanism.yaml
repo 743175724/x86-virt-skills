@@ -1,0 +1,77 @@
+# amd-virtualization eval - mechanism (24 questions)
+# BLIND: expected answers, required citations, notes and the chapter field
+# are deliberately removed. The chapter is removed because routing is part
+# of what is being measured.
+
+- id: clean-bits-mechanism
+  question: "How does VMCB state caching actually work, and when must I zero the clean field?"
+
+- id: intercept-priority-ordering
+  question: "When an instruction would raise an exception and is also intercepted, which one wins? Is there a single rule?"
+
+- id: tsc-offset-and-ratio-composition
+  question: "If I set both a TSC offset and a TSC ratio, in what order are they applied, and what exactly do they affect?"
+
+- id: vmrun-ordering
+  question: "Walk me through what VMRUN does, in order, from the moment it executes to the first guest instruction."
+
+- id: vmrun-consistency-checks
+  question: "How does VMRUN decide that my guest state is illegal, and how should I express the CR4 and EFER checks in my own validator?"
+
+- id: gif-stgi-clgi-vgif
+  question: "What does the global interrupt flag do to pending events, and what does vGIF change?"
+
+- id: event-injection-and-reinjection
+  question: "How do I inject an event into a guest, and how do I re-inject one that was interrupted by an intercept during IDT delivery?"
+
+- id: nested-permission-combining
+  question: "Under nested paging, how do the guest page tables and the nested page tables combine to decide whether an access is allowed?"
+
+- id: memory-type-combining
+  question: "With nested paging on, how is the effective memory type for a guest access decided, and what happens to guest MTRRs?"
+
+- id: npf-check-ordering
+  question: "In what order does the hardware perform the checks that can produce an `#NPF` versus a guest `#PF`, and where do RMP checks sit?"
+
+- id: asid-allocation-and-exhaustion
+  question: "How should a hypervisor allocate ASIDs, what happens when it runs out, and how many are there?"
+
+- id: gmet-mechanism
+  question: "What is the Guest Mode Execute Trap, how does it work at the page-table level, and how is it turned on?"
+
+- id: avic-ipi-delivery-path
+  question: "Trace an AVIC-accelerated IPI from the guest's ICR write to the target vCPU's IRR, step by step."
+
+- id: vnmi-virtualization
+  question: "How does NMI virtualization work on AMD, and what does it require me to configure?"
+
+- id: io-page-table-walk
+  question: "How does an IOMMU host I/O page-table walk work, and how do I get a page size other than the level default?"
+
+- id: gcr3-pasid-translation
+  question: "How does the IOMMU turn a PASID into a guest CR3, and how wide a PASID can it actually translate?"
+
+- id: msi-remapping-end-to-end
+  question: "Walk an MSI from a passthrough device through the IOMMU to a running guest vCPU's IRR."
+
+- id: ga-log-and-gappi
+  question: "What is the GA log actually telling the hypervisor, and what does GAPPI change?"
+
+- id: c-bit-mechanics
+  question: "How does the C-bit work, and what do I have to do when I change it on a page?"
+
+- id: ghcb-establishment
+  question: "Walk me through how a SEV-ES guest and the hypervisor negotiate and establish the GHCB before the first ordinary `#VC`."
+
+- id: rmp-page-states
+  question: "What are the RMP page states, what determines which one a page is in, and which transitions are not possible?"
+
+- id: vmpl-and-rmpadjust
+  question: "How do VMPLs work, what is in a VMPL permission mask, and how does a guest hand permissions downward?"
+
+- id: vmcb02-construction
+  question: "When L1 asks to run L2 on AMD, what does L0 have to build, and how are the two hypervisors' intercepts combined?"
+
+- id: vmcb-versus-vmcs
+  question: "What is the real architectural difference between AMD's VMCB and Intel's VMCS, and what follows from it?"
+

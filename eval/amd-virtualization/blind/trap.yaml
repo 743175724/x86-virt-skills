@@ -1,0 +1,41 @@
+# amd-virtualization eval - trap (12 questions)
+# BLIND: expected answers, required citations, notes and the chapter field
+# are deliberately removed. The chapter is removed because routing is part
+# of what is being measured.
+
+- id: trap-client-sev-cpuid
+  question: "SEV is an EPYC feature, so on a desktop Ryzen `Fn8000_001F EAX[1]` reads 0 - right?"
+
+- id: trap-x2avic-cpuid-bit
+  question: "Which CPUID bit enumerates x2AVIC? I have `Fn8000_000A EDX[14]` written down."
+
+- id: trap-cmdbufrun-register
+  question: "The IOMMU is not draining my command buffer. I am polling `CmdBufRun` in the Control Register at MMIO 0018h and it never sets. What is wrong?"
+
+- id: trap-irte-bit0-name
+  question: "What is bit 0 of an interrupt remapping table entry called?"
+
+- id: trap-iommu-mmio-window-size
+  question: "How large is the IOMMU MMIO window? I have 14 KiB written down."
+
+- id: trap-vmexit-restores
+  question: "On `#VMEXIT` the processor restores the host's RIP, RSP and RAX. Is that the whole list?"
+
+- id: trap-vmload-vmsave-ss
+  question: "Does VMLOAD/VMSAVE cover SS along with the other segment state, so I can skip saving it myself?"
+
+- id: trap-two-dimensional-walk-count
+  question: "Nested paging turns the native 4-reference page walk into a 16-reference walk. What does that cost, and where is the number specified?"
+
+- id: trap-branch-type-confusion-cve
+  question: "Which CVE should I cite for Branch Type Confusion / RETbleed on AMD? AMD's bulletin shows CVE-2022-23816."
+
+- id: trap-hyperv-image-name
+  question: "Which hypervisor binary does Hyper-V load on my Ryzen desktop, and where is that documented?"
+
+- id: trap-enlightened-vmcb
+  question: "Intel has the enlightened VMCS for nested Hyper-V. AMD has no counterpart at all, correct?"
+
+- id: trap-vmgexit-encoding
+  question: "Is VMGEXIT encoded as `F3 0F 01 D9` only, with the `F2` form a transcription error?"
+

@@ -1,0 +1,65 @@
+# amd-virtualization eval - diagnosis (20 questions)
+# BLIND: expected answers, required citations, notes and the chapter field
+# are deliberately removed. The chapter is removed because routing is part
+# of what is being measured.
+
+- id: diag-svm-unavailable-chain
+  question: "CPUID says SVM is present but my `WRMSR` to `EFER` takes a `#GP` and `SVME` reads back 0. Walk the chain."
+
+- id: diag-exit-code-80h
+  question: "I set the VMRUN intercept, which is bit 0 of a vector, and I am getting exit code `80h` rather than `00h`. Is my table wrong?"
+
+- id: diag-stale-guest-tlb
+  question: "I changed a nested page table entry and the guest keeps using the old translation. What am I missing?"
+
+- id: diag-avic-incomplete-ipi
+  question: "I am taking exit code `401h` repeatedly and a guest vCPU has stopped receiving interrupts. How do I decode it and what are the causes?"
+
+- id: diag-io-page-fault
+  question: "I have an `IO_PAGE_FAULT` in the IOMMU event log with dword +04 reading `2050_0000h`. Decode it, and tell me whether the transaction can be retried."
+
+- id: diag-passthrough-interrupts-missing
+  question: "A passthrough device's MSIs never reach the guest, and the device is otherwise working. Where do I look?"
+
+- id: diag-sev-launch-failure
+  question: "My SEV guest will not launch: the firmware returns `INVALID_PLATFORM_STATE`, and later `WBINVD_REQUIRED`. What is going on?"
+
+- id: diag-vc-storm-early-boot
+  question: "My SEV-ES guest hangs very early in boot, apparently in a `#VC` loop, before it reaches long mode."
+
+- id: diag-attestation-verify-failure
+  question: "An SEV-SNP attestation report fails signature verification, or my parser reports nonsense TCB numbers. What are the usual causes?"
+
+- id: diag-vmm-cannot-use-amd-v
+  question: "My hypervisor reports that AMD-V is disabled in the BIOS on this Windows 11 desktop. SVM Mode is clearly enabled in firmware and CPUID reports SVM. What is going on?"
+
+- id: diag-probe-chain-reads-clean
+  question: "I walked the whole hardware chain on a Windows machine - CPUID, `VM_CR`, `EFER.SVME`, `VM_HSAVE_PA` - and every stage reads healthy, but VMRUN never runs. What did I get wrong?"
+
+- id: diag-driver-rejected-memory-integrity
+  question: "Our signed kernel driver loaded for years and now fails as soon as memory integrity is turned on."
+
+- id: diag-kernel-dma-protection-off
+  question: "`msinfo32` shows Kernel DMA Protection `Off` on my AM5 desktop even though I enabled the IOMMU in firmware. Why, and what would it take to turn it on?"
+
+- id: diag-nested-hyperv-on-ryzen-7000
+  question: "Can I run nested Hyper-V inside a VM on my Ryzen 7000 desktop under Windows 11, and what do I have to set?"
+
+- id: diag-vmware-virtualbox-coexistence
+  question: "Do I have to turn Hyper-V off to run VMware Workstation or VirtualBox on this machine?"
+
+- id: diag-gpu-passthrough-client
+  question: "Can I pass my Radeon through to a Hyper-V VM on Windows 11?"
+
+- id: diag-confirm-vbs-status
+  question: "How do I actually confirm, on a Windows machine, whether VBS is running and whether the hypervisor launched?"
+
+- id: diag-vbs-cost-figure
+  question: "How much performance will memory integrity cost me for gaming on an AMD desktop?"
+
+- id: diag-sev-es-disabled-on-snp-host
+  question: "After a firmware update, SEV-ES guests stopped working on a host with SEV-SNP enabled. Is this a Zen 5 generational change?"
+
+- id: diag-avic-default-state
+  question: "Is AVIC enabled by default? I have read both that it has been off by default for years and that it is on now."
+

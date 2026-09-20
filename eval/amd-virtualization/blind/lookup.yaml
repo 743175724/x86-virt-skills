@@ -1,0 +1,77 @@
+# amd-virtualization eval - lookup (24 questions)
+# BLIND: expected answers, required citations, notes and the chapter field
+# are deliberately removed. The chapter is removed because routing is part
+# of what is being measured.
+
+- id: amd-document-set
+  question: "Which AMD publications does this knowledge base treat as normative, at which revisions, and what are the citation traps I should know before I go looking for a section number?"
+
+- id: vm-cr-msr-layout
+  question: "What is the address of the `VM_CR` MSR and what does each of its defined bits do?"
+
+- id: vm-hsave-pa-rules
+  question: "What is `VM_HSAVE_PA`, what are the rules for writing it, and what may I assume about the memory it points at?"
+
+- id: fn8000-0001-ecx-bit2-scope
+  question: "`CPUID Fn8000_0001 ECX[2]` is set. Exactly which instructions does that let me execute?"
+
+- id: vmcb-clean-bit-map
+  question: "Give me the VMCB clean-bit map: where the field is, what each bit covers, and what bit 31 is for."
+
+- id: int-ctl-60h-layout
+  question: "Lay out the virtual interrupt control word at VMCB offset `60h` field by field."
+
+- id: vmcb-state-save-offsets
+  question: "In the VMCB state save area, where do CPL, EFER, CR0/CR3/CR4, RFLAGS, RIP, RSP, RAX and CR2 live, and what is the offset convention?"
+
+- id: intercept-vector-4-and-5
+  question: "What is in intercept vector 4, and what is intercept vector 5 - I have a manual that shows 014h as reserved."
+
+- id: msrpm-ranges-and-encoding
+  question: "How is the MSR permissions map laid out, and which MSR ranges does it actually cover?"
+
+- id: exit-codes-60h-61h-band
+  question: "I have exit codes `60h` and `61h` in a trace. What are they, and what else is in that band?"
+
+- id: npf-exitinfo1-bits
+  question: "Give me the full EXITINFO1 bit layout for a nested page fault, and say what EXITINFO2 holds."
+
+- id: tlb-control-values
+  question: "What are the legal `TLB_CONTROL` values, where does the field live, and what gates the extended ones?"
+
+- id: avic-id-table-entries
+  question: "What do the AVIC Physical and Logical APIC ID Table entries look like, and where are their pointers in the VMCB?"
+
+- id: avic-doorbell-msr
+  question: "What is the AVIC doorbell register, and what happens if I read it?"
+
+- id: iommu-control-register-bits
+  question: "Which bits of the IOMMU Control Register do I need to bring up translation, command processing and the event log?"
+
+- id: iommu-event-codes
+  question: "List the IOMMU event log codes, and tell me how to read an event record."
+
+- id: dte-translation-fields
+  question: "How big is a Device Table Entry, how is it indexed, and where are `V`, `TV`, `Mode`, the page-table root pointer and `DomainID`?"
+
+- id: irte-guest-mode-format
+  question: "Lay out the 128-bit guest-virtual-APIC IRTE - the one with `GuestMode = 1`."
+
+- id: fn8000-001f-fields
+  question: "Decode `Fn8000_001F` for me: what is in EAX, EBX, ECX and EDX, and how do I extract the C-bit position?"
+
+- id: sev-status-bit-map
+  question: "A guest reads `SEV_STATUS`. What is the MSR address, what does each bit mean, and how does it relate to `SEV_FEATURES`?"
+
+- id: sev-firmware-error-codes
+  question: "My SEV firmware command came back with a status code. What are the defined values, and which two are nearly identical?"
+
+- id: ghcb-layout-offsets
+  question: "Give me the GHCB layout: the fields a `#VC` handler fills in, the valid bitmap, and the version and usage words."
+
+- id: snp-instructions-and-return-codes
+  question: "List the SEV-SNP instructions with their opcodes and who may execute them, and give the return-code space."
+
+- id: attestation-report-fields
+  question: "What is in an `ATTESTATION_REPORT`, at which offsets, and which VERSION values are legal?"
+
