@@ -1,116 +1,123 @@
-# Intel VT 核心事实速查（蒸馏自 13 维度深度研究，截至 2026-09-16）
+# Core Facts — Sourced Index
 
-> 用途：大多数 Intel VT 相关问题先读本文件即可回答；需要原始出处、原文摘录或完整证据链时，按 SKILL.md 路由表读对应 `intel_vt_dimNN.md`。
-> 所有数字均有来源（见维度文件）；带 ⚠️ 的条目见 `errata.md` 勘误说明。
+> **中文速览**：本文件是**路由索引**，不是章节的替代品。每章只列 2–4 条最高价值的事实，每条都带 bibliography 引用 `[N]` 和拥有该事实的章节文件指针。读它是为了决定**该去哪一章**，不是为了在这里得到完整答案。测量数字一律不在此复述（缺少测量条件的数字是错误的数字），请直接去 `16-performance.md`。会过期的事实一律不在此出现，请去 `90-dated-landscape.md`。已知讹传请先查 `errata.md`。
 
-## 目录
-1. 历史与理论根基 2. VMX 架构 3. EPT/VPID 4. VT-d 5. APICv/中断 6. 性能数据 7. 安全 8. TDX 9. 软件生态 10. 云应用 11. 嵌套虚拟化 12. AMD-V 对比 13. 2022-2026 动态
+**Rules this file obeys.** Every bullet carries a `[N]` citation and names the chapter that owns the fact. Nothing here is a bare assertion. No measurement figure is restated without its conditions — those live in chapter 16. No dated fact appears here — those live in chapter 90. Where a claim is commonly mis-stated, the bullet points at the `errata.md` entry.
 
-## 1. 历史与理论根基
-- Popek & Goldberg 虚拟化定理（CACM 17(7), 1974-07）；Robin & Irvine（USENIX Security 2000）证明 x86 有 17 条敏感但不陷入指令，经典 trap-and-emulate 不可行。
-- 软件绕行：VMware 二进制翻译 + ring deprivileging；Xen 半虚拟化（SOSP'03）；x86-64 长模式下纯软件 64 位虚拟化不可行（段机制被弱化）。
-- Intel VT 前身代号 Vanderpool，2005-01-20 以 EAS 新闻稿公开；2005-11-14 Pentium 4 662/672 首发 VT-x。
-- 家族：VT-x（IA-32 CPU）、VT-i（安腾，Silverdale/Montecito 2006-07-18）、VT-d（I/O，规范 2006-03，Q35 芯片组 2007 落地）、VT-c（网络）。
-- 关键节点：FlexMigration=Dunnington 2008-09；EPT+VPID=Nehalem（2008-11/2009-03）；unrestricted guest=Westmere 2010；APICv=Ivy Bridge-EP 2013；VMCS shadowing=Haswell 2013；⚠️ MBEC=Kaby Lake（非 Skylake）；⚠️ PML=Broadwell Xeon 2015（非 Skylake）；TDX 2020-08 公布、2023-01-10 随 Sapphire Rapids 首发。
-- 里程碑：KVM 2007-02-05 合入 Linux 2.6.20；Hyper-V RTM 2008-06-26；AWS EC2 2006 开启云时代。
+**Anchor and document baseline.** SDM revision 092 (June 2026); VMX chapters are Vol.3C Ch.26–35, with Vol.3D App.A/B/C. VT-d is Rev 5.20, April 2026, order D51397-019. See `errata.md` E20 and E21 before citing any older chapter number or the intel.com VT-d landing page.
 
-## 2. VMX 架构
-- 两种新模式：VMX root operation（VMM）与 VMX non-root operation（Guest），正交于 ring0-3；Guest 可在 non-root ring0 原生运行，无需修改。
-- 启用链：CPUID.01H:ECX[5] 检测 → IA32_FEATURE_CONTROL(0x3A) lock+enable → CR0/CR4 按 FIXED0/1 MSR(0x486-0x489) 调整 → CR4.VMXE=1 → VMXON region（4KB 对齐、写 IA32_VMX_BASIC revision ID）→ VMXON。失败分 VMfailInvalid(CF)/VMfailValid(ZF)。
-- VMCS 六区域：Guest-state（exit 存/entry 载）、Host-state（仅 exit 载，硬件从不保存）、execution 控制（pin-based / primary / secondary / tertiary 四层）、exit 控制、entry 控制、exit 信息（只读）。字段仅经 VMREAD/VMWRITE 按 32 位编码访问；布局未公开定义。
-- VM-entry 两级失败：controls/host 检查失败→落回 VMLAUNCH 下一指令；guest 检查失败→按 host-state 跳转（exit reason bit31=1）。VMLAUNCH 限 clear 态、VMRESUME 限 launched 态，VMCLEAR 是跨核迁移必经。
-- 关键 exit reason：10=CPUID、28=CR 访问、30=I/O 指令、31/32=RDMSR/WRMSR、48=EPT violation、49=EPT misconfiguration。
-- 拦截体系：exception bitmap（#PF 用 PFEC_MASK/MATCH 二级判定）、I/O bitmap A/B、MSR bitmap（4×1KB）、CR0/4 mask+shadow、CR3-target、TSC offset。
-- VMX 指令 13 条：VMXON/VMXOFF/VMPTRLD/VMPTRST/VMCLEAR/VMREAD/VMWRITE/VMCALL/VMLAUNCH/VMRESUME/INVEPT/INVVPID/VMFUNC。
-- 设计哲学：不改既有指令语义；non-root 唯一区别是"配置化陷入"。
+---
 
-## 3. EPT / VPID（内存虚拟化）
-- 影子页表之慢源于"同步税"：Guest 页表页写保护，页表写/CR3/INVLPG/缺影子项均 VM-exit；MICRO'14 实测最坏慢 29.2%。
-- EPT 完成 GVA→GPA→HPA 全硬件转换；EPTP 存于 VMCS 0x201A，低 12 位编码内存类型(WB=6)、遍历长度-1(4级=3)、A/D 使能(bit6)。
-- ⚠️ TLB miss 最坏访存 = **24 次**（4 Guest 项 + 4×4 EPT 遍历 + 4 最终转换；ISCA'16/VEE'21），中文社区常说"20 次"只算了 EPT 页表读。
-- EPT violation(exit 48，权限/缺页) vs misconfiguration(exit 49，表项非法)。
-- VMFUNC 0 号功能 = EPTP switching（512 项 EPTP list，零 exit 切换内存视图）。⚠️ VMFUNC 世代归属有分歧（ISA Haswell 时代 vs 硬件常归 Skylake）。
-- VPID：16 位字段，VPID 0 归 VMM；INVVPID 四型。Intel 实测 EPT+VPID 使 Nehalem vConsolidate +25%。
-- PML（Broadwell 起）：512 项 GPA log，D 位 0→1 自动记录，热迁移时间最多缩短 10.18%。
-- 性能两面性：VMware 2009 实测 EPT 对 MMU 密集负载最高 +48%；但 SPECjbb2005 小页下反而慢——大页（2MB/1GB）是 EPT 时代必需品。学术共识"无常胜者"：EPT 消除 exit，影子页表 TLB miss 便宜（4 vs 24 次访存）。
+## 00 · Quick reference → `00-quickref.md`
 
-## 4. VT-d（I/O 虚拟化）
-- 规范演进：1.0（2006-03 DMA 重映射）→ 1.2/2.x（中断重映射、QI、ATS/PRI/PASID）→ Rev 3.0（2018-06 Scalable Mode，PASID 粒度）→ 量产 VT-d 4.0 → Rev 5.20（2026-04，HPT/虚拟命令接口）。
-- DMA 重映射：root table(256 项/Bus) → context table(DevFn，含 Domain ID) → 二级页表；KVM/ACRN 复用 EPT 作为设备翻译表。
-- 中断重映射 IRTE 16B；bit15 区分 Remapped/Posted；Posted Interrupt + APICv 实现直通设备中断零 VMM 介入。
-- ATS/PRI/PASID 构成 SVA 与 SIOV 地基（Linux: `intel_iommu=on,sm_on`）。
-- SIOV：ADI/SDI 取代 VF，VDCM 编排，数量千级~万级；2024-26 早期落地（iommufd vDEVICE/vIOMMU）。
-- 生态：VFIO 正被 iommufd 取代；Xen PCI 直通强制 VT-d；VMware DirectPath I/O；Hyper-V DDA；GVT-g 已归档弃用（Xe 转 SR-IOV）。
-- 安全：VT-d 是 Thunderbolt 4 认证、Windows Kernel DMA Protection、TXT/tboot PMR 的共同硬件根基。
+- **Claim.** VMCS field encodings are defined in Vol.3D App.B, grouped by width (16-bit, 64-bit, 32-bit, natural-width) and by class (control, read-only, guest, host).  → `02-vmcs.md` §2.5.  `[SDM 3D App.B]` `[2]` `C:high` `V:durable`
+- **Claim.** The basic VM-exit reason codes are enumerated in Vol.3D App.C, and the VMX capability reporting facility (the `IA32_VMX_*` MSRs) in Vol.3D App.A.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
 
-## 5. APICv / 中断虚拟化
-- VM-exit+entry 往返硬件成本：Penryn ~1100 → Nehalem ~820 → Westmere ~650 cycles（Intel Technology Journal）。
-- FlexPriority（2008 Xeon 7400）：VTPR 影子，CR8 读写免 exit。
-- APICv 三特性：APIC-register virtualization（virtual-APIC page）、virtual-interrupt delivery（硬件评估/EOI 虚拟化）、posted-interrupt processing（64B PID：PIR/ON/SN/NV/NDST + notification vector）。
-- IPI virtualization（Sapphire Rapids，Linux 6.0）：IPI 周期 -22.21%(xAPIC)/-15.98%(x2APIC)，hackbench -18.8%。
-- AMD AVIC 对照：erratum #1235 致长期默认关闭，Zen4+（2025-06 上游）推进默认开启。⚠️ 中断重映射知名 erratum 在 Intel 侧（5520/5500 #53）。
+## 01 · VMX introduction → `01-vmx-intro.md`
 
-## 6. 性能数据（引用须带测试条件）
-- VM-exit 裸转换 2409(P4)→937(Core2) cycles；Nehalem 再降 ~60%（ASPLOS'06）；含处理端到端 ~3900 cycles 均值（NOVA, EuroSys'10），I/O 类可达 15826。
-- 负载画像（IBM）：CPU/内存近裸机；KVM 随机 IOPS 减半、MySQL 损失 >40%（Docker ~2%）。
-- EPT：消除 >99% exit、开销 20%→1-3%（NOVA）；高 TLB-miss 负载输影子分页 17-34%。
-- 嵌套虚拟化：Turtles 6-8%（下界）；I/O 密集吞吐可降 4.3x（OoH）。
-- 缓解代价：KPTI 典型 0.5-6%、syscall 密集 5-30%；L1TF 场景 vSphere SCAv1 损失 ~30-35%、SCAv2 ~10%（VMware 官方）。
-- 优化收益：SR-IOV 9.57Gbps 线速、延迟 63μs→2-3μs；halt-polling 唤醒延迟降 2-10x。
-- 公有云税：Xen 代 AWS 数据库负载最高 31% 写吞吐损失；Nitro 单租户 <1%。
+- **Claim.** VMX defines two new operating modes, VMX root operation and VMX non-root operation, orthogonal to the ring model, so a guest kernel runs natively at non-root ring 0 without modification.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
+- **Claim.** Entering VMX operation requires CR0 and CR4 to satisfy the `IA32_VMX_CR0_FIXED0/1` and `IA32_VMX_CR4_FIXED0/1` MSRs, `CR4.VMXE = 1`, and a 4-KByte-aligned VMXON region stamped with the revision identifier from `IA32_VMX_BASIC`.  `[SDM 3C Ch.26]` `[1][5]` `C:high` `V:durable`
 
-## 7. 安全
-- 信任反转是 VT 原生属性：Ring -1，VMM 成新 TCB；Blue Pill（2006）与 Vitriol 证明无需漏洞即可武器化合法 VT 特性。
-- 检测博弈：RDMSR 慢 23 倍可作指纹，但 hypervisor 可伪造 RDTSC——需外部时间源。
-- 重大逃逸 CVE 全在软件层（VENOM CVE-2015-3456 QEMU FDC、CVE-2020-14364、CVE-2021-28476 Hyper-V CVSS 9.9），非 VT 硬件缺陷。
-- 硬件层缺陷以侧信道形态出现：L1TF/Foreshadow（CVE-2018-3615/3620/3646）经 EPT 击穿 VM 隔离；关超线程致云容量减半（Red Hat）。
-- 防御性虚拟化：VBS/HVCI/Credential Guard 用 SLAT 建边界（"良性 Blue Pill"）；TXT/DRTM 用 SENTER+TPM 动态 PCR。
-- 云隔离三次跃迁：收敛 QEMU 攻击面 → 微码/调度缓解 → microVM/机密计算（TCB 缩至芯片+微码）。
+## 02 · VMCS → `02-vmcs.md`
 
-## 8. TDX（机密计算，重点）
-- 架构：SEAM root/non-root；TDX Module（NP-SEAMLDR→P-SEAMLDR 加载链，SEAMRR 隔离，支持热更新）；Secure EPT + PAMT + TME-MK（AES-128-XTS，私有 KeyID）；VMM/主机 OS/SMM/BIOS/管理员全部移出 TCB。至强 6 起 AES-256。
-- 证明：TD Report(1024B, MRTD/RTMR) → SGX Quoting Enclave 签 TD Quote → DCAP 验证；实测 Quote ~75.6ms（GCP C3）。
-- 版本：1.0（SPR 2023 GA）→ 1.5（live migration MigTD + TD Partitioning，2025）→ 2.0/TDX Connect（Granite Rapids 2025-02 硬件就绪，SPDM+IDE+TDISP，端到端 GA 未官宣）。
-- SGX 关系：客户端 SGX 已移除（12 代酷睿），服务器至强保留；TDX 证明栈依赖 SGX QE，两者共生。
-- 内核历程：guest 5.19、证明驱动 6.2、**host/KVM 主线合入 Linux 6.16（2025）**。
-- OS/云：Ubuntu 26.04 LTS 原生全栈；阿里云 g8i 全球首发（2023-03 GA）、⚠️ Azure DCesv5/ECesv5 为 2023-11 预览（Azure 首个 TDX GA = DCesv6/ECesv6 等 v6 系列，2026-02-26）、GCP C3 GA 2024-10、IBM Cloud 2025、VMware VCF 9.1 TDX GA（2026-05）。
-- 性能：计算 <5%，I/O 密集 10-30%，H100+TDX 机密 LLM 推理吞吐损失 18-21%。
-- 风险：TDXRay（2026，INTEL-SA-01271）影响 SPR/EMR/GNR 三代。
+- **Claim.** The VMCS is divided into guest-state area, host-state area, VM-execution controls, VM-exit controls, VM-entry controls and the read-only VM-exit information fields.  `[SDM 3C §27.3]` `[1]` `C:high` `V:durable`
+- **Claim.** VMCS fields are architecturally accessible only through VMREAD and VMWRITE by 32-bit encoding; the in-memory layout is deliberately not defined, which is the central design difference from AMD's VMCB.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
+- **Claim.** VM-function controls live at §27.6.14 and the VMCS-shadowing bitmaps at §27.6.15; these two are the hardware basis for VMFUNC/EPTP switching and for cheap nested VMCS access respectively. On VMFUNC's generation see `errata.md` E06.  `[SDM 3C §27.6.14]` `[1]` `C:high` `V:durable`
 
-## 9. 软件生态
-- KVM：kvm.ko+kvm_intel.ko 加载即 VMXON，无软件回退；/dev/kvm 三级 fd + KVM_RUN；EPT/VPID/unrestricted_guest 默认启用、缺项自动降级；posted interrupt 需 irqchip 内核化+enable_apicv+直通设备+中断重映射。
-- Xen：PV→HVM(借 VT-x)→PVHVM→PVH（推荐）；缺中断重映射曾致提权 CVE-2011-1898。
-- VMware：ASPLOS'06 证明初代 VT-x 反不如二进制翻译（缺 MMU 虚拟化），EPT 后反转；ESXi 5.1 起嵌套 64 位 guest 强制 EPT。
-- Hyper-V：SLAT(EPT) 硬性要求；VBS 用 VTL0/VTL1；Win11 默认 VBS，hypervisor 常驻，性能税约 5-10%（游戏帧率 -6%）。
-- 轻量级：Firecracker（Rust，<5MiB/<125ms）、Cloud Hypervisor（Intel 发起）、Kata（2017 合并 Clear Containers+runV）。
-- 桌面：macOS Hypervisor.framework 要求 VT-x+EPT+unrestricted guest；HAXM 已退役（AEHD 接棒）；Hyper-V 独占 VT-x → VMware 15.5.5+/VirtualBox 6.0+ 改走 WHPX。
+## 03 · Non-root operation → `03-nonroot-operation.md`
 
-## 10. 云计算应用
-- AWS：Xen→KVM/Nitro（<1%）；Azure：Hyper-V + Azure Boost 卸载；GCP：定制 KVM + Titanium（与 Intel 联合 IPU）；阿里云神龙（宣称损耗接近 0）；腾讯/华为类似卸载路线。
-- 实时迁移暗线：FlexMigration → EPT A/D + PML → TDX 1.5 TD 迁移（MigTD；CVE-2025-30513 迁移路径严重漏洞）。
-- NFV：Xeon+DPDK+VT-d/SR-IOV 定义 5G 核心网/UPF 加速范式。
-- 整合：30:1 整合比、利用率 5-15%→60-80%；vCPU 超售 1.5-4 倍为业界常态。
-- 市场：Gartner 2025-08：2024 IaaS $1718 亿(+22.5%)；VMware 占服务器虚拟化收入 96%+（2024），Broadcom 提价驱动替代。
+- **Claim.** The only behavioural difference of VMX non-root operation is configurable trapping: instruction and event behaviour is unchanged except where a VM-execution control, the exception bitmap, an I/O bitmap or the MSR bitmap directs a VM exit.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** The interception surface is built from the exception bitmap with its page-fault error-code mask/match pair, I/O bitmaps A and B, the 4-KByte MSR bitmap regions, the CR0/CR4 guest/host masks and read shadows, and the CR3-target list.  `[SDM 3C §27.6.3]` `[1]` `C:high` `V:durable`
 
-## 11. 嵌套虚拟化与学术前沿
-- 原理：L0 合并 VMCS01+VMCS12 为 VMCS02；单次 L2 exit 可级联放大 40-50 次 L1 exit；⚠️ 嵌套 EPT 多维分页 worst-case 推导以维度文件为准。
-- KVM nVMX：上游默认关、Ubuntu 默认开；L1 不能用 VT-d/APICv、不支持 L3；嵌套热迁移经 KVM_CAP_NESTED_STATE 解决（VMX 2019）。
-- 云平台：Azure 2017-07、GCP 2017-09、⚠️ **AWS=2026-02（C8i/M8i/R8i）非 2023**；阿里云/华为云官方不支持。
-- 学术谱系：Turtles(OSDI'10 最佳论文)→ELI(ASPLOS'12)→Dune(OSDI'12)→LightVM(SOSP'17)→⚠️ **OoH=SC'22（非 SOSP'22）**；安全方向 SeKVM(SOSP'21 机器证明 KVM)、HyperEnclave(ATC'22 蚂蚁)。
+## 04 · VM entry → `04-vm-entry.md`
 
-## 12. AMD-V 对比
-- 哲学差异：Intel VMCS 布局未定义、仅 VMREAD/VMWRITE 按编码访问、host 状态内嵌；AMD VMCB 布局公开、普通内存读写、host 状态外置 VM_HSAVE_PA、VMRUN 整块世界切换。
-- SLAT：AMD NPT/RVI（Barcelona 2007-09）领先 Intel EPT 约 14 个月。
-- 中断虚拟化是最大非对称项：APICv 2013 落地默认启用；AVIC 因 erratum 长期默认关（2025-06 Zen4+ 起推进默认开）。
-- 机密计算：SGX(2015) vs SEV(2017)；SNP 2021 vs TDX 2023；SIGMETRICS'25 实测 TDX VMEXIT 延迟放大 472% vs SNP 240%。
-- 市场：AMD 服务器份额 2018Q1 ~1.4% → 2024Q4 25.1%（Mercury Research）。
-- 跨厂商 vMotion 不可行（VMware EVC 官方明确）。
+- **Claim.** VM entry performs checks in a fixed order, and failures split into two classes with different recovery paths: failures of the control and host-state checks resume at the instruction after VMLAUNCH/VMRESUME, whereas guest-state check failures take a VM exit with bit 31 of the exit reason set.  `[SDM 3C Ch.29]` `[1]` `C:high` `V:durable`
+- **Claim.** VMLAUNCH requires the current VMCS to be in the clear state and VMRESUME requires the launched state; VMCLEAR is mandatory before migrating a VMCS between logical processors.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
 
-## 13. 2022-2026 最新动态
-- Xeon 6（Granite Rapids 2024-09/Sierra Forest 2024-06）：TDX 2.0.x、AES-256、MRDIMM-8800 实测 743GB/s/路、官方 5:1 整合叙事。
-- Clearwater Forest：2026-06-01 Computex 发布，首款 18A 数据中心 CPU、288 Darkmont 核、TDX 2.0 支持。
-- Panther Lake（酷睿 Ultra 300）：2026-01-05 CES GA，首款 18A 客户端。
-- VMX 新特性：tertiary controls 框架 + IPI virtualization（Linux 5.19/6.0）+ Notify VM exit（2022）+ Bus-lock detection；HLAT 已入 SDM。
-- 软件分水岭：KVM TDX host = Linux 6.16；Ubuntu 25.10/26.04 LTS 生产级 TDX；VCF 9.1（2026-05）TDX GA。
-- 消费端：Win11 25H2 逐级默认 VBS/HVCI，VT-x/EPT 成为 PC 安全基座；副作用 5-25% 游戏性能损耗。
-- 未来：Diamond Rapids（Xeon 7）官方宣布 2027（18A-P、PCIe Gen6）；TDX 计划未披露。
+## 05 · VM exit → `05-vm-exit.md`
+
+- **Claim.** Exit reason and exit qualification are defined in §27.9.1 and populated according to §30.2.1; exit qualification is not a bookmark-level heading in the SDM, so cite those two section numbers rather than a title.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In the EPT-violation exit qualification, bit 7 indicates that the **guest-linear-address** field is valid, and bit 6 is the AND of the **user-mode execute** permission, meaningful only when mode-based execute control is enabled. Both are widely mis-stated — see `errata.md` E16 and E17.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** VM-exit information recording, the guest-state save, the MSR store, the host-state load and the MSR load happen in the order given in Ch.30; general-purpose registers are not saved by hardware and are the VMM's responsibility.  `[SDM 3C Ch.30]` `[1]` `C:high` `V:durable`
+
+## 06 · Address translation → `06-address-translation.md`
+
+- **Claim.** The EPT pointer is a VM-execution control field (§27.6.11) whose low bits encode memory type, walk length minus one, and accessed/dirty enable; VPID is a separate 16-bit control field (§27.6.12) with INVEPT and INVVPID as its invalidation instructions.  → `06-address-translation.md` §6.2, encodings in `02-vmcs.md` §2.5.  `[SDM 3C §27.6.11]` `[1]` `C:high` `V:durable`
+- **Claim.** Page-modification logging (§27.6.18), sub-page write permissions (§27.6.21) and HLAT (§27.6.22, with the translation behaviour in §31.2) are the three later additions layered on top of EPT. PML dates from Broadwell Xeon, not Skylake — `errata.md` E02.  `[SDM 3C §31.2]` `[1]` `C:high` `V:durable`
+- **Claim.** A TLB miss under two-dimensional paging costs up to 24 memory references against 4 for a native walk; the widely quoted "20" omits the guest page-table entry reads (`errata.md` E03). The performance consequences, with conditions, belong to chapter 16.  `[605][606]` `C:high` `V:durable`
+- **Claim.** Intel tags translations with two distinct identifiers — PCID for process context and VPID for VM context — so "Intel has no ASID mechanism" is wrong (`errata.md` E19).  `[SDM 3C §27.6.12]` `[1][3]` `C:high` `V:durable`
+
+## 07 · APIC virtualization → `07-apic-virtualization.md`
+
+- **Claim.** APIC virtualization is controlled from §27.6.8, with APIC-timer virtualization added later at §27.6.27; the three capabilities normally grouped as APICv are APIC-register virtualization, virtual-interrupt delivery and posted-interrupt processing.  `[SDM 3C §27.6.8]` `[1]` `C:high` `V:durable`
+- **Claim.** APIC virtualization and virtual interrupts are specified in Vol.3C Ch.32, which is the owning reference for the virtual-APIC page and the posted-interrupt descriptor.  → `07-apic-virtualization.md`.  `[SDM 3C Ch.32]` `[1]` `C:high` `V:durable`
+- **Claim.** APICv shipped enabled by default in KVM, whereas AMD's AVIC was disabled by default for years under erratum #1235 — the asymmetry is real and is documented in `errata.md` E08.  `[612]` `C:high` `V:durable`
+
+## 08 · VMX instructions → `08-vmx-instructions.md`
+
+- **Claim.** The VMX instruction set is specified in Vol.3C Ch.33; the VM-instruction error field that reports its failures is defined at §27.9.5, and the capability MSRs that gate the instructions are in Vol.3D App.A.  → `08-vmx-instructions.md` §8.4, §8.6.  `[SDM 3C Ch.33]` `[1][2]` `C:high` `V:durable`
+- **Claim.** VMX instructions report failure in two distinct ways — VMfailInvalid via CF when there is no current VMCS, VMfailValid via ZF with an error number written to the VM-instruction error field — and a VMM must distinguish them.  → `08-vmx-instructions.md` §8.1, §8.4.  `[SDM 3C §27.9.5]` `[1]` `C:high` `V:durable`
+
+## 09 · SMM and SEAM → `09-smm-seam.md`
+
+- **Claim.** SMM interaction with VMX, including the dual-monitor treatment, is specified in Vol.3C Ch.34; Secure Arbitration Mode (SEAM) is Ch.35, and the SEAM non-root VM-execution control is §27.6.26.  `[SDM 3C Ch.34]` `[1]` `C:high` `V:durable`
+- **Claim.** SEAM is the CPU mode that hosts the TDX Module; it is specified in the SDM, while the module that runs inside it is specified by the separate TDX document set.  `[SDM 3C Ch.35]` `[1][11]` `C:high` `V:durable`
+
+## 10 · VT-d DMA remapping → `10-vtd-dma-remapping.md`
+
+- **Claim.** DMA remapping, device-TLB support, translation caching, translation structure formats and the register interface are VT-d Rev 5.20 chapters 3, 4, 6, 9 and 11 respectively.  `[VT-d 5.20 Ch.3]` `[8]` `C:high` `V:durable`
+- **Claim.** The current VT-d specification is Rev 5.20, April 2026, order D51397-019; the intel.com landing page metadata is stale and still advertises an older revision (`errata.md` E21).  `[VT-d 5.20 Ch.1]` `[8][620]` `C:high` `V:durable`
+
+## 11 · VT-d interrupt remapping → `11-vtd-interrupt-remapping.md`
+
+- **Claim.** Interrupt remapping, including the interrupt remapping table entry format and interrupt posting, is VT-d Rev 5.20 chapter 5.  `[VT-d 5.20 Ch.5]` `[8]` `C:high` `V:durable`
+- **Claim.** The best-documented interrupt-remapping erratum is Intel's own 5520/5500 chipset erratum #53, not an AMD defect (`errata.md` E07).  `[611]` `C:high` `V:durable`
+
+## 12 · VT-d faults, BIOS and SIOV → `12-vtd-faults-bios-siov.md`
+
+- **Claim.** Address-translation faults are VT-d Rev 5.20 chapter 7, BIOS considerations chapter 8, and performance monitoring chapter 10.  `[VT-d 5.20 Ch.7]` `[8]` `C:high` `V:durable`
+- **Claim.** Scalable I/O Virtualization is specified separately as order 337679-002 Rev 1.0 (2020); no later revision has been published, so it is stale but current.  `[21]` `C:medium` `V:durable`
+
+## 13 · TDX → `13-tdx.md`
+
+- **Claim.** The normative TDX document set is the Module Base Architecture Specification (348549-008), Module ABI Specification (348551-008), TD CPU Architectural Extensions (343754-003), GHCI v1.5 (348552-004) and the SEAMLDR Interface Specification (343755-004).  `[11][12][14][15][16]` `C:high` `V:durable`
+- **Claim.** TDX removes the VMM, host OS, SMM/BIOS and the platform operator from the TCB by combining SEAM, a CPU-measured TDX Module, Secure EPT with the PAMT, and multi-key memory encryption → `13-tdx.md` §13.2, §13.8.  `[11]` `C:high` `V:durable`
+- **Claim.** TDX attestation is coupled to SGX rather than replacing it: the TD Quote is signed by the SGX Quoting Enclave and the DCAP/PCK/PCCS infrastructure is shared (`errata.md` E12).  `[626]` `C:high` `V:durable`
+- **Claim.** TDX Module version series are bound to platform generations, so a module build is not portable across Xeon generations; which series runs where is a dated fact and lives in chapter 90.  `[575][584]` `C:high` `V:durable`
+
+## 14 · Nested virtualization → `14-nested-virtualization.md`
+
+- **Claim.** The hardware affordances that make nested virtualization tractable on Intel are the VMCS-shadowing bitmaps (§27.6.15), shadow VMCS semantics (§27.10) and EPT (Ch.31) used for multi-dimensional paging.  `[SDM 3C §27.10]` `[1]` `C:high` `V:durable`
+- **Claim.** Out of Hypervisor, the main recent academic line on exposing hypervisor-oriented hardware features to guest processes, was published at SC'22, not SOSP'22, and its two versions report different numbers (`errata.md` E04 and O6).  `[607][608]` `C:high` `V:durable`
+- **Claim.** Which clouds expose nested virtualization, and since when, is a dated fact — go to chapter 90 rather than quoting a remembered year (`errata.md` E05).  `[551]` `C:high` `V:durable`
+
+## 15 · Security → `15-security.md`
+
+- **Claim.** The major VM-escape CVEs are defects in VMM device-emulation software, not in VT-x hardware; hardware-level exposure in this domain takes the form of microarchitectural side channels instead (`errata.md` E11).  `[615][572]` `C:high` `V:durable`
+- **Claim.** The MDS family is covered by INTEL-SA-00233 and comprises MSBDS (CVE-2018-12126), MLPDS (CVE-2018-12127), MFBDS/ZombieLoad (CVE-2018-12130) and MDSUM (CVE-2019-11091) — the ZombieLoad mapping is frequently reported wrongly (`errata.md` E18).  `[616][617]` `C:high` `V:durable`
+- **Claim.** Model-specific registers, including the mitigation-control MSRs that a VMM must virtualize or pass through, are enumerated in SDM Vol.4; Intel's advisories are the authoritative index of which erratum maps to which control bit.  `[5][23]` `C:medium` `V:durable`
+
+## 16 · Performance → `16-performance.md`
+
+- **Claim.** Every performance number in this skill is required to carry its measurement conditions. In particular, the bare VMX transition cost and the end-to-end cost including hypervisor handling are different quantities and must never be quoted as one figure (`errata.md` E09).  `[613][614]` `C:high` `V:durable`
+- **Claim.** The structural cost that all EPT performance discussion rests on is 24 memory references on a two-dimensional walk against 4 natively; everything else is workload- and page-size-dependent.  `[605][606]` `C:high` `V:durable`
+- **Claim.** Vendor overhead figures for cloud virtualization are marketing statements, not measurements, and must be reproduced in attributed voice only (`errata.md` E10).  `[554][566]` `C:high` `V:durable`
+
+## 17 · Software ecosystem → `17-windows-platform.md`
+
+- **Claim.** The kernel-side reference for Intel TDX, including the platform binding of module versions and the host enabling requirements, is the kernel.org x86 TDX document.  `[575]` `C:high` `V:durable`
+- **Claim.** QEMU exposes TDX through a `tdx-guest` object under `confidential-guest-support`, with documented limitations on irqchip splitting, read-only private memory and SMM.  `[580]` `C:medium` `V:durable`
+- **Claim.** Which kernel, QEMU, libvirt, distro and hypervisor release first carried a given feature is a dated fact; chapter 17 owns the durable architecture, chapter 90 owns the version numbers.  `[574][577]` `C:high` `V:durable`
+
+## 18 · Cross-vendor comparison → `18-comparison-amd-arm-riscv.md`
+
+- **Claim.** The deepest structural difference is VMCS opacity: Intel's VMCS layout is architecturally undefined and reachable only through VMREAD/VMWRITE, which is why the comparison with AMD's publicly laid-out VMCB is a design-philosophy difference and not a feature gap.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
+- **Claim.** Interrupt virtualization is the largest Intel/AMD asymmetry in practice: APICv shipped enabled, AVIC did not (`errata.md` E08).  `[612][631]` `C:high` `V:durable`
+- **Claim.** TLB tagging is functionally equivalent across vendors but differently factored — Intel splits it into PCID and VPID, AMD uses a single ASID (`errata.md` E19).  `[SDM 3C §27.6.12]` `[1][618]` `C:high` `V:durable`
+- **Claim.** Market-share framing of the Intel/AMD contest is a dated fact and belongs to chapter 90, not to the architectural comparison.  `[597]` `C:medium` `V:durable`
+
+## 90 · Dated landscape → `90-dated-landscape.md`
+
+- **Claim.** Chapter 90 is the only file in this skill permitted to carry time-limited (dated) claims; its as-of date is 2026-09-16, and every answer drawing on it must say so and require re-verification against the vendor's own source.  `[557]` `C:high` `V:durable`
+- **Claim.** Cloud GA/preview status, pricing, market share, kernel merge status and roadmaps are the fastest-decaying and most frequently mis-reported category; the Azure TDX preview-versus-GA case is the worked example (`errata.md` E15).  `[556][557]` `C:high` `V:durable`
+- **Claim.** Every cloud-vendor overhead or priority claim recorded in chapter 90 is tagged `[vendor-stated]` and must be reproduced in attributed voice (`errata.md` E10, E13).  `[565][566]` `C:high` `V:durable`

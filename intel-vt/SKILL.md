@@ -1,61 +1,132 @@
 ---
 name: intel-vt
 description: >
-  英特尔虚拟化技术（Intel Virtualization Technology）领域专家知识库，基于覆盖 13 个技术维度、
-  260+ 次检索、经交叉验证的深度研究构建（数据截至 2026-09-16）。
-  Use this skill whenever 涉及 Intel VT/VT-x/VMX 的技术问答、文档或报告撰写、hypervisor/VMCS/EPT 代码
-  编写与审查、虚拟化性能分析、虚拟化安全分析（VM escape、侧信道、VBS）、Intel TDX 机密计算、
-  VT-d/IOMMU/设备直通、KVM/Xen/VMware/Hyper-V 虚拟化机制、嵌套虚拟化，以及 Intel 与 AMD-V/ARM/RISC-V
-  虚拟化技术对比。触发词示例：VT-x、VMX、VMCS、VM-Exit、EPT、VPID、VT-d、SR-IOV、APICv、
-  posted interrupt、TDX、机密计算、hypervisor、虚拟机逃逸、虚拟化开销、Vanderpool。
-  Do NOT use for: 与 Intel 虚拟化无关的通用虚拟化概念科普（如 Java JVM、Docker 基础），或纯 AMD/ARM
-  平台且不涉及与 Intel 对比的问题。
+  Intel VT expert knowledge base for Windows PCs.
+  Covers Intel VT-x/VMX/VMCS, VM-exit decoding, EPT/VPID, VT-d/IOMMU, APICv and posted
+  interrupts, nested virtualization, Hyper-V/VBS/HVCI/WSL2 and who owns VMX root operation
+  on Windows, Intel TDX and SEAM, and Intel-versus-AMD/ARM/RISC-V comparison. Every
+  architectural claim is anchored to an Intel specification by document number and section.
+  Triggers - VT-x, VMX, VMCS, VM-exit, exit qualification, EPT, EPT violation, VPID, INVEPT,
+  VT-d, DMAR, IOMMU, IRTE, SR-IOV, APICv, posted interrupt, VMCS shadowing, nested
+  virtualization, Hyper-V, VBS, HVCI, WSL2, Kernel DMA Protection, TDX, SEAM, SEAMCALL,
+  hypervisor, virtual machine escape. Do NOT use for AMD-primary questions - the sibling
+  amd-virtualization skill owns those - or for generic virtualization concepts unrelated
+  to Intel hardware.
+license: Apache-2.0
+metadata:
+  target-platform: Windows PC
+  normative-baseline: Intel SDM rev 092 (2026-06), VT-d Rev 5.20 (2026-04), TDX module docs (2026-05/08)
+  dated-snapshot: 2026-09-16
 ---
 
-# Intel VT 领域专家知识库
+# Intel VT — specification-anchored knowledge base
 
-## 这是什么
+Target platform: **Windows PC**. The hardware chapters (`01`–`12`) are CPU and
+chipset architecture and are OS-independent; the platform, security and
+performance chapters are written for Windows.
 
-一套经过多智能体深度研究与交叉验证的 Intel 虚拟化技术知识库，覆盖 13 个维度：演进史、VMX 架构、EPT/VPID、VT-d、APICv、性能量化、安全攻防、TDX 机密计算、软件生态、云应用、嵌套虚拟化、AMD-V 对比、2022-2026 最新动态。
+## How to use this skill
 
-**时效基准：2026-09-16。** 涉及"最新/当前"表述时以此为准；若用户问题明显需要更新数据（如之后发布的产品），先检索再回答，并沿用本库的事实核查标准。
+**Read the one chapter your question maps to. Do not load the directory.**
+Chapters run 300–550 lines each; the routing table below resolves to a section.
 
-## 使用方法（三级渐进阅读）
+1. **Look up the route** in §Routing. If the question is a symptom rather than a
+   topic, use `00-quickref.md` §0.2 instead — it maps failures to chapters.
+2. **Read that chapter's section.** Each chapter opens with a Chinese summary, a
+   `Maps to:` line naming its Intel specification chapter, and an `Owns:` line.
+   If the fact you need is listed under another chapter's `Owns:`, go there —
+   cross-chapter restatement is prohibited, so the other chapter is authoritative.
+3. **Check `errata.md` before writing anything** that touches a commonly
+   circulated claim. It carries 28 entries, 22 settled corrections and 6 recorded
+   open conflicts. Where it disagrees with a familiar statement, it wins.
+4. **Stop.** One chapter plus `errata.md` answers almost everything. Pull a second
+   chapter only when the question genuinely spans two (for example, EPT violation
+   handling needs `06` for the structures and `05` for the qualification layout).
 
-1. **先读 `references/core-facts.md`** —— 13 维度蒸馏事实速查。大多数问答、综述、代码注释需求到此即可解决。
-2. **需要原始出处、原文摘录、完整证据链时**，按下表读对应维度文件（含 Claim/Source/URL/Date/Excerpt/Confidence 结构化证据）。
-3. **动笔前必查 `references/errata.md`** —— 经交叉验证的常见讹传勘误（如 MBEC=Kaby Lake、PML=Broadwell、EPT 最坏 24 次访存、OoH=SC'22、AWS 嵌套虚拟化=2026-02、Azure DCesv5 为预览非 GA），不得沿用讹传口径。
+`core-facts.md` is a sourced index, not a substitute for the chapters — use it to
+find the owning chapter fast, then read that chapter.
 
-## 问题 → 维度文件路由表
+## Routing
 
-| 用户意图 | 读取文件 |
-|---------|---------|
-| 历史、Vanderpool、演进时间线、x86 虚拟化理论 | `references/intel_vt_dim01.md` |
-| VMX root/non-root、VMCS 字段、VM-entry/exit、VMX 指令、hypervisor 代码 | `references/intel_vt_dim02.md` |
-| EPT、VPID、影子页表、内存虚拟化、PML | `references/intel_vt_dim03.md` |
-| VT-d、IOMMU、DMA/中断重映射、SR-IOV、SIOV、设备直通、GPU 直通 | `references/intel_vt_dim04.md` |
-| APICv、posted interrupt、IPI virtualization、FlexPriority | `references/intel_vt_dim05.md` |
-| 虚拟化开销、性能数据、benchmark、缓解措施代价 | `references/intel_vt_dim06.md` |
-| VM escape、Blue Pill、L1TF/MDS、VBS、TXT、虚拟化安全 | `references/intel_vt_dim07.md` |
-| TDX、SEAM、远程证明、机密计算、SEV-SNP 对比、云厂商机密 VM | `references/intel_vt_dim08.md` |
-| KVM/QEMU/Xen/VMware/Hyper-V/Firecracker 对 VT 的使用 | `references/intel_vt_dim09.md` |
-| AWS/Azure/GCP/阿里云底层、实时迁移、NFV、GPU 云、市场数据 | `references/intel_vt_dim10.md` |
-| 嵌套虚拟化、OoH、Dune、SeKVM、学术研究 | `references/intel_vt_dim11.md` |
-| Intel vs AMD-V vs ARM vs RISC-V 对比、市场份额 | `references/intel_vt_dim12.md` |
-| Xeon 6、Clearwater Forest、Panther Lake、VMX 新特性、Linux 内核合入动态 | `references/intel_vt_dim13.md` |
+| Question is about | Read |
+|---|---|
+| Enabling VMX, VMXON failures, CPUID/IA32_FEATURE_CONTROL, VT-x history | `01-vmx-intro.md` |
+| VMCS layout, **field encodings**, execution/exit/entry controls, shadow VMCS fields | `02-vmcs.md` §2.5 |
+| What the guest may do, bitmaps, CR masks, MTF, unrestricted guest | `03-nonroot-operation.md` |
+| VM-entry checks, **why VM entry failed**, event injection | `04-vm-entry.md` §4.9 |
+| **Decoding a VM exit**: exit reasons, exit qualification, IDT-vectoring | `05-vm-exit.md` §5.3 |
+| EPT structures, EPT violation vs misconfiguration, VPID, PML, SPP, HLAT, #VE | `06-address-translation.md` |
+| APICv, virtual-APIC page, RVI/SVI, posted interrupts, IPIv | `07-apic-virtualization.md` |
+| VMX instruction semantics, **VM-instruction error 1–28**, capability MSRs | `08-vmx-instructions.md` §8.4 |
+| SMM under VMX, dual-monitor treatment, SEAM ISA, SEAMRR | `09-smm-seam.md` |
+| VT-d DMA remapping, DMAR registers, translation structures, invalidation | `10-vtd-dma-remapping.md` |
+| Interrupt remapping, **IRTE**, interrupt posting on the VT-d side | `11-vtd-interrupt-remapping.md` |
+| **VT-d faults and fault reason codes**, ACPI DMAR, SIOV, DMA-attack surface | `12-vtd-faults-bios-siov.md` |
+| TDX: SEAMCALL/TDCALL leaves, TD lifecycle, Secure EPT, attestation | `13-tdx.md` |
+| Nested VMX, **VMCS shadowing**, vmcs02, nested EPT, nesting on a PC | `14-nested-virtualization.md` |
+| Transient-execution CVEs and **mitigation MSRs**, VBS, HVCI, Credential Guard, TXT | `15-security.md` §15.5 |
+| Overhead numbers — VBS, utility VMs, WHP vs bare VMX, nesting, EPT | `16-performance.md` |
+| **Hyper-V, WHP/WHPX, WSL2, Sandbox, Kernel DMA Protection, "why no VT-x"** | `17-windows-platform.md` §17.1 |
+| Intel vs AMD SVM/SEV, vs ARM, vs RISC-V; what a client PC actually has | `18-comparison-amd-arm-riscv.md` |
+| Cloud/product/market/roadmap status, GA dates, kernel merge versions | `90-dated-landscape.md` |
+| Document numbers, symptom triage, terminology, where a table lives | `00-quickref.md` |
+| Known misconceptions and unresolved conflicts | `errata.md` |
+| Full citation list | `bibliography.md` |
 
-## 输出标准
+## The Windows fact that resolves most questions
 
-- **有据可查**：关键事实标注来源（维度文件内含 URL/日期/原文摘录）；区分「已 GA」「官方宣布」「单方宣称」「传闻」。
-- **引用外部可复核**：关键事实（日期、GA/预览状态、性能数字、CVE 编号）须回溯维度文件中记录的原始来源（来源名 + 日期，关键处附 URL）；「dimNN §x」等内部编号仅作辅助定位，不得作为唯一出处。
-- **时效敏感事实警示**：云厂商产品 GA/预览状态、价格、市场份额、内核合入状态是衰减最快、二手来源最易记错的类别；结论依赖其准确性时，应提示用户以官方来源二次核验；知识库标注与官方来源冲突时以官方为准。
-- **知识边界显式化**：知识库未收录的事实用外部检索补齐时，须显式标注「本知识库未收录」并给出来源与权威性评估。
-- **数字带条件**：性能数字必须附带测试条件（微架构、负载、测量口径），不同来源冲突时并列呈现而非取平均。
-- **置信度透明**：维度文件中 Confidence=low 或存在分歧的事实，输出时必须显式标注。
-- **勘误优先**：与 `references/errata.md` 冲突的常见说法，一律按勘误口径。
-- 涉及代码（VMX 启用、VMCS 操作、EPT 构建）时，字段编码与控制位以 dim02/dim03 中经 Intel SDM 核验的清单为准。
+Once VBS, WSL2, Windows Sandbox, Docker Desktop or the Hyper-V role is enabled,
+**the Windows kernel runs as a VTL0 guest and Hyper-V owns VMX root operation.**
+Any question shaped like "why can't my VMM / driver / debugger use VT-x on this
+machine" resolves there, and any third-party VMM on that machine is already
+running nested through the Windows Hypervisor Platform. See
+`17-windows-platform.md` §17.1 before reaching for a hardware explanation.
 
-## 知识库局限（如实告知用户）
+## Output standards
 
-- 无 2026-09-16 之后的数据；TDX Connect 端到端 GA、Diamond Rapids TDX 计划等当时未定事项标注为"未官宣/未披露"。
-- 维度文件为研究证据档案（含原始摘录），不是成稿报告；需要成稿时自行组织叙述。
+- **Cite the specification, not this skill.** Every architectural claim in a
+  chapter carries an anchor such as `[SDM 3C §27.9.1]` or `[VT-d 5.20 §7.1.3]`
+  plus a `[N]` bibliography reference. Reproduce the Intel document and section
+  in your answer. "According to the SDM" without a section is not a citation.
+- **Carry the confidence and volatility markers.** A claim tagged `C:low` is
+  reported as uncertain. A claim tagged `V:dated` — everything in
+  `90-dated-landscape.md` — is reported as a 2026-09-16 snapshot that the user
+  must re-verify before acting on it.
+- **Numbers keep their conditions.** Performance figures are meaningless without
+  microarchitecture, hypervisor version, benchmark and year. Where sources
+  disagree, `16-performance.md` presents them side by side; do the same. Never
+  average conflicting measurements.
+- **Vendor statements stay attributed.** "Zero virtualization overhead" and its
+  relatives are claims made by a vendor, not measurements. Say who said it.
+- **Say when the knowledge base does not know.** Gaps are marked deliberately —
+  several chapters end with an explicit open-items section. Reporting a gap beats
+  filling it with a plausible guess, which is the exact failure this rebuild
+  exists to eliminate.
+- **Do not invent section numbers.** If you cite an Intel section, it must be one
+  the chapter gives you. The SDM renumbered its VMX chapters; remembered numbers
+  from older manuals are wrong.
+
+## Scope boundaries
+
+- **AMD-primary questions** go to the sibling `amd-virtualization` skill. Use this
+  skill for Intel-primary questions and for two-way comparisons, where
+  `18-comparison-amd-arm-riscv.md` gives the Intel-side view.
+- **TDX is server-only.** No client Windows PC has it. `13-tdx.md` is complete and
+  specification-anchored, but read it only for Xeon or confidential-computing
+  questions.
+- **Time-sensitive facts live in exactly one file.** If a fact has a GA date, a
+  version number, a price or a market share, it is in `90-dated-landscape.md` and
+  nowhere else. The architecture chapters are meant to stay true.
+
+## Known limits
+
+- The dated snapshot is **2026-09-16**. Nothing after it is covered.
+- No modern (Ice Lake / Sapphire Rapids / Granite Rapids / any client part)
+  public cycle-level VM-exit measurement exists in this knowledge base. The
+  newest hard figure is Westmere-era, 2010. `16-performance.md` says so rather
+  than extrapolating.
+- Several structure layouts are deliberately incomplete where the source PDF was
+  ambiguous; each chapter's open-items section names them.
+- The Windows chapters cite Microsoft Learn and the Hypervisor Top-Level
+  Functional Specification. They are Tier-2 sources: authoritative for Windows
+  behaviour, but not Intel specifications.
