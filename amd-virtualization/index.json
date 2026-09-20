@@ -303,8 +303,8 @@
         "15.6 Nesting on Windows",
         "15.7 Open items"
       ],
-      "bytes": 44640,
-      "sha256": "8a149e431f888310a6e560fe8b9befc8b89538ddeb48d7d61120325636e10981"
+      "bytes": 44846,
+      "sha256": "97a1fa176c850e6648b17bc6b1aca63684c86694f6312d63fe656abe863cf9e7"
     },
     {
       "path": "references/16-windows-platform.md",
@@ -325,8 +325,8 @@
         "16.11 Linux-only: the VFIO path",
         "16.12 Open items"
       ],
-      "bytes": 48547,
-      "sha256": "fd525266f1f41ae730c6c5292793e8fbca7c9b01ce0cc5e28d5c949c5c129de7"
+      "bytes": 49715,
+      "sha256": "43f2958395320bb5640f2f26f96fbb20b04339718d45284d567b538304c76c52"
     },
     {
       "path": "references/17-security.md",
@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 58365,
-      "sha256": "5a2f35fafd1434f38dbe4895219bb7c9588a3994fe2e8f16a017e491d0d8fab4"
+      "bytes": 58971,
+      "sha256": "e80781d2120792cd2b615dee1373211160fc200441fffbf685ef1f06c0defb7a"
     },
     {
       "path": "references/18-performance.md",
@@ -385,8 +385,8 @@
         "19.12 What a client PC actually has",
         "19.13 Open items"
       ],
-      "bytes": 47107,
-      "sha256": "c5349b6154a7119093ac878b132083cd54cad4bda6ebe53f7df62c2e125ffedd"
+      "bytes": 47212,
+      "sha256": "d6b685dbe625ed01c7885cd8dda35b6a38c80da106fac3360563f35b2e81b4cf"
     },
     {
       "path": "references/90-dated-landscape.md",
