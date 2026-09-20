@@ -23,12 +23,21 @@ permissions:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        # Two versions because the tools are plain ESM with no transpile step:
-        # 20 is the oldest LTS worth supporting, 24 is what they were written on.
+        # Two Node versions because the tools are plain ESM with no transpile
+        # step: 20 is the oldest LTS worth supporting, 24 is what they were
+        # written on.
+        #
+        # Windows is in the matrix because these skills target Windows PCs and
+        # because an ubuntu-only matrix is structurally blind to the bug that
+        # put it here: Git honours core.autocrlf on Windows and checks LF
+        # content out as CRLF, which broke both the frontmatter parser and
+        # every SHA-256 in index.json on a fresh clone. autocrlf is off on
+        # ubuntu, so that CI was green while a real clone was broken.
+        os: [ubuntu-latest, windows-latest]
         node: ['20', '24']
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +62,9 @@ jobs:
       - name: install script works
         # If this breaks, the skills cannot be consumed by any host, which no
         # amount of clean lint would reveal.
+        # bash explicitly: Windows runners default to PowerShell, and this is
+        # POSIX shell. Windows runners ship bash.
+        shell: bash
         run: |
           node tools/install.mjs --copy
           for skill in intel-vt amd-virtualization; do

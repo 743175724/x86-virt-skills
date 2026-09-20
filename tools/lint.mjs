@@ -129,7 +129,14 @@ function lintSkill(skillName) {
   const isCorrection = (line) =>
     BASE_CORRECTION_HINTS.test(line) || (cfg.correctionHints?.test(line) ?? false)
 
-  const parseFrontmatter = (text, file) => {
+  const parseFrontmatter = (rawText, file) => {
+    // Normalise line endings first. Git on Windows honours core.autocrlf and
+    // checks LF content out as CRLF, so a fresh clone handed this "---\r\n" and
+    // the exact "---\n" test reported "missing YAML frontmatter" — followed by
+    // name "undefined" and an empty description, none of which were true.
+    // .gitattributes now pins eol=lf, but a tool should not depend on a
+    // checkout setting to read a file it owns.
+    const text = rawText.replace(/\r\n/g, '\n')
     if (!text.startsWith('---\n')) { err(file, 'missing YAML frontmatter'); return {} }
     const end = text.indexOf('\n---', 4)
     if (end === -1) { err(file, 'unterminated YAML frontmatter'); return {} }

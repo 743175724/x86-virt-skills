@@ -1,0 +1,22 @@
+# Check every text file out as LF, on every platform.
+#
+# Without this, Git on Windows honours core.autocrlf and rewrites LF to CRLF at
+# checkout time. That silently broke a fresh clone in two ways:
+#
+#   - lint.mjs tests for "---\n" to find SKILL.md's YAML frontmatter, so a CRLF
+#     checkout reported "missing YAML frontmatter" and then "name undefined".
+#   - index.json carries a SHA-256 per chapter, computed over LF content, so
+#     every chapter looked like it had drifted from the index.
+#
+# Both tools are now tolerant of CRLF as well, but this is the root-cause fix:
+# the corpus is LF, the hashes are over LF, and a checkout should match.
+#
+# CI on ubuntu-latest could never have caught it, because autocrlf is off there.
+# The Windows job added alongside it exists for exactly this class of bug.
+
+* text=auto eol=lf
+
+# Binary, never touched.
+*.pdf   binary
+*.png   binary
+*.zip   binary

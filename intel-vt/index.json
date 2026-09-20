@@ -41,8 +41,8 @@
         "1.12 Checklist before the first VM entry",
         "1.13 What a verifier should check against the PDF"
       ],
-      "bytes": 43744,
-      "sha256": "580d9d171c774560c77db04a7b78c5cfdc762acc73b309eb7712a5d2df0c9bf4"
+      "bytes": 43400,
+      "sha256": "527cc4983d02f7e17ce396dd67ee388500510ecc2a400cc5fe917b4cbb3cb717"
     },
     {
       "path": "references/02-vmcs.md",
@@ -64,8 +64,8 @@
         "2.12 Software use of the VMCS",
         "2.13 Reading this chapter against a real machine"
       ],
-      "bytes": 60614,
-      "sha256": "653843bfebaa7e5d4512a4d53fe4b5c52e5de1062c3dbcf923c31cc2f7375d20"
+      "bytes": 60211,
+      "sha256": "9195639a8b0ea684c06dda5ede7fcf747d8a35c422973bdc262b6bc0410d69b0"
     },
     {
       "path": "references/03-nonroot-operation.md",
@@ -91,8 +91,8 @@
         "3.15 Designing an interception policy",
         "3.16 What a verifier should check against the PDF"
       ],
-      "bytes": 44941,
-      "sha256": "0315fe775cfab30ea16abbb49fdc2653617f90d61e04c78af48ba4a99d0e34a0"
+      "bytes": 44586,
+      "sha256": "77d999ba00352d8f068678ed0ac54c8a3c55d41543d8d6bd538b45ce8337b185"
     },
     {
       "path": "references/04-vm-entry.md",
@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 60601,
-      "sha256": "54d9a58eda8aa630acd22e33efc1766a9fe945e14c8b610687400f4996042037"
+      "bytes": 60134,
+      "sha256": "f0b82c5c960d39e98ab9eac49ad1e7075d1739f7151095af456c1188fabb095c"
     },
     {
       "path": "references/07-apic-virtualization.md",
