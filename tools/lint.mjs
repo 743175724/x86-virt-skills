@@ -530,6 +530,14 @@ for (const skill of skills) {
     continue
   }
   console.log(`\n${prefix}\x1b[32mlint clean\x1b[0m — ${r.chapters} chapter file(s), ${r.bib} bibliography entries, ${r.claims} distinct claims`)
+  // `[no-spec]` exempts a claim from the Tier-1 anchor rule, so the exemption
+  // has to stay visible. Printing the count is what makes the escape safe to
+  // offer: a silent exemption is how fabricated anchors got here in the first place.
+  if (r.noSpec?.length) {
+    const list = process.argv.includes('--no-spec')
+    console.log(`${prefix}  ${r.noSpec.length} claim(s) declared \`[no-spec]\` — no specification documents them.` + (list ? '' : ' Pass --no-spec to list them.'))
+    if (list) for (const loc of r.noSpec) console.log(`${prefix}    ${loc}`)
+  }
 }
 
 if (failed) { console.log(''); process.exit(1) }
