@@ -35,7 +35,7 @@ This choice is what makes the rest of the architecture look the way it does. Bec
 | VMX non-root operation | The form of VMX operation in which guest software runs | A privilege level; it is orthogonal to CPL |
 | VM entry | A transition into VMX non-root operation | VMXON, which enters VMX operation but no guest |
 | VM-exit | A transition out of VMX non-root operation | VMXOFF, which leaves VMX operation altogether |
-| VMXON region | The per-logical-processor region VMXON takes as operand | A VMCS: it has the same format but is never accessed by VMREAD or VMWRITE |
+| VMXON region | The per-logical-processor region VMXON takes as operand | A VMCS: it needs the same amount of memory and the same revision identifier, but is never accessed by VMREAD or VMWRITE |
 | VMCS | The per-virtual-processor control structure | The VMXON region |
 
 The spellings in the left column — "VM entry" unhyphenated, "VM-exit" hyphenated, "guest-physical address" as one hyphenated term — are the forms this knowledge base uses everywhere, so that a reader can grep for them.
@@ -167,7 +167,7 @@ A single `rdmsr 0x480` answers five separate questions, and reading it is the fa
 | Region size | 44:32 | How many bytes must each region be? |
 | 32-bit address limit | 48 | Must VMCS-referenced physical addresses fit in 32 bits? |
 | Dual-monitor support | 49 | Can this processor host an SMM monitor? |
-| Memory type | 53:50 | Which memory type must the regions use — 6 means write-back? |
+| Memory type | 53:50 | Which memory type *should* the regions use — 6 means write-back? |
 | INS/OUTS reporting | 54 | Will VM exits on string I/O carry instruction information? |
 | "True" MSRs present | 55 | Must default-1 controls be read from the ordinary or the "true" capability MSRs? |
 | Hardware-exception injection | 56 | May VM entry deliver a hardware exception with or without an error code, whatever the vector? |
@@ -207,7 +207,7 @@ IA32_VMX_BASIC is the head of a contiguous block of read-only MSRs. Knowing the 
 - **Claim.** The VMXON region must be aligned on a 4-KByte boundary, so bits 11:0 of its physical address must be 0, and the pointer must not set any bit beyond the processor's physical-address width — or any bit in 63:32 if IA32_VMX_BASIC bit 48 is 1.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
 - **Claim.** Software should allocate the VMXON region with the size reported in IA32_VMX_BASIC bits 44:32 and must write the VMCS revision identifier from IA32_VMX_BASIC bits 30:0 into bits 30:0 of the first four bytes of the region, with bit 31 cleared to 0, before executing VMXON; the region needs no other initialisation.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
 - **Claim.** VMXON fails if bits 30:0 of the first four bytes of the VMXON region do not match the VMCS revision identifier reported in IA32_VMX_BASIC, or if bit 31 of that doubleword is 1.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
-- **Claim.** Software should maintain the VMCS region and the structures a VMCS references in writeback cacheable memory and should consult IA32_VMX_BASIC, because a future implementation may allow or require a different memory type; the SDM states this requirement for the VMCS region rather than for the VMXON region, and mapping such a structure uncacheable is permitted but makes software's own accesses to it slower.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
+- **Claim.** Software should maintain the VMCS region and the structures a VMCS references in writeback cacheable memory and should consult IA32_VMX_BASIC, because a future implementation may allow or require a different memory type; the SDM states this requirement for the VMCS region rather than for the VMXON region. Mapping any of those regions or structures UC is permitted but **strongly discouraged**: §27.2 footnote 3 says it "will cause the performance of transitions using those structures to suffer significantly", and the processor goes on using the memory type IA32_VMX_BASIC reports regardless. (Vol.3D App.A.1 footnote 3 adds the separate cost — a UC mapping software establishes for its own access to those structures slows those accesses.)  `[SDM 3C §27.2]` `[SDM 3D App.A.1]` `[1]` `[2]` `C:high` `V:durable`
 - **Claim.** The VMXON region requires the same amount of memory as a VMCS region and carries the same VMCS revision identifier in its first four bytes, but it is never accessed by VMREAD or VMWRITE; software should not access or modify the VMXON region of a logical processor between that processor's VMXON and VMXOFF, and doing so may lead to unpredictable behaviour.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
 - **Claim.** Software should use a separate VMXON region for each logical processor, and that region stays bound to its logical processor for as long as that processor remains in VMX operation.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
 

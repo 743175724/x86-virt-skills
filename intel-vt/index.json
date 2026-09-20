@@ -41,8 +41,8 @@
         "1.12 Checklist before the first VM entry",
         "1.13 What a verifier should check against the PDF"
       ],
-      "bytes": 42987,
-      "sha256": "c2b59bad55e4487f55659070fbf9f2dcce45436eb2e95acef031821d16e3a442"
+      "bytes": 43744,
+      "sha256": "580d9d171c774560c77db04a7b78c5cfdc762acc73b309eb7712a5d2df0c9bf4"
     },
     {
       "path": "references/02-vmcs.md",
@@ -64,8 +64,8 @@
         "2.12 Software use of the VMCS",
         "2.13 Reading this chapter against a real machine"
       ],
-      "bytes": 60138,
-      "sha256": "604879301a3fef18aef9521c93d2cfe3d5d8003f152c6ebe10e9b4ecfebcd41c"
+      "bytes": 60614,
+      "sha256": "653843bfebaa7e5d4512a4d53fe4b5c52e5de1062c3dbcf923c31cc2f7375d20"
     },
     {
       "path": "references/03-nonroot-operation.md",
@@ -91,8 +91,8 @@
         "3.15 Designing an interception policy",
         "3.16 What a verifier should check against the PDF"
       ],
-      "bytes": 44582,
-      "sha256": "9c24aa953c2a145434263a7a78f38df4a44f86fd19ac372eb6a577a74d990daf"
+      "bytes": 44941,
+      "sha256": "0315fe775cfab30ea16abbb49fdc2653617f90d61e04c78af48ba4a99d0e34a0"
     },
     {
       "path": "references/04-vm-entry.md",
@@ -107,14 +107,14 @@
         "4.5 Stage 3 — checks on the guest-state area",
         "4.6 Stage 4 — loading guest state",
         "4.7 Stage 5 — loading MSRs from the VM-entry MSR-load area",
-        "4.8 Stage 7 — event injection via the VM-entry interruption-information field",
+        "4.8 Stage 7 — event injection via the injected-event identification field",
         "4.9 The three failure modes — how to tell them apart",
         "4.10 A debugging order of operations",
         "4.11 Failure signatures seen in practice",
         "4.12 Cross-references"
       ],
-      "bytes": 67378,
-      "sha256": "90e2cfa5a30511d9d3e263c68df725eef8ff83e0761fbcbd0b11d0fa1e6ceee9"
+      "bytes": 69376,
+      "sha256": "807e8a7586c5610d6c9fb4309273c034221052eda0a3cbd7de7d96b6e22b9bc6"
     },
     {
       "path": "references/05-vm-exit.md",
@@ -137,8 +137,8 @@
         "5.13 Two corrections carried by this chapter",
         "5.14 Cross-references"
       ],
-      "bytes": 66561,
-      "sha256": "63138a97521c258105c82ea1eb03a9840b166a7829a76138803f410efe42302f"
+      "bytes": 67641,
+      "sha256": "514a121f613e0e7fcebc5d60c5c1b8d2b6b242669dfd65bc07fcabcadc6dc5a2"
     },
     {
       "path": "references/06-address-translation.md",
@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 59294,
-      "sha256": "de5c2dc3621fa736e353e9ea3d52a294d55d184c3c5e3b5865537b81114c35dc"
+      "bytes": 60532,
+      "sha256": "3de567510d97ee4452fc2dce1c5b2f26c7d9d93796ddf0a27ce1cc1668034003"
     },
     {
       "path": "references/07-apic-virtualization.md",
@@ -338,8 +338,8 @@
         "14.13 Academic lineage",
         "14.14 Out of scope for this chapter"
       ],
-      "bytes": 51575,
-      "sha256": "0667b6dcd85fe70af257b0b36895473e2d56b004ec133ef9cc73296dd8aac3f6"
+      "bytes": 51747,
+      "sha256": "c9f7ef6c3f0ab6c2012d24850c68ebfbbf289e8dc4674c8201ae5d2f447e3c49"
     },
     {
       "path": "references/15-security.md",
@@ -385,8 +385,8 @@
         "16.12 Procedure for answering a performance question",
         "16.13 Out of scope for this chapter"
       ],
-      "bytes": 44011,
-      "sha256": "1734379990b4a944482b05fa8e00010e3da87694445c668862a951282f9a97d9"
+      "bytes": 44470,
+      "sha256": "1da613a531f39879b7560b6c60f457b1df9c548c470beceb90a001b0572aaab9"
     },
     {
       "path": "references/17-windows-platform.md",
@@ -406,8 +406,8 @@
         "17.10 Procedure for answering a Windows VT question",
         "17.11 Out of scope for this chapter"
       ],
-      "bytes": 52593,
-      "sha256": "68d5ec39cffa902512c9638147897b177e92e2a0d260dc461e8cc7921268a9ef"
+      "bytes": 53560,
+      "sha256": "716ead8142d466f64ae4243d6c2942a7104ab6b6d517fbdc57727927e268204d"
     },
     {
       "path": "references/18-comparison-amd-arm-riscv.md",

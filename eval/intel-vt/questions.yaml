@@ -46,13 +46,10 @@
   type: lookup
   question: "What is the VMCS field encoding of the HLAT pointer and of the HLAT prefix-size field?"
   must_include:
-    - "this knowledge base does not state those encodings"
-    - "they are listed among the encodings deliberately omitted because they could not be confirmed"
-    - "read them from the Vol.3D field-encoding appendix or from a kernel header before using them"
-  must_not_include:
-    - "the HLAT pointer is at encoding 0x2040"
+    - "the HLAT pointer (HLATP) is at VMCS encoding 0x2040"
+    - "the HLAT prefix size field is at encoding 0x0006"
   required_citation: "SDM 3D App.B"
-  notes: "Chapter 02 section 2.5.6 and chapter 06 section 6.13 both record this omission. Any concrete encoding here is a fabrication and scores zero."
+  notes: "UPDATED 2026-09-21. Both encodings were previously unconfirmed and the key demanded that hedge; the 2026-09-20 PDF verification pass confirmed them against Vol.3D App.B, chapter 02 section 2.5 now states them, and chapter 06 section 6.13 no longer lists them as omitted. The old must_not_include banned the correct answer."
 
 - id: exit-reasons-ept-family
   chapter: 05-vm-exit.md
@@ -76,7 +73,7 @@
     - "33 is VM-entry failure due to invalid guest state"
     - "34 is VM-entry failure due to MSR loading"
     - "41 is VM-entry failure due to a machine-check event"
-  required_citation: "SDM 3C §27.9.1"
+  required_citation: "SDM 3C §30.2.1"
   notes: "Chapter 05 sections 5.2 and 5.3; chapter 04 section 4.9 carries the same three values."
 
 - id: exit-qual-io-instruction
@@ -89,7 +86,7 @@
     - "bit 4 is set for a string instruction and bit 5 for a REP prefix"
     - "bit 6 is 0 when the port came from DX and 1 when it was an immediate operand"
     - "bits 31:16 contain the port number"
-  required_citation: "SDM 3C §27.9.1"
+  required_citation: "SDM 3C §30.2.1"
   notes: "Chapter 05 section 5.4.3. Values 2, 4, 5, 6 and 7 of the size field are not used."
 
 - id: eptp-low-bits
@@ -179,11 +176,9 @@
   type: lookup
   question: "What is the VMCS encoding of the PID-pointer table address and of the last PID-pointer index used by IPI virtualization?"
   must_include:
-    - "this knowledge base does not state those encodings"
-    - "they are among the facts deliberately omitted because they could not be anchored"
-    - "the field roles are known - the table is indexed by the target APIC ID and each entry carries a valid bit in bit 0 - but the encodings are not"
-  must_not_include:
-    - "the PID-pointer table address is at encoding 0x2036"
+    - "the PID-pointer table address is at VMCS encoding 0x2042"
+    - "the last PID-pointer index is at encoding 0x0008"
+    - "the table is indexed by the target APIC ID and each entry carries a valid bit in bit 0"
   required_citation: "SDM 3C Ch.32"
   notes: "Chapter 07 section 7.12 and chapter 02 section 2.5.6 both record the omission. Inventing an encoding scores zero."
 
@@ -829,9 +824,9 @@
     - "a blocked vCPU must not simply be left with its posted-interrupt descriptor pointing at it: repoint NV at a host wake-up vector and NDST at the host CPU so a posting wakes the vCPU through the host interrupt path"
     - "the VMM must also refuse to block if ON is already set, because a notification is already in flight"
     - "SN is the control for a vCPU that is descheduled or executing in host context: a poster then records the vector in PIR and sends no notification, and the interrupts accumulate for the next merge"
-    - "VM entry performs posted-interrupt processing when ON is set, so interrupts posted while the vCPU was not running are picked up at the next entry rather than lost"
+    - "VM entry does NOT perform posted-interrupt processing, so a VMM must not rely on entry to drain PIR: the pending vectors are picked up only when a notification is delivered in non-root operation, which is why NV/NDST repointing and the refusal to block with ON set are load-bearing"
   required_citation: "SDM 3C Ch.32"
-  notes: "Chapter 07 section 7.8.4. Quickref section 0.2 routes 'guest loses or duplicates interrupts under APICv' to 07 sections 7.6 and 7.8."
+  notes: "Chapter 07 section 7.8.4. Quickref section 0.2 routes 'guest loses or duplicates interrupts under APICv' to 07 sections 7.6 and 7.8. CORRECTED 2026-09-21: this item previously asserted that VM entry drains PIR when ON is set. SDM 3C section 29.3.2.5 says it does not, and the corpus agrees; as written the key rewarded an answer that would ship a lost-interrupt bug."
 
 - id: msix-not-delivered-after-remapping
   chapter: 11-vtd-interrupt-remapping.md
@@ -1004,7 +999,7 @@
   must_not_include:
     - "bit 7 means the guest-physical address is valid"
     - "bit 7 indicates the guest-physical-address field has been filled in"
-  required_citation: "SDM 3C §27.9.1"
+  required_citation: "SDM 3C §30.2.1"
   notes: "errata E16. Chapter 05 sections 5.4.6 and 5.13; chapter 06 section 6.4.3 carries the same correction. The wrong reading propagates from stale transcriptions of a 2017-era SDM mirror."
 
 - id: trap-ept-qual-bit6
@@ -1019,7 +1014,7 @@
   must_not_include:
     - "bit 6 is the logical-AND of the XD bits"
     - "bit 6 is derived from the execute-disable bit"
-  required_citation: "SDM 3C §27.9.1"
+  required_citation: "SDM 3C §30.2.1"
   notes: "errata E17. Chapter 05 sections 5.4.6 and 5.13; chapter 06 sections 6.3.1 and 6.4.3."
 
 - id: trap-zombieload-cve

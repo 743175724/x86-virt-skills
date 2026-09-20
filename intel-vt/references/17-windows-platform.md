@@ -81,7 +81,7 @@ Every MSR below appears in a claim in this section; the table collects them beca
 | 0x40000001 | hypercall page: guest-physical page number plus enable bit |
 | 0x40000002 | virtual processor index of the current processor |
 | 0x40000021 | reference TSC page, for trap-free timekeeping |
-| 0x40000073 | VP assist page, which also carries the enlightened VMCS |
+| 0x40000073 | VP assist page: EOI assist, VTL control, and the `EnlightenVmEntry` / `CurrentNestedVmcs` controls that select an enlightened VMCS (§17.2.3) |
 | 0x40000080 – 0x40000084 | synthetic interrupt controller: control, version, event-flags page, message page, end of message |
 | 0x40000090 – 0x4000009F | sixteen synthetic interrupt source registers |
 | 0x400000B0 and following | synthetic timer configuration and count registers |
@@ -147,6 +147,8 @@ provides directly. Each one exists because the trapping version was measurably e
 ### 17.3.5 Debuggers, drivers and other software that wants the hardware
 
 - **Claim.** The single-owner rule of §17.1 applies to every consumer of VMX, not only to virtual-machine products: a driver or analysis tool that wants to execute VMXON is in the same position as a third-party VMM and must go through the platform API or run nested.  `[SDM 3C Ch.26]` `[1][465]` `C:high` `V:durable`
+- **Claim.** What that VMXON actually raises is decided by enumeration, not by the resident hypervisor choosing a fault. If VMX is not exposed to the partition, `CPUID.1:ECX.VMX` reads 0, `CR4.VMXE` cannot be set, and VMXON raises **#UD**; a VMXON attempted with CR4.VMXE clear raises **#UD** for the same reason, and CPL > 0 raises **#GP(0)**. See `01-vmx-intro.md` §1.8 and `08-vmx-instructions.md` §8.3.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
+- **Claim.** **Open item.** Whether Hyper-V ever intercepts VMXON and injects a fault of its own choosing, rather than letting enumeration produce #UD, is not documented in any Microsoft source this knowledge base has read. Diagnose from what the guest observes — `CPUID.1:ECX.VMX`, `CR4.VMXE` and `IA32_FEATURE_CONTROL` — rather than from the exception vector alone.  `[no-spec]` `[465]` `C:low` `V:durable`
 - **Claim.** Software that instead relies on writable-executable kernel memory or on patching kernel code is blocked by a different mechanism — memory-integrity enforcement from VTL1 (§17.6) — so the two failure modes have different fixes and should not be diagnosed together.  `[483]` `C:high` `V:durable`
 - **Claim.** Guest-visible processor facilities can also behave differently when a hypervisor is resident, because timers, performance-monitoring and some model-specific registers may be virtualized or intercepted; which ones is a property of the hypervisor's interception configuration rather than of the processor; see `03-nonroot-operation.md`.  `[SDM 3C §27.6]` `[1][461]` `C:medium` `V:durable`
 
@@ -232,7 +234,7 @@ These features are not "virtual machines" in the user's mental model, but they a
 ## 17.7 Nested virtualization on a Windows PC
 
 - **Claim.** Hyper-V can expose virtualization extensions to a child partition so that "a guest virtual machine can install its own hypervisor and run its own guest VMs"; Microsoft states this for both vendors' extensions, "for example, Intel VT-x and AMD-V", and names two standing constraints — memory cannot be adjusted while the nested machine runs, so dynamic memory does not fluctuate, and "virtualization applications other than Hyper-V aren't supported in Hyper-V virtual machines, and are likely to fail".  `[479]` `C:high` `V:durable`
-- **Claim.** On Intel hardware the inner hypervisor's control-structure accesses are the dominant nested cost, which is what the enlightened VMCS in the VP assist page (§17.2.3) and, in hardware, VMCS shadowing exist to reduce; see `14-nested-virtualization.md`.  `[SDM 3C §27.6.15]` `[1][461][479]` `C:medium` `V:durable`
+- **Claim.** On Intel hardware the inner hypervisor's control-structure accesses are the dominant nested cost, which is what the enlightened VMCS selected through the VP assist page (§17.2.3) and, in hardware, VMCS shadowing exist to reduce; see `14-nested-virtualization.md`.  `[SDM 3C §27.6.15]` `[1][461][479]` `C:medium` `V:durable`
 - **Claim.** Nesting does not remove the single-owner rule: the innermost VMM still does not own VMX root operation, and every exit it takes is mediated by the levels above it, which is why nested configurations compound the cost described in §17.3.4 and in `16-performance.md` §16.7.  `[479]` `C:high` `V:durable`
 
 ---
