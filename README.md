@@ -173,7 +173,11 @@ must be done by different agents.
   `C:low`.
 - Eval scoring is done by agents from the same model family as the answerers.
   They are separate agents, which removes self-grading, but not family-level
-  correlation.
+  correlation. One category was re-scored by a different model as a check:
+  it disagreed on 1 item of 47, about 2 percentage points, and adjudicating
+  against the quoted answer showed the *original* scorer was right and the
+  cross-model one under-credited. That is a variance measurement, not a bias
+  measurement — a real test needs a scorer from a different vendor.
 - Both eval runs found the *answer key* wrong more often than the skill: five
   keys on the Intel side, four on the AMD side. Scorers are given explicit
   authority to mark an item `key-disputed` and check the specification instead,
