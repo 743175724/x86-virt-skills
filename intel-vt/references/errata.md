@@ -50,7 +50,7 @@
 - Misconception: "AWS has supported nested virtualization on ordinary (virtualized) EC2 instances since 2023."
 
 - **Claim.** Until 2026-02 AWS supported nested virtualization **only on bare-metal (`.metal`) instances**; virtualized Nitro instances did not expose VT-x to the guest. Support on virtualized C8i/M8i/R8i instances, via `--cpu-options "NestedVirtualization=enabled"` and limited to KVM or Hyper-V as L1, dates from **2026-02**, not 2023.  `[551]` `C:high` `V:durable`
-- **Owner:** current status → `90-dated-landscape.md` §90.1.1; mechanism → `14-nested-virtualization.md`.
+- **Owner:** current status → `90-dated-landscape.md` §90.3.1; mechanism → `14-nested-virtualization.md`.
 
 ### E06 · VMFUNC generation (disputed — cite both sides)
 
@@ -90,7 +90,7 @@
 - Misconception: "Cloud providers' 'zero overhead' / '<5% loss' / '100% of bare-metal performance' figures are third-party benchmark results."
 
 - **Claim.** These are the providers' **own marketing statements**, published without methodology and without independent replication: AWS's "typically less than 1%", Alibaba's "100% of physical-machine performance, zero virtualization loss / 5x I/O / 160% overall", Tencent's "15% down to under 5%", Huawei's "zero reservation, zero loss, zero jitter". Write them in attributed voice ("Alibaba states that…") with the source attached, or omit them. Never assert them.  `[554][566][567][568]` `C:high` `V:durable`
-- **Owner:** `90-dated-landscape.md` §90.1.
+- **Owner:** `90-dated-landscape.md` §90.3.1.
 
 ### E11 · Escape CVEs are VMM software defects, not VT hardware defects
 
@@ -114,7 +114,7 @@
 - Misconception (the previous errata table labelled this entry "(fact)", leaving its polarity ambiguous; restated here): stating as established fact that "Alibaba Cloud Shenlong was released one month before AWS Nitro."
 
 - **Claim.** The "one month earlier than Amazon Nitro" statement comes from **Alibaba's own retrospective** and has no independent corroboration; AWS's Nitro precursors (C3 SR-IOV offload in 2013, C4 EBS offload in 2015) predate the 2017 date the comparison rests on, so at best the claim is about the release of a complete integrated hardware/software architecture. Reproduce it only in attributed voice as a single-party claim; do not assert priority either way.  `[565]` `C:low` `V:durable`
-- **Owner:** `90-dated-landscape.md` §90.1.4.
+- **Owner:** `90-dated-landscape.md` §90.3.1.
 
 ### E14 · TDX Connect / TEE-IO is not GA
 
@@ -122,7 +122,7 @@
 - Misconception: "TDX Connect / TEE-IO is generally available."
 
 - **Claim.** Intel announced **hardware** support for TDX Connect (TEE-IO) on Xeon 6 P-core processors on **2025-02-24**, and Intel's own wording is that a TDX Connect solution additionally requires an enabled host OS/hypervisor and a TEE-IO capable device. No end-to-end GA date had been announced as of 2026-09-16. Hardware readiness is not product availability.  `[587][588]` `C:high` `V:durable`
-- **Owner:** current status → `90-dated-landscape.md` §90.3.2; architecture → `13-tdx.md`.
+- **Owner:** current status → `90-dated-landscape.md` §90.3.3; architecture → `13-tdx.md`.
 
 ### E15 · Azure DCesv5 / ECesv5 was a preview, not a GA
 
@@ -130,7 +130,7 @@
 - Misconception: "Azure DCesv5/ECesv5 (Intel TDX) went GA in December 2023."
 
 - **Claim.** DCesv5/ECesv5 were announced as **public preview** on **2023-11-15** and became deployable on 2023-12-07 while still in preview; they never reached GA under those names. Azure's first generally available Intel TDX confidential VMs are the v6 series (DCesv6/DCedsv6/ECesv6/ECedsv6, Emerald Rapids), announced GA on **2026-02-26**. This is the canonical example of the preview→"GA" drift that makes cloud status the most error-prone fact class in this domain.  `[556][557]` `C:high` `V:durable`
-- **Owner:** `90-dated-landscape.md` §90.1.2.
+- **Owner:** `90-dated-landscape.md` §90.3.1.
 
 ### E16 · EPT-violation exit qualification bit 7
 

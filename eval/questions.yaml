@@ -1,0 +1,1166 @@
+# intel-vt golden evaluation set
+#
+# 80 questions.  Scoring protocol: eval/RUNNER.md
+#   lookup     24  (02 05 06 07 08 10 11 12 13)
+#   mechanism  24
+#   diagnosis  20
+#   trap       12  (one per confirmed erratum - all must be present)
+#
+# Every must_include item is verifiable against the chapter named in `chapter`.
+# Every required_citation is an anchor that appears verbatim in that chapter.
+# Ten questions have an honest answer of "the knowledge base does not have this"
+# or "the sources disagree"; their expected hedge is in must_include.
+
+# ===========================================================================
+# LOOKUP  (24)
+# ===========================================================================
+
+- id: vmcs-encoding-derive
+  chapter: 02-vmcs.md
+  type: lookup
+  question: "I have a VMCS field encoding of 0x201A in a trace and no table to hand. What field is it, and how do I decode an arbitrary encoding without a table?"
+  must_include:
+    - "0x201A is the EPT pointer (EPTP)"
+    - "bit 0 is the access type, 0 = full and 1 = high"
+    - "bits 9:1 are the field index, so 0x201A has index 13"
+    - "bits 11:10 are the field type, 0 = control"
+    - "bits 14:13 are the field width, 1 = 64-bit"
+    - "encoding = (width << 13) | (type << 10) | (index << 1) | access"
+  required_citation: "SDM 3D App.B"
+  notes: "The chapter gives this exact worked example plus the derivation rule; a correct answer should reproduce both."
+
+- id: tertiary-controls-encoding-and-msr
+  chapter: 02-vmcs.md
+  type: lookup
+  question: "Where do the tertiary processor-based VM-execution controls live in the VMCS, what turns them on, and which MSR says which bits I may set?"
+  must_include:
+    - "the tertiary processor-based controls are a 64-bit field at encoding 0x2034"
+    - "they take effect only when bit 17 of the primary processor-based controls is 1"
+    - "capability is reported by IA32_VMX_PROCBASED_CTLS3 at MSR 492H"
+    - "IA32_VMX_PROCBASED_CTLS3 is a single 64-bit allowed-1 mask with no default-1 bits"
+  required_citation: "SDM 3D App.A"
+  notes: "Chapter 02 section 2.8.4. Bit positions of individual tertiary controls (LOADIWKEY exiting 0, enable HLAT 1, EPT paging-write control 2, guest-paging verification 3, IPI virtualization 4) are a bonus, not required."
+
+- id: hlat-pointer-encoding
+  chapter: 02-vmcs.md
+  type: lookup
+  question: "What is the VMCS field encoding of the HLAT pointer and of the HLAT prefix-size field?"
+  must_include:
+    - "this knowledge base does not state those encodings"
+    - "they are listed among the encodings deliberately omitted because they could not be confirmed"
+    - "read them from the Vol.3D field-encoding appendix or from a kernel header before using them"
+  must_not_include:
+    - "the HLAT pointer is at encoding 0x2040"
+  required_citation: "SDM 3D App.B"
+  notes: "Chapter 02 section 2.5.6 and chapter 06 section 6.13 both record this omission. Any concrete encoding here is a fabrication and scores zero."
+
+- id: exit-reasons-ept-family
+  chapter: 05-vm-exit.md
+  type: lookup
+  question: "Which basic exit reason numbers does an EPT-using VMM have to handle?"
+  must_include:
+    - "48 EPT violation"
+    - "49 EPT misconfiguration"
+    - "62 page-modification log full"
+    - "66 SPP-related event"
+  required_citation: "SDM 3D App.C"
+  notes: "Chapter 05 section 5.3; the same four are collected in chapter 06 section 6.12."
+
+- id: exit-reason-entry-failure-values
+  chapter: 05-vm-exit.md
+  type: lookup
+  question: "My exit-reason field reads 8000_0021H. What does that number mean bit for bit, and what are its siblings?"
+  must_include:
+    - "bit 31 of the exit-reason field is the VM-entry-failure indicator"
+    - "bits 15:0 carry the basic exit reason, here 33"
+    - "33 is VM-entry failure due to invalid guest state"
+    - "34 is VM-entry failure due to MSR loading"
+    - "41 is VM-entry failure due to a machine-check event"
+  required_citation: "SDM 3C §27.9.1"
+  notes: "Chapter 05 sections 5.2 and 5.3; chapter 04 section 4.9 carries the same three values."
+
+- id: exit-qual-io-instruction
+  chapter: 05-vm-exit.md
+  type: lookup
+  question: "I took exit reason 30. How do I read the port number and the access size out of the exit qualification?"
+  must_include:
+    - "bits 2:0 give the size: 0 = 1 byte, 1 = 2 bytes, 3 = 4 bytes"
+    - "bit 3 gives the direction: 0 = OUT, 1 = IN"
+    - "bit 4 is set for a string instruction and bit 5 for a REP prefix"
+    - "bit 6 is 0 when the port came from DX and 1 when it was an immediate operand"
+    - "bits 31:16 contain the port number"
+  required_citation: "SDM 3C §27.9.1"
+  notes: "Chapter 05 section 5.4.3. Values 2, 4, 5, 6 and 7 of the size field are not used."
+
+- id: eptp-low-bits
+  chapter: 06-address-translation.md
+  type: lookup
+  question: "What goes in the low bits of the EPT pointer, and what value selects a 4-level EPT hierarchy?"
+  must_include:
+    - "bits 2:0 are the EPT paging-structure memory type, of which only 0 (uncacheable) and 6 (write-back) may be supported"
+    - "bits 5:3 are the EPT page-walk length minus 1, so 3 selects a 4-level hierarchy and 4 selects 5-level"
+    - "bit 6 enables accessed and dirty flags for EPT"
+    - "bits 51:12 hold the physical address of the root EPT paging structure"
+    - "bits 11:8 are reserved and must be 0"
+  required_citation: "SDM 3C §27.6.11"
+  notes: "Chapter 06 section 6.2. Bit 7 (supervisor shadow-stack enforcement) is a bonus."
+
+- id: ept-misconfiguration-conditions
+  chapter: 06-address-translation.md
+  type: lookup
+  question: "Which EPT entry values cause an EPT misconfiguration rather than an EPT violation?"
+  must_include:
+    - "bits 2:0 of 010b (write without read) or 110b (write and execute without read)"
+    - "100b (execute-only) on a processor that does not support execute-only EPT translations"
+    - "EPT memory type 2, 3 or 7 in bits 5:3 of a present leaf entry; the defined values are 0, 1, 4, 5 and 6"
+    - "any reserved bit set in a present entry, including bits 7:3 of a non-leaf entry and the page-frame alignment bits"
+  must_not_include:
+    - "a not-present entry with garbage in its upper bits causes an EPT misconfiguration"
+  required_citation: "SDM 3C Ch.31"
+  notes: "Chapter 06 section 6.4.1. Misconfiguration checks apply only to entries actually used in a translation and only to present entries."
+
+- id: pml-log-and-index
+  chapter: 06-address-translation.md
+  type: lookup
+  question: "How big is the page-modification log, where does the index live, and which way does the buffer fill?"
+  must_include:
+    - "the log is a 4-KByte page holding 512 entries of 64 bits each"
+    - "the PML address is a 64-bit VM-execution control field at encoding 200EH"
+    - "the PML index is a 16-bit guest-state field at encoding 0812H"
+    - "software initialises the index to 511 and the processor decrements it after each entry, so the buffer fills downwards"
+    - "an index outside 0 to 511 causes a page-modification log-full VM exit, basic exit reason 62"
+  required_citation: "SDM 3C §27.6.18"
+  notes: "Chapter 06 section 6.8. PML requires EPT A/D flags (EPTP bit 6) and logs only the 0-to-1 transition of the dirty flag."
+
+- id: virtual-apic-page-offsets
+  chapter: 07-apic-virtualization.md
+  type: lookup
+  question: "What are the offsets of VTPR, VPPR, VEOI, VISR and VIRR in the virtual-APIC page?"
+  must_include:
+    - "VTPR at offset 080H"
+    - "VPPR at offset 0A0H"
+    - "VEOI at offset 0B0H"
+    - "VISR at offsets 100H through 170H"
+    - "VIRR at offsets 200H through 270H"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 section 7.3.1. VICR_LO 300H, VICR_HI 310H and the self-IPI register at 3F0H are bonus."
+
+- id: posted-interrupt-descriptor-layout
+  chapter: 07-apic-virtualization.md
+  type: lookup
+  question: "Give me the bit layout of the posted-interrupt descriptor."
+  must_include:
+    - "bits 255:0 are PIR, the posted-interrupt requests, one bit per vector"
+    - "bit 256 is ON, outstanding notification"
+    - "bit 257 is SN, suppress notification"
+    - "bits 279:272 are NV, the notification vector"
+    - "bits 319:288 are NDST, the notification destination"
+    - "the descriptor is 64 bytes and 64-byte aligned"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 section 7.8.1."
+
+- id: apicv-vmcs-encodings
+  chapter: 07-apic-virtualization.md
+  type: lookup
+  question: "Which VMCS encodings do I need to program a full APICv stack?"
+  must_include:
+    - "virtual-APIC address at 2012H"
+    - "APIC-access address at 2014H"
+    - "posted-interrupt descriptor address at 2016H"
+    - "EOI-exit bitmaps 0 to 3 at 201CH, 201EH, 2020H and 2022H"
+    - "TPR threshold at 401CH"
+    - "guest interrupt status at 0810H"
+    - "posted-interrupt notification vector at 0002H"
+  required_citation: "SDM 3C §27.6.8"
+  notes: "Chapter 07 section 7.4 restates these from chapter 02 because the algorithms cannot be read without them."
+
+- id: pid-pointer-table-encoding
+  chapter: 07-apic-virtualization.md
+  type: lookup
+  question: "What is the VMCS encoding of the PID-pointer table address and of the last PID-pointer index used by IPI virtualization?"
+  must_include:
+    - "this knowledge base does not state those encodings"
+    - "they are among the facts deliberately omitted because they could not be anchored"
+    - "the field roles are known - the table is indexed by the target APIC ID and each entry carries a valid bit in bit 0 - but the encodings are not"
+  must_not_include:
+    - "the PID-pointer table address is at encoding 0x2036"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 section 7.12 and chapter 02 section 2.5.6 both record the omission. Inventing an encoding scores zero."
+
+- id: vminstr-error-vmptrld
+  chapter: 08-vmx-instructions.md
+  type: lookup
+  question: "VMPTRLD is failing with ZF set. Which error numbers can it produce and what does each mean?"
+  must_include:
+    - "error 9: VMPTRLD with invalid physical address - not 4-KByte aligned or beyond the physical-address width"
+    - "error 10: VMPTRLD with VMXON pointer"
+    - "error 11: VMPTRLD with incorrect VMCS revision identifier, which also covers a shadow-VMCS indicator set on a processor without VMCS shadowing"
+  required_citation: "SDM 3C §27.9.5"
+  notes: "Chapter 08 sections 8.3.3 and 8.4."
+
+- id: vmx-capability-msr-addresses
+  chapter: 08-vmx-instructions.md
+  type: lookup
+  question: "List the VMX capability MSR addresses I have to read at hypervisor bring-up."
+  must_include:
+    - "IA32_VMX_BASIC 480H"
+    - "IA32_VMX_PINBASED_CTLS 481H, PROCBASED_CTLS 482H, EXIT_CTLS 483H, ENTRY_CTLS 484H"
+    - "IA32_VMX_MISC 485H"
+    - "IA32_VMX_CR0_FIXED0/FIXED1 486H/487H and CR4_FIXED0/FIXED1 488H/489H"
+    - "IA32_VMX_VMCS_ENUM 48AH"
+    - "IA32_VMX_PROCBASED_CTLS2 48BH"
+    - "IA32_VMX_EPT_VPID_CAP 48CH"
+    - "IA32_VMX_TRUE_PINBASED/PROCBASED/EXIT/ENTRY_CTLS 48DH to 490H"
+    - "IA32_VMX_VMFUNC 491H"
+    - "IA32_VMX_PROCBASED_CTLS3 492H"
+  required_citation: "SDM 3D App.A"
+  notes: "Chapter 08 section 8.6.1. IA32_VMX_EXIT_CTLS2 at 493H is a bonus and is marked C:medium."
+
+- id: invvpid-types
+  chapter: 08-vmx-instructions.md
+  type: lookup
+  question: "What are the four INVVPID types, and why does INVVPID keep failing with error 28 on my code?"
+  must_include:
+    - "type 0 individual-address"
+    - "type 1 single-context"
+    - "type 2 all-contexts"
+    - "type 3 single-context-retaining-globals"
+    - "types 0, 1 and 3 require a non-zero VPID in the descriptor; a VPID of 0000H reports error 28"
+    - "error 28 is also reported when the processor does not support the requested type, which is enumerated in IA32_VMX_EPT_VPID_CAP"
+  required_citation: "SDM 3C Ch.33"
+  notes: "Chapter 08 section 8.5. Type 2 ignores the descriptor and never touches VPID 0000H."
+
+- id: dmar-register-offsets
+  chapter: 10-vtd-dma-remapping.md
+  type: lookup
+  question: "What are the register offsets in a VT-d remapping unit for the capability registers, the global command and status registers, the root-table address and the interrupt-remap table address?"
+  must_include:
+    - "CAP_REG at 008h"
+    - "ECAP_REG at 010h"
+    - "GCMD_REG at 018h"
+    - "GSTS_REG at 01Ch"
+    - "RTADDR_REG at 020h"
+    - "IRTA_REG at 0B8h"
+    - "the IOTLB registers and the fault recording registers are not at fixed offsets - they come from ECAP_REG.IRO and CAP_REG.FRO, each scaled by 16"
+  required_citation: "VT-d 5.20 §11.4"
+  notes: "Chapter 10 section 10.5. VER_REG 000h, CCMD_REG 028h, FSTS_REG 034h, IQH/IQT/IQA 080h/088h/090h are bonus."
+
+- id: invalidation-descriptor-types
+  chapter: 10-vtd-dma-remapping.md
+  type: lookup
+  question: "What are the type values of the VT-d invalidation descriptors, and where in the descriptor is the type field?"
+  must_include:
+    - "the Type field is 7 bits formed by concatenating descriptor bits 11:9 and bits 3:0"
+    - "1h Context-cache Invalidate"
+    - "2h IOTLB Invalidate"
+    - "3h Device-TLB Invalidate"
+    - "4h Interrupt Entry Cache Invalidate"
+    - "5h Invalidation Wait"
+    - "6h PASID-based IOTLB Invalidate"
+    - "7h PASID-cache Invalidate"
+    - "8h PASID-based-Device-TLB Invalidate"
+    - "9h Page Group Response"
+    - "Ah HPT Cache Invalidate"
+  required_citation: "VT-d 5.20 §6.5.2"
+  notes: "Chapter 10 section 10.6.3. The Page Group Response descriptor at 9h is defined in section 7.6.1 but is submitted through the invalidation queue."
+
+- id: irte-remapped-layout
+  chapter: 11-vtd-interrupt-remapping.md
+  type: lookup
+  question: "Give me the full bit layout of an IRTE in the remapped format."
+  must_include:
+    - "an IRTE is 128 bits"
+    - "bit 0 P (present)"
+    - "bit 1 FPD"
+    - "bit 2 DM (destination mode)"
+    - "bit 3 RH (redirection hint)"
+    - "bit 4 TM (trigger mode)"
+    - "bits 7:5 DLM (delivery mode)"
+    - "bits 11:8 AVAIL"
+    - "bit 15 IM (IRTE mode)"
+    - "bits 23:16 V (vector)"
+    - "bits 63:32 DST (destination ID)"
+    - "bits 79:64 SID"
+    - "bits 81:80 SQ"
+    - "bits 83:82 SVT"
+  required_citation: "VT-d 5.20 §9.9"
+  notes: "Chapter 11 section 11.4. IM = 1 reinterprets the whole entry in the posted format of section 9.10."
+
+- id: irta-reg-size-field
+  chapter: 11-vtd-interrupt-remapping.md
+  type: lookup
+  question: "I want a 256-entry interrupt remapping table. What do I program into IRTA_REG?"
+  must_include:
+    - "IRTA_REG is at offset 0B8h"
+    - "bits 63:12 are IRTA, the 4-KB-aligned table base"
+    - "bit 11 is EIME"
+    - "bits 3:0 are S, and the number of entries is 2^(S+1)"
+    - "so 256 entries means S = 7"
+    - "the value takes effect only after the Set Interrupt Remap Table Pointer command (GCMD_REG.SIRTP)"
+  must_not_include:
+    - "the number of entries is 2^S"
+  required_citation: "VT-d 5.20 §11.4.10"
+  notes: "Chapter 11 sections 11.3.1 and 11.12 pitfall 2: S is a log2-minus-one, so S = 0 means two entries."
+
+- id: vtd-fault-reason-codes
+  chapter: 12-vtd-faults-bios-siov.md
+  type: lookup
+  question: "My fault recording register shows fault reason 2h. What is it, and what are the neighbouring legacy-mode codes?"
+  must_include:
+    - "2h (LCT.2) is a Clear Present field in the context-entry used to process the request"
+    - "1h (LRT.2) is a Clear Present field in the root-entry"
+    - "5h (LGN.2) is lack of write permission for a Write or AtomicOp request"
+    - "6h (LGN.3) is lack of read permission for a Read or AtomicOp request"
+    - "Eh (LGN.4) is an output address after remapping landing in the interrupt address range FEEx_xxxxh"
+    - "legacy-mode reasons occupy 1h to Eh; interrupt-remapping reasons occupy 20h to 2Bh and scalable-mode reasons 38h to A5h, so the range decides the namespace"
+  required_citation: "VT-d 5.20 §7.1.3"
+  notes: "Chapter 12 section 12.3.1 plus the pitfall in 12.9 about non-overlapping ranges."
+
+- id: fault-recording-register-layout
+  chapter: 12-vtd-faults-bios-siov.md
+  type: lookup
+  question: "Where in a VT-d Fault Recording Register do I find the fault reason, the source-id and the faulting address?"
+  must_include:
+    - "the register is 128 bits"
+    - "bit 127 is F (fault), and it is RW1C - software clears it by writing 1"
+    - "bits 103:96 are FR, the fault reason"
+    - "bits 79:64 are SID, the source identifier"
+    - "bits 63:12 are FI, the fault info (the faulting address)"
+    - "bits 123:104 are PV, the 20-bit PASID value, meaningful only when PP at bit 95 is set"
+    - "the request type is split across two non-adjacent bits, T1 at 126 and T2 at 92"
+  required_citation: "VT-d 5.20 §11.4.7.6"
+  notes: "Chapter 12 section 12.2.1. The first register is at base + 16 * CAP_REG.FRO and they are 16 bytes apart."
+
+- id: tdx-leaf-numbers
+  chapter: 13-tdx.md
+  type: lookup
+  question: "What are the leaf numbers for entering a TD, for the host adding a private page dynamically, and for the guest accepting one?"
+  must_include:
+    - "TDH.VP.ENTER is SEAMCALL leaf 0"
+    - "TDH.MEM.PAGE.AUG is SEAMCALL leaf 6"
+    - "TDG.MEM.PAGE.ACCEPT is TDCALL leaf 6"
+    - "the leaf number is in RAX bits 15:0 for both SEAMCALL and TDCALL, with the interface-function version in bits 23:16"
+  required_citation: "TDX-ABI §5.4.1"
+  notes: "Chapter 13 sections 13.5 and 13.6. RAX bit 63 = 1 dispatches a SEAMCALL to the P-SEAMLDR instead of the TDX Module."
+
+- id: tdx-gpaw-shared-bit
+  chapter: 13-tdx.md
+  type: lookup
+  question: "Where exactly does the SHARED bit sit in a TD's guest-physical address?"
+  must_include:
+    - "the SHARED bit is at GPA bit GPAW-1"
+    - "only GPAW values of 48 and 52 are possible"
+    - "so the shared bit is bit 47 or bit 51"
+    - "GPAs with SHARED = 0 are translated through the Secure EPT and GPAs with SHARED = 1 through the Shared EPT pointer"
+  required_citation: "TDX-BASE §11.15.1"
+  notes: "Chapter 13 section 13.8.1. GPAW is distinct from MAXPA and from TDCS.VIRT_MAXPA."
+
+# ===========================================================================
+# MECHANISM  (24)
+# ===========================================================================
+
+- id: vm-entry-check-order
+  chapter: 04-vm-entry.md
+  type: mechanism
+  question: "Walk me through what a VM entry actually does, in order, and explain why some failures come back to the instruction after VMLAUNCH and others come back at my host RIP."
+  must_include:
+    - "stage 1 is basic checks on the instruction and the current VMCS"
+    - "stage 2 is the checks on the VMX controls and on the host-state area"
+    - "stage 3 is the checks on the guest-state area"
+    - "stage 4 loads guest state and clears address-range monitoring"
+    - "stage 5 loads MSRs from the VM-entry MSR-load area"
+    - "stage 6 sets the launch state to launched for VMLAUNCH, and stage 7 performs event injection"
+    - "failure in stage 1 or 2 does not start the entry: control passes to the instruction after VMLAUNCH or VMRESUME with the VMfail flag protocol"
+    - "failure in stage 3 or 5 happens after guest state has been loaded, so the processor loads host state and resumes at the host RIP with a VM-entry failure in the exit-reason field"
+  required_citation: "SDM 3C Ch.29"
+  notes: "Chapter 04 section 4.1. The consequence that VMfail never changes guest-visible state while a 33/34 failure already overwrote it is the point of the question."
+
+- id: pir-virr-merge-and-on-sn-race
+  chapter: 07-apic-virtualization.md
+  type: mechanism
+  question: "Explain the PIR-to-VIRR merge in posted-interrupt processing, and why the order of operations inside it is a correctness argument rather than an implementation detail."
+  must_include:
+    - "the processor clears ON first"
+    - "then acknowledges the notification interrupt at the local APIC"
+    - "then performs an atomic read-and-clear of PIR"
+    - "ORs the value read into VIRR on the virtual-APIC page"
+    - "raises RVI to the highest vector taken from PIR if that is greater than the current RVI"
+    - "then evaluates pending virtual interrupts"
+    - "clearing ON before the read-and-clear is what makes the protocol lossless: the worst case is a redundant notification, never a dropped vector"
+    - "if ON were cleared after PIR was read, a poster landing in between would see ON = 1, skip the notification, and leave its bit in a PIR the target had just emptied - a lost interrupt"
+    - "SN suppresses the notification entirely while the target vCPU cannot use it; the interrupts still accumulate in PIR for the next merge"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 sections 7.8.3 and 7.8.4. An answer that describes the merge but not the ordering argument should lose the last three items."
+
+- id: vmcs-shadowing-mechanism
+  chapter: 14-nested-virtualization.md
+  type: mechanism
+  question: "How does VMCS shadowing actually work, and what stops a guest hypervisor from simply running its guest out of the shadow VMCS?"
+  must_include:
+    - "a VMCS is a shadow VMCS when bit 31 of the first 4 bytes of the VMCS region is 1; bits 30:0 of the same doubleword are the revision identifier"
+    - "VMCS shadowing is enabled by a secondary processor-based VM-execution control"
+    - "the shadow VMCS that a guest VMREAD or VMWRITE reaches is the one named by the VMCS-link pointer of the current VMCS"
+    - "two 4-KByte bitmaps, the VMREAD bitmap and the VMWRITE bitmap, hold one bit per encoding: 1 causes a VM exit, 0 lets the access complete against the shadow VMCS"
+    - "a 4-KByte bitmap holds 32768 bits, so only encodings below 8000H can be shadowed; an operand with any bit set in 63:15 always exits"
+    - "VM entry fails if the current VMCS is a shadow VMCS, so a shadow VMCS can be made current for initialisation but can never be entered"
+    - "the shadow VMCS hangs off the VMCS-link pointer of vmcs01, the VMCS that runs L1; it is not vmcs02"
+  required_citation: "SDM 3C §27.6.15"
+  notes: "Chapter 14 section 14.3 owns the nested use; chapter 02 section 2.11 owns the VMCS-side facts. Encodings 0x2026 and 0x2028 for the two bitmaps are a bonus."
+
+- id: vmcs02-merging
+  chapter: 14-nested-virtualization.md
+  type: mechanism
+  question: "When L1 asks to run L2, how does L0 build the VMCS the hardware actually loads, and which parts are unions and which are intersections?"
+  must_include:
+    - "the host-state area of vmcs02 comes from vmcs01, because an exit from L2 must land in L0"
+    - "the guest-state area of vmcs02 comes from vmcs12, with L0 overriding the fields it owns including the VMCS-link pointer"
+    - "intercepts are unioned: anything either level wants to trap must trap, because only L0 can catch it"
+    - "the exception bitmap of vmcs02 is the union of vmcs01's and vmcs12's"
+    - "MSR pass-through is intersected: an MSR may be passed through to L2 only if both vmcs01 and vmcs12 permit it"
+    - "pin-based controls are unioned, and L0 keeps its own external-interrupt and NMI exiting regardless of what L1 asked for"
+    - "the EPTP in vmcs02 always points at an EPT structure L0 controls (EPT02); L1's EPTP value is data to interpret, never a pointer the hardware loads"
+    - "TSC offsets compose additively and TSC multipliers multiplicatively"
+  required_citation: "SDM 3C §27.6.2"
+  notes: "Chapter 14 section 14.4.2. The page-fault error-code mask/match pair is the one place the union cannot be expressed, so L0 must intercept all #PF and filter in software - bonus."
+
+- id: secure-ept-page-acceptance
+  chapter: 13-tdx.md
+  type: mechanism
+  question: "Why does a TD guest have to accept a page the host just gave it, and what is the exact sequence?"
+  must_include:
+    - "the VMM extends Secure EPT with TDH.MEM.SEPT.ADD if a new level is needed"
+    - "the VMM adds and maps the page with TDH.MEM.PAGE.AUG, which leaves the Secure EPT entry in the PENDING state and does not measure the page"
+    - "TDH.MEM.PAGE.AUG does not access the destination page at all"
+    - "the guest accepts it with TDG.MEM.PAGE.ACCEPT, which zeroes the content"
+    - "acceptance exists to defeat an attack in which the host VMM removes arbitrary pages with TDH.MEM.PAGE.REMOVE and replaces them with zeroed pages"
+    - "a guest TD must therefore track its own GPA allocation and must never accept a page it already knows to be TD-owned"
+    - "a guest access to a PENDING page results in either a #VE or a TD exit, selected by ATTRIBUTES.SEPT_VE_DISABLE and the flexible-pending-VE controls"
+  required_citation: "TDX-BASE §9.10.1"
+  notes: "Chapter 13 sections 13.8.3 and 13.8.4."
+
+- id: vtd-queued-invalidation
+  chapter: 10-vtd-dma-remapping.md
+  type: mechanism
+  question: "How does queued invalidation work in VT-d, and what ordering do I have to respect between descriptors?"
+  must_include:
+    - "queued invalidation is supported only where ECAP_REG.QI is set, enabled through GCMD_REG.QIE and observed through GSTS_REG.QIES"
+    - "the queue is located by IQA_REG at 090h, with IQH_REG at 080h giving the offset hardware reads next and IQT_REG at 088h the offset software writes next"
+    - "it is the only route to PASID-granular and device-TLB invalidation"
+    - "hardware completes an IOTLB invalidation descriptor only after all context-cache invalidation descriptors ahead of it have completed"
+    - "hardware completes a PASID-based IOTLB invalidation descriptor only after all context-cache and PASID-cache descriptors ahead of it have completed"
+    - "software must always request IOTLB invalidation before the corresponding Device-TLB invalidation"
+    - "the Invalidation Wait descriptor synchronises software with hardware, and its Fence (FN) flag makes hardware execute following descriptors only after the wait completes"
+  required_citation: "VT-d 5.20 §6.5.2"
+  notes: "Chapter 10 sections 10.6.3 and 10.6.4."
+
+- id: hvci-uses-ept
+  chapter: 15-security.md
+  type: mechanism
+  question: "How does Windows memory integrity actually stop a kernel exploit from running shellcode, given that the attacker already has kernel write?"
+  must_include:
+    - "memory integrity (HVCI) runs kernel-mode code integrity inside the VBS isolated environment rather than in the kernel it is policing"
+    - "the enforced invariant is W^X for kernel memory: a page is made executable only after passing code-integrity checks in the secure environment, and executable pages are never writable"
+    - "the executable permission lives in the EPT entry the hypervisor controls, not in the VTL0 page tables the compromised kernel controls"
+    - "so a VTL0 kernel cannot grant itself execute rights, and the write-shellcode-then-jump step fails"
+    - "mode-based execute control for EPT (MBEC) is what makes this affordable, by splitting EPT execute permission into supervisor-mode execute and user-mode execute"
+  required_citation: "SDM 3C §31.3.2"
+  notes: "Chapter 15 section 15.8. Microsoft names MBEC, AMD GMET and ARM TTS2UXN as the features that reduce HVCI's cost."
+
+- id: virtual-interrupt-delivery
+  chapter: 07-apic-virtualization.md
+  type: mechanism
+  question: "With virtual-interrupt delivery on, what does the processor do when it decides to deliver a virtual interrupt?"
+  must_include:
+    - "a virtual interrupt is recognized only when the priority class of RVI (bits 7:4) is strictly greater than the priority class of VPPR (bits 7:4)"
+    - "recognition is not delivery: the guest must also be able to accept an interrupt - RFLAGS.IF = 1 and no blocking by STI or MOV SS"
+    - "on delivery the processor takes Vector = RVI, sets VISR[Vector]"
+    - "sets SVI to the vector"
+    - "sets VPPR to the vector's priority class (Vector AND F0H)"
+    - "clears VIRR[Vector] and recomputes RVI from the remaining VIRR bits"
+    - "then delivers the interrupt through the guest IDT with no VM exit"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 sections 7.6.3 and 7.6.4. A VMM injects under VID by setting the VIRR bit and raising RVI, not by using the VM-entry interruption-information field."
+
+- id: ept-violation-vs-misconfiguration
+  chapter: 06-address-translation.md
+  type: mechanism
+  question: "What is the difference between an EPT violation and an EPT misconfiguration, and how should my handlers differ?"
+  must_include:
+    - "an EPT violation (exit reason 48) means the entries are well formed but deny the access, or an entry is not present"
+    - "an EPT misconfiguration (exit reason 49) means an entry contains an unsupported value"
+    - "a violation is a policy decision the VMM programmed on purpose; a misconfiguration is a bug in the table the VMM built"
+    - "an exit qualification is defined for an EPT violation but not for an EPT misconfiguration, so a misconfiguration gives no architectural hint beyond the guest-physical address"
+    - "both record the offending address in the guest-physical address VM-exit information field"
+    - "resuming after a misconfiguration without changing the entry re-raises the same exit, so the only correct handling is to correct or tear down the mapping"
+    - "the most common real cause of an unexpected misconfiguration is a non-atomic update to a live EPT entry that momentarily leaves an illegal permission combination"
+    - "for a violation, qualification bits 3, 4 and 5 all clear means the guest-physical address is not mapped at all by EPT, while some of them set means a permission failure on a mapped page"
+    - "neither exit advances RIP: the saved guest RIP points at the faulting instruction and the instruction must be re-executed, not skipped"
+  required_citation: "SDM 3C Ch.31"
+  notes: "Chapter 06 sections 6.4.2 and 6.4.4; the qualification bits are chapter 05 section 5.4.6 and the RIP rule is 5.3.1. Advancing RIP on a fault-like exit is named as a common hypervisor bug."
+
+- id: default1-controls-and-true-msrs
+  chapter: 02-vmcs.md
+  type: mechanism
+  question: "Why can I not just zero-initialise the VM-execution control fields, and what are the TRUE_ capability MSRs for?"
+  must_include:
+    - "for the pin-based, primary processor-based, VM-exit and VM-entry controls, bits 31:0 of the capability MSR report the allowed-0 settings and bits 63:32 the allowed-1 settings"
+    - "a control may be 0 only if its allowed-0 bit is 0, and may be 1 only if its allowed-1 bit is 1"
+    - "a control whose allowed-0 bit is 1 is a default-1 control and must be set to 1 on that processor"
+    - "IA32_VMX_BASIC bit 55 indicates the TRUE_ capability MSRs at 48DH to 490H"
+    - "the TRUE_ MSRs report the same allowed-1 settings but may report allowed-0 of 0 for controls that are default-1 in the original MSRs"
+    - "so software that wants to clear a default-1 control such as CR3-load exiting or CR3-store exiting must consult the TRUE_ MSR"
+    - "the correct derivation is to OR in the allowed-0 half and AND with the allowed-1 half"
+    - "a control field that violates either constraint makes VM entry fail with VM-instruction error 7"
+  must_not_include:
+    - "the first VMX processors only supported the 1-setting of bits 1, 2 and 4"
+  required_citation: "SDM 3D App.A"
+  notes: "Chapter 02 section 2.8.4 explicitly rewrites the old 'first processors' framing: bits 1, 2 and 4 are the default-1 class of the pin-based controls, not a property of early silicon."
+
+- id: idt-vectoring-reinjection
+  chapter: 05-vm-exit.md
+  type: mechanism
+  question: "My guest hangs after a fault that happened while it was taking another fault. What is the architectural mechanism I am missing?"
+  must_include:
+    - "the IDT-vectoring information field records an event whose delivery through the guest IDT was interrupted by the VM exit"
+    - "its bit 31 is the valid bit and it is the VMM's signal that an event was lost and must be re-delivered"
+    - "its layout is bits 7:0 vector, bits 10:8 interruption type, bit 11 error-code valid, bit 31 valid"
+    - "the standard response is to copy the IDT-vectoring information and error code into the VM-entry interruption-information and VM-entry exception error-code fields for the next VM entry"
+    - "for a software interrupt, privileged software exception or software exception the VM-exit instruction length must be carried over to the VM-entry instruction length"
+    - "the field must be read on every VM exit unconditionally, because a task switch, an EPT violation or an exception can all interrupt event delivery"
+  required_citation: "SDM 3C §27.9.3"
+  notes: "Chapter 05 section 5.6 and the dispatch recipe in 5.12 step 3."
+
+- id: vpid-ept-tagging
+  chapter: 06-address-translation.md
+  type: mechanism
+  question: "With VPID and EPT both on, which invalidation instruction do I need after which change? I keep getting stale translations."
+  must_include:
+    - "the processor caches three kinds of mapping: linear mappings tagged with the current VPID and PCID, guest-physical mappings tagged with the current EP4TA, and combined mappings tagged with all three"
+    - "guest-physical mappings carry no VPID tag, so no INVVPID type can invalidate them - removing one requires INVEPT"
+    - "INVEPT does invalidate combined mappings, because those carry an EP4TA as well"
+    - "with enable VPID set, VM entry and VM exit no longer invalidate cached linear or combined mappings, so every invalidation is the VMM's responsibility"
+    - "making an EPT entry more permissive needs no invalidation because the processor never caches a negative result; making it more restrictive, or repointing it, does"
+    - "a vCPU migrating to another logical processor needs INVVPID single-context for that VPID; recycling a VPID needs the same before first use"
+    - "VPID 0000H is reserved for VMX root operation, and VM entry fails if enable VPID is 1 with a VPID of 0000H"
+  required_citation: "SDM 3C Ch.31"
+  notes: "Chapter 06 section 6.6, including the invalidation-site table."
+
+- id: ve-conversion-and-busy-field
+  chapter: 06-address-translation.md
+  type: mechanism
+  question: "Under what exact conditions does an EPT violation become a #VE instead of a VM exit, and why can a #VE handler not fault recursively?"
+  must_include:
+    - "the virtualization exception is vector 20 and is delivered in VMX non-root operation in place of an EPT-violation VM exit"
+    - "all three conditions must hold: the EPT-violation #VE VM-execution control is 1, bit 63 (suppress-#VE) of the EPT leaf entry is 0, and the 32-bit field at offset 4 of the virtualization-exception information area is 0"
+    - "the processor sets the field at offset 4 to FFFFFFFFH when it delivers a #VE and never delivers another while it is non-zero, so guest software must clear it"
+    - "that makes #VE non-reentrant by construction: a handler that faults again before clearing offset 4 gets a VM exit rather than a nested #VE"
+    - "because bit 63 suppresses rather than enables, turning the control on converts every convertible EPT violation at once unless the VMM has already set bit 63 where it wants to keep the exit"
+  required_citation: "SDM 3C §27.6.19"
+  notes: "Chapter 06 section 6.11. The information area is at encoding 202AH and holds exit reason at 0, busy at 4, qualification at 8, GLA at 16, GPA at 24, EPTP index at 32."
+
+- id: ipi-virtualization-pid-table
+  chapter: 07-apic-virtualization.md
+  type: mechanism
+  question: "What does IPI virtualization add on top of posted interrupts, and which IPIs still exit?"
+  must_include:
+    - "IPI virtualization is enabled by a tertiary processor-based VM-execution control"
+    - "the processor emulates the ICR writes that would send an IPI by posting directly into the target vCPU's posted-interrupt descriptor"
+    - "it finds that descriptor through a PID-pointer table indexed by the target vCPU's APIC ID, bounded by the last PID-pointer index field"
+    - "a PID-pointer table entry carries a valid bit in bit 0 alongside the 64-byte-aligned descriptor address"
+    - "only physical-addressing, flat-mode, unicast IPIs are covered"
+    - "logical addressing, broadcast and shorthand forms, an index beyond the last PID-pointer index, and an invalid table entry all fall back to a trap-like APIC-write VM exit, basic exit reason 56"
+    - "once posted, delivery follows the ordinary posted-interrupt path: set PIR, set ON if it was clear and SN is 0, send NV to NDST"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 section 7.9. IPI virtualization is a server-platform feature - see 18-comparison section 18.11."
+
+- id: interrupt-index-and-source-validation
+  chapter: 11-vtd-interrupt-remapping.md
+  type: mechanism
+  question: "How does VT-d turn an incoming MSI into an IRTE lookup, and how does it decide the device was allowed to raise that interrupt?"
+  must_include:
+    - "a DWORD write with FEEh in address bits 31:20 is decoded as an interrupt request"
+    - "address bit 4 is the Interrupt Format field: 0 is compatibility format, 1 is remappable format"
+    - "in remappable format address bits 19:5 carry Handle[14:0], bit 3 is SHV, and bit 2 carries Handle[15]"
+    - "interrupt_index = address.handle when SHV is 0, and address.handle + data.subhandle when SHV is 1"
+    - "an index at or beyond the configured table size is an error (fault reason 21h)"
+    - "SVT selects the validation: 01b compares the requester-id against SID under the mask chosen by SQ, 10b treats the upper 8 bits of SID as a Startbus# and the lower 8 as an Endbus# and checks the bus number lies in that range"
+    - "a source-id verification failure blocks the request and is reported as fault reason 26h"
+  required_citation: "VT-d 5.20 §5.1.3"
+  notes: "Chapter 11 sections 11.2.2, 11.3 and 11.4.1. Handle[15] sitting at address bit 2 is the pitfall in 11.12."
+
+- id: ooh-reported-results
+  chapter: 14-nested-virtualization.md
+  type: mechanism
+  question: "What speedups does the Out of Hypervisor work report for EPML?"
+  must_include:
+    - "the two figure sets come from different versions of the same work and must not be merged"
+    - "the SC'22 result is that EPML speeds up CRIU checkpointing by 13x and Boehm garbage collection by 6x relative to SPML, /proc and userfaultfd, with 16x less overhead on the monitored application"
+    - "the arXiv preprint abstract instead reports a checkpoint-time reduction of about 14% at an overhead of about 0.5%"
+    - "this knowledge base does not choose between them; always say which version a number comes from"
+  must_not_include:
+    - "EPML speeds up checkpointing by about 14x"
+  required_citation: "errata.md O6"
+  notes: "Chapter 14 section 14.13 reproduces both quotations. Averaging or blending the two figure sets is the failure being tested."
+
+- id: hyperv-owns-vmx-root
+  chapter: 17-windows-platform.md
+  type: mechanism
+  question: "On a Windows PC, who owns VMX root operation, and what does that mean for a third-party VMM?"
+  must_include:
+    - "VMX root operation has exactly one owner per logical processor: the software that executed VMXON, and the architecture provides no way to share it"
+    - "when the Windows hypervisor is running it is that owner - it launches before the Windows kernel, and the Windows installation becomes the root partition, a guest running in VTL0"
+    - "enabling VBS, WSL2, Windows Sandbox, Docker Desktop's Hyper-V backend or the Hyper-V role all start the hypervisor, even when no virtual machine is ever created"
+    - "a third-party VMM must then use the Windows Hypervisor Platform, run as a nested guest, or require the hypervisor be turned off"
+    - "turning the hypervisor off disables every Hyper-V-backed Windows feature at once, including the security ones"
+  required_citation: "SDM 3C Ch.26"
+  notes: "Chapter 17 sections 17.1 and 17.3.6. This is the fact SKILL.md says resolves most Windows VT questions."
+
+- id: enlightened-vmcs
+  chapter: 17-windows-platform.md
+  type: mechanism
+  question: "What is Hyper-V's enlightened VMCS and how does it relate to VMCS shadowing?"
+  must_include:
+    - "a virtual processor enables a VP assist page by writing its guest-physical address to the synthetic MSR at 0x40000073"
+    - "the VP assist page carries the enlightened VMCS"
+    - "a guest hypervisor reads and writes that in-memory structure, which Hyper-V consumes at VM entry, instead of executing VMREAD and VMWRITE"
+    - "it addresses the same cost that VMCS shadowing addresses in hardware - the inner hypervisor's field-access traps - but by a software contract instead of a hardware control"
+  required_citation: "SDM 3C §27.6.15"
+  notes: "Chapter 17 section 17.2.3, cross-referenced from chapter 14 section 14.12.2."
+
+- id: vtl-isolation-slat
+  chapter: 15-security.md
+  type: mechanism
+  question: "What is a Virtual Trust Level and what hardware actually enforces the boundary between VTL0 and VTL1?"
+  must_include:
+    - "normal Windows, kernel mode included, runs in VTL0; the secure kernel and Isolated User Mode run in VTL1"
+    - "VTLs are hierarchical, so VTL1 is strictly more privileged than VTL0"
+    - "the boundary is enforced by memory access permissions the hypervisor assigns with second-level address translation - EPT on Intel parts"
+    - "software inside the partition, including the VTL0 kernel, cannot change those permissions"
+    - "Microsoft implements up to 16 trust levels architecturally but ships two, VTL0 and VTL1"
+    - "Isolated User Mode trustlets run at VTL1 in user mode and marshal system calls to the VTL0 kernel"
+  required_citation: "SDM 3C §31.3"
+  notes: "Chapter 15 section 15.7; chapter 17 section 17.2.7 owns the partition-side mechanics. This is the same EPT permission machinery as 06, applied to trust levels rather than VMs."
+
+- id: tdx-tlb-tracking
+  chapter: 13-tdx.md
+  type: mechanism
+  question: "Before the host can remove a private page from a TD, it has to prove no CPU still caches a translation for it. How does that protocol work?"
+  must_include:
+    - "step 1 is TDH.MEM.RANGE.BLOCK on each GPA range, which blocks creation of new translations but leaves existing cached ones valid"
+    - "step 2 is TDH.MEM.TRACK, which advances the TD's epoch counter"
+    - "step 3 is an IPI to each remote logical processor running one of the TD's VCPUs"
+    - "step 4 is that each such LP TD-exits on receipt of the IPI"
+    - "step 5 is that the VMM treats the exit as spurious and re-enters the TD, and that entry flushes any stale entries"
+    - "a range counts as tracked once every one of the TD's VCPUs has been inactive at least once after TDH.MEM.TRACK"
+    - "if the VMM knows the active-VCPU count is zero after TDH.MEM.TRACK it may skip the IPIs"
+    - "cached address translation here includes TLB entries, cached paging-structure entries and GPAs the module has translated into VMX control-structure fields"
+  required_citation: "TDX-BASE §9.7"
+  notes: "Chapter 13 section 13.8.5. BEPOCH in the leaf PAMT entry records TDCS.TD_EPOCH at the moment of blocking."
+
+- id: l1tf-mitigation-chain
+  chapter: 15-security.md
+  type: mechanism
+  question: "What does a hypervisor actually have to do about L1TF, and why is turning off hyperthreading not the whole answer?"
+  must_include:
+    - "the mechanism is a terminal fault: when the paging-structure entry has Present clear or reserved bits set, its address bits may still be used speculatively to read the L1 data cache, and Intel states terminal faults can occur while reading EPT entries too"
+    - "the OS-side mitigation is PTE inversion - non-present entries are made to refer to a physical address above the highest cacheable memory"
+    - "the VMM-side mitigation is writing bit 0 of IA32_FLUSH_CMD (MSR 10BH) to flush the L1 data cache, repeated on every guest entry"
+    - "IA32_ARCH_CAPABILITIES bit 3 (SKIP_L1DFL_VMENTRY) says the hypervisor need not flush the L1D on VM entry"
+    - "flushing does not address a sibling thread executing concurrently, because hyperthreads share the L1D"
+    - "Intel's own wording is that disabling hyperthreading does not in itself provide mitigation for L1TF"
+    - "where IA32_ARCH_CAPABILITIES bit 17 (FB_CLEAR) is reported, L1D_FLUSH does not overwrite fill buffers, so an L1TF flush is not an MDS mitigation and the VERW sequence is still required"
+  required_citation: "SDM 4 §2.1"
+  notes: "Chapter 15 sections 15.4.2 and 15.5.1. L1TF is CVE-2018-3615/3620/3646, INTEL-SA-00161."
+
+- id: flexpriority-generation
+  chapter: 07-apic-virtualization.md
+  type: mechanism
+  question: "Which processor generation introduced FlexPriority?"
+  must_include:
+    - "the generation is disputed and this knowledge base does not pick a side"
+    - "one line of evidence places TPR-shadow-capable silicon in 2006 to 2007 Core 2 (Merom/Penryn) parts, on the strength of a Core 2 Duo T7700 reporting the flexpriority and tpr_shadow CPU flags"
+    - "the other places the introduction of Intel VT FlexPriority at the Xeon 7400 series in 2008, which is the Intel-side and review-press framing"
+    - "both datings must be given; the likeliest reconciliation (hardware 2006, brand 2008) is not stated by any source"
+    - "FlexPriority is a marketing name for TPR-shadow-based TPR virtualization, not a separate architectural facility - the SDM only describes the use TPR shadow VM-execution control"
+  required_citation: "errata.md O1"
+  notes: "Chapter 07 sections 7.2 and 7.12 flag it as unresolved. Asserting either date alone is the failure being tested."
+
+- id: vmfunc-generation
+  chapter: 06-address-translation.md
+  type: mechanism
+  question: "Which generation did VMFUNC and EPTP switching arrive in - Haswell or Skylake?"
+  must_include:
+    - "the two attributions measure different things and both must be given"
+    - "the instruction entered the SDM/ISA documentation in the Haswell/Silvermont era"
+    - "hardware availability is commonly dated to Skylake in engineering practice, with Xen and KVM support landing 2015 to 2016"
+    - "do not assert a single generation"
+  required_citation: "errata.md E06"
+  notes: "Chapter 06 section 6.13 defers the question to errata rather than asserting it; chapter 02 owns the VM-function control fields."
+
+- id: tdx-aes-key-strength
+  chapter: 13-tdx.md
+  type: mechanism
+  question: "Is TDX memory encryption AES-128-XTS or AES-256?"
+  must_include:
+    - "it depends on the generation and the sources do not state it the same way"
+    - "the TDX base architecture describes the MKTME/TME-MK engine as providing memory encryption using AES-128-XTS"
+    - "Intel's TDX feature-readiness material gives the AES key strength as 128 bit on 4th and 5th Gen Xeon and 256 bit on Xeon 6, both E-core and P-core"
+    - "so an unqualified statement that TDX uses AES-128-XTS is wrong as a general claim; state the generation with the number"
+  required_citation: "TDX-ISA Ch.2"
+  notes: "Chapter 13 section 13.4.5 and errata O3. The ISA specification defines the TME-MK interoperation but does not fix a data-encryption key length."
+
+# ===========================================================================
+# DIAGNOSIS  (20)
+# ===========================================================================
+
+- id: vmlaunch-error-7
+  chapter: 04-vm-entry.md
+  type: diagnosis
+  question: "My hypervisor worked on my old test box and now VMLAUNCH sets ZF with VM-instruction error 7 on a newer machine. What is wrong?"
+  must_include:
+    - "error 7 is 'VM entry with invalid control field(s)' - the failure is in the VMX controls, not the instruction"
+    - "the error number does not say which control was wrong"
+    - "the usual cause of 'worked on one machine and not another' is a control bit hard-coded rather than derived from the capability MSRs"
+    - "re-derive every control field from its capability MSR: OR in the allowed-0 half, AND with the allowed-1 half, and prefer the TRUE_ MSR when IA32_VMX_BASIC bit 55 is 1"
+    - "the other common cause is a dependency check after enabling a new feature - unrestricted guest without EPT, virtual-interrupt delivery without external-interrupt exiting, posted interrupts without acknowledge-interrupt-on-exit"
+    - "control-field failures leave the guest untouched: control returns to the instruction after VMLAUNCH"
+  required_citation: "SDM 3C §27.9.5"
+  notes: "Chapter 04 sections 4.3, 4.10 and the failure-signature table in 4.11; error list in 08 section 8.4."
+
+- id: vmresume-error-5-after-migration
+  chapter: 04-vm-entry.md
+  type: diagnosis
+  question: "I move a vCPU to another logical processor and the first VMRESUME there fails with error 5. The VMCS is definitely the right one."
+  must_include:
+    - "error 5 is 'VMRESUME with non-launched VMCS'"
+    - "the VMCLEAR you executed on the old processor reset the launch state to clear"
+    - "the next entry on the new processor must be VMLAUNCH, not VMRESUME"
+    - "the launch state lives in the VMCS and no instruction reads it back, so software has to track it - reset your own launched flag whenever you VMCLEAR"
+    - "VMCLEAR before moving the VMCS is still mandatory, because it flushes VMCS data the old processor may hold in implementation-specific caches"
+  required_citation: "SDM 3C §27.9.5"
+  notes: "Chapter 04 sections 4.2 and 4.11; the state machine is chapter 02 section 2.4.1 where the hazard is two lines of code."
+
+- id: vmlaunch-cf-no-error
+  chapter: 04-vm-entry.md
+  type: diagnosis
+  question: "After VMLAUNCH, RFLAGS.CF is set and the VM-instruction error field is empty. Where do I even start?"
+  must_include:
+    - "CF set with ZF clear is VMfailInvalid, which means there is no valid current VMCS in which to record an error number"
+    - "so VMPTRLD was never executed, or a VMCLEAR of that VMCS cleared the current-VMCS pointer"
+    - "test CF first and ZF second after every VMX instruction: CF means the VMCS pointer or operand was structurally unusable, ZF means the VMCS was found and its contents rejected"
+    - "reading the VM-instruction error field is pointless when CF is set"
+  required_citation: "SDM 3C Ch.33"
+  notes: "Chapter 04 sections 4.9 and 4.11 row 1; chapter 08 section 8.1 states the flag protocol."
+
+- id: vmlaunch-error-8-64bit
+  chapter: 04-vm-entry.md
+  type: diagnosis
+  question: "A brand new 64-bit hypervisor fails its very first VMLAUNCH with error 8, before any guest code runs."
+  must_include:
+    - "error 8 is 'VM entry with invalid host-state field(s)'"
+    - "the classic cause on a 64-bit VMM is the host address-space size VM-exit control left at 0"
+    - "the other common cause is a host segment selector with a non-zero RPL or TI - host CS, SS, DS, ES, FS, GS and TR selectors must have selector bits 2:0 equal to 000b"
+    - "if the logical processor is in IA-32e mode when VM entry executes, the host address-space size control must be 1"
+    - "with host address-space size 1, host CR4.PAE must be 1 and host RIP must be canonical"
+    - "a host-state failure leaves the guest untouched and returns to the instruction after VMLAUNCH, which is how you tell it apart from a guest-state failure"
+  required_citation: "SDM 3C §27.5"
+  notes: "Chapter 04 section 4.4 and the practical-consequence note after it, plus the 4.11 signature table."
+
+- id: entry-failure-33-qualification-0
+  chapter: 04-vm-entry.md
+  type: diagnosis
+  question: "My first VM entry appears to succeed and then I land at my host RIP with exit reason 8000_0021H and exit qualification 0. What failed?"
+  must_include:
+    - "this is basic exit reason 33, VM-entry failure due to invalid guest state, with the VM-entry-failure bit (bit 31) set"
+    - "guest state has already been loaded and then host state was reloaded, so your registers are the host-state area's context, not the context that executed VMLAUNCH"
+    - "qualification 0 means one of the ordinary guest-state checks failed rather than one of the enumerated special cases, so the VMM must re-derive the cause itself"
+    - "the two dominant causes during bring-up are the segment access-rights checks and the IA-32e mode consistency set"
+    - "the IA-32e consistency set is the VM-entry control 'IA-32e mode guest', guest IA32_EFER.LMA and LME, guest CR0.PG, guest CR4.PAE and the CS access-rights L bit"
+    - "qualifications 2, 3 and 4 would instead mean PDPTE loading, NMI injection blocked by STI, and an invalid VMCS-link pointer"
+  required_citation: "SDM 3C Ch.29"
+  notes: "Chapter 04 sections 4.5.2, 4.5.7, 4.9, 4.10 step 4 and 4.11."
+
+- id: entry-failure-34-msr-load
+  chapter: 04-vm-entry.md
+  type: diagnosis
+  question: "Exit reason 8000_0022H with exit qualification 3. What is the failing thing and where is it?"
+  must_include:
+    - "this is basic exit reason 34, VM-entry failure due to MSR loading"
+    - "the exit qualification is the 1-based index of the failing entry in the VM-entry MSR-load list"
+    - "so the offending entry is at msr_load_area + 16 * (qualification - 1), here the third entry"
+    - "each entry is 16 bytes: MSR index in bits 31:0, bits 63:32 reserved and must be 0, value in bits 127:64"
+    - "an entry fails if bits 63:32 are non-zero, if the index is IA32_FS_BASE (C0000100H), IA32_GS_BASE (C0000101H), IA32_BIOS_UPDT_TRIG (00000079H) or in the x2APIC range 00000800H to 000008FFH, or if a WRMSR with that index and value would fault"
+    - "MSRs the VM-entry and VM-exit controls load directly (IA32_EFER, IA32_PAT, IA32_PERF_GLOBAL_CTRL, IA32_BNDCFGS, IA32_DEBUGCTL) should not also be in the MSR areas"
+  required_citation: "SDM 3C Ch.29"
+  notes: "Chapter 04 sections 4.7, 4.7.1 and 4.10 step 3."
+
+- id: vmxon-general-protection
+  chapter: 01-vmx-intro.md
+  type: diagnosis
+  question: "VMXON takes a #GP(0) on some of our machines and works on others. Firmware shows VT-x as enabled on all of them."
+  must_include:
+    - "check IA32_FEATURE_CONTROL at MSR 3AH first"
+    - "bit 0 is the lock bit; while it is 0, VMXON causes #GP, and once it is 1 any WRMSR to the MSR causes #GP until the next power-up reset"
+    - "bit 1 enables VMXON in SMX operation and bit 2 enables VMXON outside SMX operation; VMXON checks the bit matching the current SMX state"
+    - "if bit 0 is set and bit 2 is clear, VMX has been disabled by firmware and there is no software path to change it before the next power cycle - report it rather than retry"
+    - "the other #GP causes are CPL greater than 0, and CR0 or CR4 holding values outside the window the IA32_VMX_CR0_FIXED0/1 and IA32_VMX_CR4_FIXED0/1 MSRs allow"
+    - "a missing CR4.VMXE gives #UD, not #GP"
+  required_citation: "SDM 3C Ch.26"
+  notes: "Chapter 01 sections 1.4, 1.5 and the diagnosis table in 1.8.1. Quickref section 0.2 routes 'VMXON fails' here."
+
+- id: lost-event-during-delivery
+  chapter: 05-vm-exit.md
+  type: diagnosis
+  question: "My guest occasionally hangs after a page fault that happened while it was already delivering an interrupt. Exits look normal otherwise."
+  must_include:
+    - "you are losing the event that was in delivery: read the IDT-vectoring information field on every VM exit, unconditionally"
+    - "when its valid bit (bit 31) is set, an event was interrupted during delivery through the guest IDT and must be re-injected"
+    - "copy the IDT-vectoring information and its error code into the VM-entry interruption-information and VM-entry exception error-code fields for the next entry"
+    - "for a software interrupt or software exception, carry the VM-exit instruction length over to the VM-entry instruction length"
+    - "the field can be valid for many different basic exit reasons - a task switch, an EPT violation or an exception can all interrupt event delivery"
+  required_citation: "SDM 3C §30.2.4"
+  notes: "Chapter 05 sections 5.6 and 5.12 step 3 call this 'the classic source of the guest hangs after a nested fault'."
+
+- id: apicv-interrupts-lost-when-descheduled
+  chapter: 07-apic-virtualization.md
+  type: diagnosis
+  question: "Interrupts go missing for a vCPU that my scheduler has just blocked, but only under APICv with posted interrupts."
+  must_include:
+    - "a blocked vCPU must not simply be left with its posted-interrupt descriptor pointing at it: repoint NV at a host wake-up vector and NDST at the host CPU so a posting wakes the vCPU through the host interrupt path"
+    - "the VMM must also refuse to block if ON is already set, because a notification is already in flight"
+    - "SN is the control for a vCPU that is descheduled or executing in host context: a poster then records the vector in PIR and sends no notification, and the interrupts accumulate for the next merge"
+    - "VM entry performs posted-interrupt processing when ON is set, so interrupts posted while the vCPU was not running are picked up at the next entry rather than lost"
+  required_citation: "SDM 3C Ch.32"
+  notes: "Chapter 07 section 7.8.4. Quickref section 0.2 routes 'guest loses or duplicates interrupts under APICv' to 07 sections 7.6 and 7.8."
+
+- id: msix-not-delivered-after-remapping
+  chapter: 11-vtd-interrupt-remapping.md
+  type: diagnosis
+  question: "MSI-X stopped being delivered as soon as I enabled interrupt remapping. Some devices work, the ones with large index values do not."
+  must_include:
+    - "the top bit of the handle is not adjacent to the others: Handle[14:0] is in address bits 19:5 and Handle[15] is at address bit 2"
+    - "software that builds the MSI address by shifting a 16-bit handle left by 5 silently loses the top bit for handles at or above 0x8000"
+    - "check IRTA_REG.S as well: entries = 2^(S+1), so S is a log2-minus-one"
+    - "nothing in IRTA_REG takes effect until GCMD_REG.SIRTP (bit 24) is set and GSTS_REG.IRTPS (bit 24) reports it serviced"
+    - "the enable order is: program IRTA_REG, set SIRTP and wait for IRTPS, invalidate the interrupt entry cache with a global iec_inv_dsc, then set GCMD_REG.IRE (bit 25) and wait for GSTS_REG.IRES"
+    - "an index at or beyond the table size faults with reason 21h; a clear Present bit in the IRTE faults with 22h; a source-id verification failure faults with 26h"
+  required_citation: "VT-d 5.20 §5.1.5.2"
+  notes: "Chapter 11 sections 11.8, 11.10 and the pitfall list in 11.12."
+
+- id: device-dma-faulting
+  chapter: 12-vtd-faults-bios-siov.md
+  type: diagnosis
+  question: "A device's DMA is being blocked after I turned on DMA remapping, and my fault handler never fires."
+  must_include:
+    - "a non-recoverable fault blocks the request regardless of whether it is reported, so the blocking and the reporting are separate questions"
+    - "FECTL_REG.IM (bit 31) defaults to 1, so fault interrupts are masked out of reset - a driver that programs the fault event registers but never clears IM logs faults it never sees"
+    - "read the Fault Recording Registers directly: they are at base + 16 * CAP_REG.FRO, the count is CAP_REG.NFR + 1, and FSTS_REG.FRI gives the index to start from"
+    - "process them in circular FIFO order from FRI until you find one with F clear, and clear each F by writing 1"
+    - "FPD set anywhere in the translation path suppresses reporting of a qualified fault without permitting the request, so an FPD-heavy configuration degrades observability rather than isolation"
+    - "if the device is covered by an RMRR, the second-stage structures must provide an identity mapping with read and write permissions for that reserved region or its legacy DMA fails"
+  required_citation: "VT-d 5.20 §7.2.1"
+  notes: "Chapter 12 sections 12.2, 12.2.2, 12.5.4 and 12.8.1. Quickref section 0.2 routes 'device DMA is blocked or faulting' to 12 sections 12.2 and 12.3."
+
+- id: seamcall-illegal-sequence
+  chapter: 13-tdx.md
+  type: diagnosis
+  question: "My TDX host code gets an error back from a SEAMCALL that the ABI spec says exists. What class of mistake is this usually?"
+  must_include:
+    - "TDX enforces call ordering through two nested state machines, so the leaf can be valid and still be illegal in the current state"
+    - "the outer machine is the TD life cycle: TD_HKID_ASSIGNED, TD_KEYS_CONFIGURED, TD_BLOCKED, TD_TEARDOWN"
+    - "the inner machine is TDCS.OP_STATE, whose baseline states are UNALLOCATED, UNINITIALIZED, INITIALIZED and RUNNABLE"
+    - "TDH.VP.CREATE, TDH.VP.ADDCX and TDH.VP.INIT are legal only in the INITIALIZED state - VCPU creation is allowed only during TD build time"
+    - "at module scope, until the module reaches SYS_READY only the TDH.SYS.* bring-up leaves are accepted"
+    - "completion status is in RAX: 0 is success, a positive value is success with a warning, and a negative value is an error, with the class in bits 47:40"
+    - "a SEAMCALL can also fail before reaching a leaf at all, with #UD, #GP(0) or VMfailInvalid signalled by RFLAGS.CF = 1, in which case RAX is unmodified"
+  required_citation: "TDX-BASE §7.2"
+  notes: "Chapter 13 sections 13.7, 13.7.1, 13.7.2 and 13.19. Quickref section 0.2 routes 'SEAMCALL returns an error / illegal sequence' to 13 section 13.7."
+
+- id: vtx-unavailable-on-windows
+  chapter: 17-windows-platform.md
+  type: diagnosis
+  question: "My hypervisor says VT-x is not available on this Windows 11 laptop. Firmware clearly has virtualization enabled and CPUID reports VMX. What is going on?"
+  must_include:
+    - "the Windows hypervisor already holds VMX root operation, so your VMXON cannot succeed"
+    - "the Windows kernel itself is a guest running in VTL0 and the machine is already a hypervisor host"
+    - "VBS or memory integrity, WSL2, Windows Sandbox, Docker Desktop's Hyper-V backend or the Hyper-V role will each have started it, even with no virtual machine defined"
+    - "the three options are: use the Windows Hypervisor Platform API, run nested inside a child partition, or turn the hypervisor off"
+    - "turning it off loses every Hyper-V-backed feature at once, including virtualization-based security"
+    - "this is a statement about who owns VMX root operation, not about firmware"
+  must_not_include:
+    - "re-enable Intel VT-x in the BIOS"
+  required_citation: "SDM 3C Ch.26"
+  notes: "Chapter 17 sections 17.1, 17.3.6 and 17.9.1 row 1; chapter 14 section 14.12.1. Quickref section 0.5 question 1."
+
+- id: driver-rejected-after-memory-integrity
+  chapter: 15-security.md
+  type: diagnosis
+  question: "Our kernel driver loaded fine for years and now Windows refuses it as soon as memory integrity is turned on. It is signed."
+  must_include:
+    - "memory integrity (HVCI) enforces W^X on kernel memory from VTL1, so the failure is structural, not a signing policy change"
+    - "drivers that allocate memory that is simultaneously writable and executable are incompatible"
+    - "so are drivers that generate or patch code at runtime, or mix data and code in one section"
+    - "the guidance is a clear separation of data and code, and never modifying code pages directly"
+    - "the permission decision lives in the EPT entry the hypervisor controls, not in the VTL0 page tables, so the kernel cannot grant the page execute rights"
+    - "unsigned or improperly signed code fails for a second, separate reason: the integrity check that authorises the transition to executable runs in the secure environment"
+  required_citation: "SDM 3C §31.3.2"
+  notes: "Chapter 15 section 15.8; chapter 17 sections 17.6 and 17.6.1. Quickref section 0.5 question 3."
+
+- id: hypervisor-works-linux-not-windows11
+  chapter: 17-windows-platform.md
+  type: diagnosis
+  question: "My type-2 hypervisor runs fine on Linux and misbehaves or runs much slower on the same machine under Windows 11. What changed?"
+  must_include:
+    - "on Linux the vendor module executes VMXON itself, so the host is in VMX root operation and your VMM owns the hardware"
+    - "on a Windows machine with any Hyper-V-backed feature enabled the Windows hypervisor owns VMX root operation, and your VMM becomes a user-mode process whose guest is a Hyper-V partition reached through the Windows Hypervisor Platform"
+    - "every guest exit is then handled twice: the hardware exits to the Windows hypervisor, which decides whether it owns the exit, and only then is an exit context returned to your user-mode code"
+    - "you also lose the ability to program your own VM-execution controls - register access is by name through the API and the VMCS is never visible, so an optimisation the API does not expose is unavailable regardless of what the hardware supports"
+    - "if the VMM runs inside a Hyper-V child partition instead, the nested exit-multiplication cost applies on top"
+    - "this knowledge base records no measurement of the resulting difference carrying processor, workload and configuration - the direction follows from the mechanism, the magnitude does not"
+  required_citation: "SDM 3C Ch.26"
+  notes: "Chapter 17 sections 17.1, 17.3.1, 17.3.2, 17.3.4 and 17.3.6; chapter 14 section 14.12; chapter 16 section 16.5."
+
+- id: vbs-overhead-figure
+  chapter: 16-performance.md
+  type: diagnosis
+  question: "How many frames per second will I lose if I leave memory integrity on for gaming?"
+  must_include:
+    - "the published figures disagree and none of them reaches this knowledge base with a complete condition set"
+    - "the circulating figures are about 6% average frame-rate loss, a general '5-10%' system figure, and a '5-25%' gaming range"
+    - "the 6% figure reached this knowledge base only through secondary reporting and the original benchmark, processor, titles and settings were not read"
+    - "the '5-10%' and '5-25%' figures have no traceable primary source here"
+    - "these must not be averaged into a single number"
+    - "what can be stated is the mechanism: the hypervisor is resident so some operations become exits, second-level address translation is active for the whole machine and not only for VMs, and kernel page-permission changes require a transition to VTL1"
+    - "a comparison that toggles memory integrity is not measuring the same thing as one that disables the hypervisor, because the second also removes the second-level translation cost"
+  must_not_include:
+    - "expect around 10% on average"
+  required_citation: "SDM 3C §31.3.2"
+  notes: "Chapter 16 sections 16.3.1, 16.3.2, 16.3.3 and 16.11 item 4; chapter 15 section 15.12; errata O4. Producing a single number is the failure being tested."
+
+- id: modern-vmexit-cycles
+  chapter: 16-performance.md
+  type: diagnosis
+  question: "What does a VM exit cost in cycles on a current client CPU?"
+  must_include:
+    - "this knowledge base holds no public cycle-level VM-exit measurement for Ice Lake, Sapphire Rapids, Granite Rapids or any recent client part"
+    - "the newest hard cycle figure available here is the Westmere round trip published in 2010"
+    - "the 2010 Intel figures are best-case round trips of about 1100 cycles on Penryn, about 820 on Nehalem and about 650 on Westmere, the last attributed to VMCS caching"
+    - "those are bare hardware transitions with no handler; the end-to-end cost of handling an exit is a different quantity, measured in NOVA at about 3900 cycles of which 1016 (26%) was the transition"
+    - "do not interpolate from the 2010 figures to a modern part"
+  must_not_include:
+    - "roughly 500 cycles on a modern core"
+  required_citation: "SDM 3C Ch.30"
+  notes: "Chapter 16 sections 16.2.3, 16.2.4, 16.2.5 and 16.12 step 3; SKILL.md 'Known limits' states the same absence."
+
+- id: whp-vs-bare-vmx-figure
+  chapter: 16-performance.md
+  type: diagnosis
+  question: "How much slower is my VMM on the Windows Hypervisor Platform than it would be owning VMX directly?"
+  must_include:
+    - "no public measurement carrying processor, guest workload and configuration is recorded in this knowledge base"
+    - "the direction follows from the mechanism, the magnitude does not"
+    - "the mechanism is that each exit is processed twice - the hardware exits to the Windows hypervisor, which decides whether it owns the exit, and only then is an exit context returned to the user-mode VMM, one more boundary crossing than a VMM owning VMX root operation pays"
+    - "the arrangement also removes the VMM's ability to program its own VM-execution controls, so optimisations that depend on a specific control are unavailable regardless of hardware support"
+  required_citation: "SDM 3C Ch.30"
+  notes: "Chapter 16 section 16.5 and chapter 17 section 17.3.4. Chapter 16 calls this the cleanest example in the chapter of a mechanism plus an explicit 'no measured figure here'."
+
+- id: wsl2-overhead-figure
+  chapter: 16-performance.md
+  type: diagnosis
+  question: "What does running WSL2 cost me when I am not using it?"
+  must_include:
+    - "no measurement of WSL2, Windows Sandbox or a Windows container backend carrying processor, workload and configuration is recorded in this knowledge base"
+    - "the mechanism can be stated: a utility VM is a Hyper-V partition, it holds memory, its virtual processors are scheduled against the host's, and its I/O crosses a synthetic-device boundary, so the cost is present whenever it is running"
+    - "the dominant reported costs for this class are memory residency and cross-boundary filesystem access rather than CPU overhead, because guest compute runs in non-root operation at native speed"
+    - "enabling WSL2 also makes the machine a hypervisor host, which has its own consequences for third-party VMMs"
+  required_citation: "SDM 3C Ch.31"
+  notes: "Chapter 16 section 16.4 and chapter 17 section 17.4.1/17.4.6."
+
+- id: vtl-transition-cost
+  chapter: 16-performance.md
+  type: diagnosis
+  question: "How many cycles does a VTL0 to VTL1 transition take on a Windows machine with VBS on?"
+  must_include:
+    - "this knowledge base records no measurement of a VTL transition in cycles"
+    - "what can be stated is that calls into the secure kernel are VTL transitions, hypervisor-mediated, so they cost at least a round trip of the kind measured for VM exits"
+    - "the same absence applies to hypercall cost, VMBus round-trip latency and the Windows Hypervisor Platform exit path"
+  must_not_include:
+    - "about 1000 cycles"
+  required_citation: "SDM 3C Ch.30"
+  notes: "Chapter 16 sections 16.3.1 and 16.10.1."
+
+# ===========================================================================
+# TRAP  (12) - one per confirmed erratum; every one must be present
+# ===========================================================================
+
+- id: trap-ept-qual-bit7
+  chapter: 05-vm-exit.md
+  type: trap
+  question: "In the EPT-violation exit qualification, what does bit 7 tell me?"
+  must_include:
+    - "bit 7 is set if the guest-linear-address field of the VMCS is valid for this VM exit"
+    - "it says nothing about the guest-physical-address field"
+    - "the guest-physical address is always reported for an EPT violation and needs no validity flag"
+  must_not_include:
+    - "bit 7 means the guest-physical address is valid"
+    - "bit 7 indicates the guest-physical-address field has been filled in"
+  required_citation: "SDM 3C §27.9.1"
+  notes: "errata E16. Chapter 05 sections 5.4.6 and 5.13; chapter 06 section 6.4.3 carries the same correction. The wrong reading propagates from stale transcriptions of a 2017-era SDM mirror."
+
+- id: trap-ept-qual-bit6
+  chapter: 05-vm-exit.md
+  type: trap
+  question: "And bit 6 of the same qualification - is that the AND of the XD bits across the EPT paging structures?"
+  must_include:
+    - "no - bit 6 is the logical-AND of the user-mode execute permission (bit 10) of the EPT paging-structure entries used in the translation"
+    - "it is defined only when the mode-based execute control for EPT VM-execution control is 1, and is otherwise undefined"
+    - "it has nothing to do with the execute-disable bit of the guest's own paging structures"
+    - "bit 5 is the companion: the AND of bit 2, which is execute when MBEC is off and supervisor-mode execute when MBEC is on"
+  must_not_include:
+    - "bit 6 is the logical-AND of the XD bits"
+    - "bit 6 is derived from the execute-disable bit"
+  required_citation: "SDM 3C §27.9.1"
+  notes: "errata E17. Chapter 05 sections 5.4.6 and 5.13; chapter 06 sections 6.3.1 and 6.4.3."
+
+- id: trap-zombieload-cve
+  chapter: 15-security.md
+  type: trap
+  question: "Which CVE is ZombieLoad?"
+  must_include:
+    - "ZombieLoad is CVE-2018-12130, the fill-buffer variant, MFBDS (Microarchitectural Fill Buffer Data Sampling)"
+    - "CVE-2019-11091 is a different member of the MDS family - MDSUM, Microarchitectural Data Sampling Uncacheable Memory"
+    - "the family also contains CVE-2018-12126 (MSBDS, store buffer) and CVE-2018-12127 (MLPDS, load ports)"
+    - "all four are covered by INTEL-SA-00233"
+  must_not_include:
+    - "ZombieLoad is CVE-2019-11091"
+  required_citation: "SDM 3C §28.1.2"
+  notes: "errata E18. Chapter 15 section 15.5.2 states the correction explicitly and section 15.5 carries the full matrix."
+
+- id: trap-intel-asid
+  chapter: 06-address-translation.md
+  type: trap
+  question: "AMD has ASIDs for tagging TLB entries per VM. Does Intel have anything equivalent, or does it flush on every transition?"
+  must_include:
+    - "Intel has two address-space identifier mechanisms, not none"
+    - "PCID tags linear-address translations by process context"
+    - "VPID is a 16-bit VMCS field that tags translations by virtual-processor / VM context, with INVVPID to invalidate"
+    - "what is true is narrower: Intel does not use the name ASID and does not use a single identifier for both roles, whereas AMD's 32-bit ASID covers the VM-tagging role alone"
+  must_not_include:
+    - "Intel has no ASID mechanism"
+    - "Intel flushes the TLB on every VMX transition"
+  required_citation: "SDM 3C §27.6.12"
+  notes: "errata E19. Chapter 06 section 6.6; the cross-vendor framing is chapter 18 section 18.3.2. ARM's VMID plus ASID mirrors Intel's two-namespace arrangement rather than AMD's single one."
+
+- id: trap-mbec-generation
+  chapter: 06-address-translation.md
+  type: trap
+  question: "Mode-based execute control came in with Skylake, right?"
+  must_include:
+    - "no - Mode-Based Execute Control first appeared in Kaby Lake, the 7th-generation Core parts of late 2016 to 2017"
+    - "MBEC splits the EPT execute permission into supervisor-mode execute (bit 2) and user-mode execute (bit 10)"
+    - "it is the hardware accelerator behind Windows HVCI"
+    - "the AMD counterpart, GMET, appeared in Zen 2"
+  must_not_include:
+    - "MBEC was introduced with Skylake"
+  required_citation: "errata.md E01"
+  notes: "Quickref section 0.4 terminology table also records 'Kaby Lake, not Skylake'. Chapter 06 section 6.3.1 defers the generation to errata rather than asserting it."
+
+- id: trap-pml-generation
+  chapter: 06-address-translation.md
+  type: trap
+  question: "Which microarchitecture introduced page-modification logging?"
+  must_include:
+    - "PML was introduced with Broadwell Xeon in 2015, on the server platform"
+    - "attributions to a later microarchitecture are incorrect"
+  must_not_include:
+    - "PML was introduced with Skylake"
+  required_citation: "SDM 3C §27.6.18"
+  notes: "errata E02. Chapter 06 section 6.8 states first silicon was the Broadwell generation of Intel Xeon processors in 2015; quickref section 0.4 repeats 'Broadwell Xeon 2015, not Skylake'."
+
+- id: trap-ept-walk-accesses
+  chapter: 06-address-translation.md
+  type: trap
+  question: "What is the worst-case number of memory accesses for a TLB miss under EPT with 4-level guest paging?"
+  must_include:
+    - "24 memory accesses, against at most 4 for a native 4-level walk"
+    - "the decomposition is 4 to translate the guest CR3 value through EPT, plus 5 for each of the 4 guest paging-structure levels - 4 EPT accesses plus 1 read of the guest entry"
+    - "the widely repeated figure of 20 counts only the EPT paging-structure reads and omits the 4 reads of the guest paging-structure entries"
+    - "24 is a worst case for a cold walk; paging-structure caches mitigate it"
+  must_not_include:
+    - "up to 20 memory accesses"
+  required_citation: "SDM 3C Ch.31"
+  notes: "errata E03. Chapter 06 section 6.5; chapter 14 section 14.7.1 derives it as (L+1)^2 - 1; chapter 16 section 16.8.2 gives the general form G + (G+1)*E."
+
+- id: trap-ooh-venue
+  chapter: 14-nested-virtualization.md
+  type: trap
+  question: "Where was the Out of Hypervisor paper published?"
+  must_include:
+    - "SC'22, the IEEE/ACM Supercomputing conference, in November 2022"
+    - "arXiv:2202.13483 (February 2022) is the preprint"
+    - "the frequent attribution to SOSP in 2022 is wrong"
+  must_not_include:
+    - "SOSP'22"
+    - "SOSP 2022"
+  required_citation: "errata.md E04"
+  notes: "Chapter 14 section 14.13 carries the publication-venue correction explicitly. Note the separate unresolved conflict about OoH's own reported numbers (errata O6)."
+
+- id: trap-sdm-vmx-chapter-numbers
+  chapter: 00-quickref.md
+  type: trap
+  question: "Which SDM chapters cover VMX? I want to cite the chapter on Virtualization of System Resources."
+  must_include:
+    - "in SDM revision 092 the VMX chapters are Vol.3C chapters 26 to 35"
+    - "26 Introduction to VMX, 27 VMCS, 28 VMX Non-Root Operation, 29 VM Entries, 30 VM Exits, 31 VMX Support for Address Translation, 32 APIC Virtualization, 33 VMX Instruction Reference, 34 SMM, 35 SEAM"
+    - "Vol.3D App.A carries the capability reporting facility, App.B the VMCS field encodings and App.C the basic exit reasons"
+    - "there is no chapter titled Virtualization of System Resources - it no longer exists, and neither do Handling Boundary Conditions in a VMM or Managing State"
+    - "a citation to any of those titles, or to a VMX chapter number outside 26 to 35, comes from a stale manual"
+  must_not_include:
+    - "Virtualization of System Resources is SDM Vol.3C chapter 32"
+    - "see the Managing State chapter"
+  required_citation: "SDM 3C Ch.26"
+  notes: "errata E20. Quickref section 0.1 'Three traps'. Typically quoted from 2017-era HTML mirrors."
+
+- id: trap-vt-rp-specification
+  chapter: 06-address-translation.md
+  type: trap
+  question: "Can you point me at the Intel VT-rp specification for HLAT and guest-paging verification?"
+  must_include:
+    - "there is no standalone Intel VT-rp specification - no such document exists"
+    - "the normative content lives only inside the SDM"
+    - "the linear-address translation behaviour is in Vol.3A §5.5.1, §5.5.3 and §5.5.5"
+    - "the VMCS fields are in Vol.3C §27.6.22 and HLAT itself is in Vol.3C §31.2"
+    - "a citation to a 'VT-rp specification' is a fabricated source"
+  must_not_include:
+    - "the Intel VT-rp specification, document number"
+  required_citation: "SDM 3C §31.2"
+  notes: "errata E22. Chapter 06 section 6.10; quickref section 0.1 'Three traps'."
+
+- id: trap-tdxray-advisory
+  chapter: 13-tdx.md
+  type: trap
+  question: "What is the Intel advisory number and CVE for TDXRay?"
+  must_include:
+    - "TDXRay has no INTEL-SA advisory number, no CVE and no CVSS score"
+    - "Intel's response was a security announcement, INTEL-2026-04-02-001, dated 2026-04-02"
+    - "Intel treats the behaviour as architecturally permitted observation of shared microarchitectural resources and places the mitigation burden on developers following its side-channel-resistance guidance"
+    - "INTEL-SA-01271 is unrelated: it is the Intel Gaudi Software Installer Advisory of 2025-05-13, covering CVE-2024-45067, an incorrect-default-permissions issue in Gaudi installers before version 1.18"
+  must_not_include:
+    - "TDXRay is covered by INTEL-SA-01271"
+    - "Intel published INTEL-SA-01271 in response"
+  required_citation: "TDX-BASE §17.3"
+  notes: "Chapter 13 section 13.21.2. The mislabel originates in link text on the TDXRay project site whose href points at the announcement. NOTE FOR MAINTAINERS: 90-dated-landscape.md currently contradicts this and must be fixed."
+
+- id: trap-vtd-current-revision
+  chapter: 10-vtd-dma-remapping.md
+  type: trap
+  question: "Which revision of the VT-d specification should I be citing? The Intel page shows Rev 4.1 from March 2023."
+  must_include:
+    - "the current specification is Rev 5.20, April 2026, order number D51397-019"
+    - "the intel.com landing page metadata is stale - it shows 2023-03-22 and its content endpoint was still serving Rev 4.1 when checked on 2026-09-20"
+    - "always take the revision from the PDF cover page, not from the intel.com page metadata"
+  must_not_include:
+    - "the current VT-d specification is Rev 4.1"
+    - "cite VT-d Rev 4.1 (2023)"
+  required_citation: "VT-d 5.20 Ch.1"
+  notes: "errata E21. Quickref section 0.1 document table and 'Three traps'. Rev 5.20 also renames first-level/second-level to first-stage/second-stage."

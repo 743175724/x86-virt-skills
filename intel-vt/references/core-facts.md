@@ -76,7 +76,7 @@
 ## 12 · VT-d faults, BIOS and SIOV → `12-vtd-faults-bios-siov.md`
 
 - **Claim.** Address-translation faults are VT-d Rev 5.20 chapter 7, BIOS considerations chapter 8, and performance monitoring chapter 10.  `[VT-d 5.20 Ch.7]` `[8]` `C:high` `V:durable`
-- **Claim.** Scalable I/O Virtualization is specified separately as order 337679-002 Rev 1.0 (2020); no later revision has been published, so it is stale but current.  `[21]` `C:medium` `V:durable`
+- **Claim.** Scalable I/O Virtualization is specified separately as order 337679-002 Rev 1.1 (September 2020, per the PDF cover; the widely-cited "Rev 1.0" is wrong) → `12-vtd-faults-bios-siov.md` §12.7; no later revision has been published, so it is stale but current.  `[21]` `C:medium` `V:durable`
 
 ## 13 · TDX → `13-tdx.md`
 

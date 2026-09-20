@@ -435,18 +435,16 @@
     {
       "path": "references/90-dated-landscape.md",
       "title": "90. Dated Landscape",
-      "summary_zh": "本文件是整个技能的**时效隔离区**。云厂商实例状态、内核合入点、硅片路线图、市场份额、厂商宣传口径——一切会过期的事实全部关在这里，其他任何章节都不得出现 `V:dated` 断言。本文件的有效日期是 **2026-09-16**；引用它回答问题时，必须告诉用户这是一份带日期的快照，并要求在据此行动前回官方来源复核。需要长期稳定的架构事实，请读 `01`–`18` 章；需要已知讹传的纠正，请读 `errata.md`。",
+      "summary_zh": "本文件是整个技能的**时效隔离区**——一切会过期的事实（版本号、默认策略、GA 日期、合入点、路线图、市场份额、厂商宣传口径）全部关在这里，其他任何章节都不得出现 `V:dated` 断言。目标平台是 Windows PC，因此顺序按重要性排：**§90.1 Windows 版本、默认策略与硬件门槛**（VBS/HVCI/Credential Guard 在哪些版本、哪类机型上默认开启及其推进史；驱动黑名单与 HVCI 不兼容驱动；WHPX 出现的时间与第三方 VMM 的支持版本——VirtualBox / VMware Workstation / QEMU / Android 模拟器与 HAXM 退役；WSL2、Windows Sandbox、Docker Desktop、Defender Application Guard 的版本与 SKU 门槛；Hyper-V 嵌套虚拟化的版本前提与随版本变化的限制；各版本的 hypervisor 调度器默认值；Panther Lake 等客户端硅片）；**§90.2** 与 PC 相关的时效性安全事件；**§90.3 服务器与云**——客户端 PC 上一样都没有，保留但已大幅压缩。本文件有效日期 **2026-09-16**；引用它回答问题时，必须告诉用户这是一份带日期的快照，并要求在据此行动前回官方来源复核。需要长期稳定的架构事实请读 `01`–`18` 章，需要已知讹传的纠正请读 `errata.md`。",
       "maps_to": null,
       "headings": [
         "As-of date: 2026-09-16",
-        "90.1 Cloud provider status",
-        "90.2 Kernel, hypervisor and distro support",
-        "90.3 Silicon and roadmap",
-        "90.4 Market and commercial",
-        "90.5 Dated security events"
+        "90.1 Windows: versions, defaults and requirements",
+        "90.2 Dated security events on a Windows PC",
+        "90.3 Server and cloud (out of scope for a client PC)"
       ],
-      "bytes": 22251,
-      "sha256": "b594a2b410f47e139f60262499ca459ab9d2bcf41248ec650eaede09f99f9f86"
+      "bytes": 39048,
+      "sha256": "808b1f86b7fdd1b4c036a7ae5a8a2c4c86e7dba3b61b1a37ae00dd3e8a320d70"
     },
     {
       "path": "references/bibliography.md",
@@ -467,8 +465,8 @@
         "550–599 · Dated landscape (90)",
         "600–649 · Errata"
       ],
-      "bytes": 61889,
-      "sha256": "a08adffe0f6a5e3f16caf4433fd32177ecdb3d1bff86c5bea17253ec7f8311de"
+      "bytes": 69164,
+      "sha256": "1007a2a0f0972d570e1ea6cc0c3ee25d10b935493b297d8ca87128036ff6b641"
     },
     {
       "path": "references/core-facts.md",
@@ -497,8 +495,8 @@
         "18 · Cross-vendor comparison → `18-comparison-amd-arm-riscv.md`",
         "90 · Dated landscape → `90-dated-landscape.md`"
       ],
-      "bytes": 16129,
-      "sha256": "859c72b30724c39783335ac31dbb591707ce2f3f194eb2f5d7995ceca861fee3"
+      "bytes": 16235,
+      "sha256": "a46d3a5f8b4192b0b7f5db0096636dc15dd3ba2c896b18105d5f9c455e66b639"
     },
     {
       "path": "references/errata.md",
@@ -509,8 +507,8 @@
         "Settled corrections",
         "Open conflicts — do not pick a side"
       ],
-      "bytes": 23373,
-      "sha256": "8fb473dfa76cf27bd508d61e22f77159bea30b8f0d58e5a8a7c8ba75af968105"
+      "bytes": 23375,
+      "sha256": "a2776eaa61f726250fdd84545846add14a3cb6ffdac63aa5eb64a2cb891d5975"
     }
   ]
 }

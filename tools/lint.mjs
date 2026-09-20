@@ -65,6 +65,12 @@ const MISCONCEPTIONS = [
   { wrong: /PML[^.]{0,40}Skylake/i, right: 'PML shipped with Broadwell Xeon (2015)' },
   { wrong: /SOSP.?22[^.]{0,20}(OoH|Out of Hypervisor)|Out of Hypervisor[^.]{0,20}SOSP/i,
     right: 'Out of Hypervisor was published at SC’22' },
+  { wrong: /TDXRay[^.]{0,80}INTEL-SA-01271|INTEL-SA-01271[^.]{0,80}TDXRay/i,
+    right: 'TDXRay has no INTEL-SA number; Intel responded with announcement INTEL-2026-04-02-001. INTEL-SA-01271 is an unrelated Gaudi advisory' },
+  { wrong: /(SIOV|Scalable I\/O Virtualization)[^.]{0,60}Rev(ision)? 1\.0/i,
+    right: 'the SIOV specification cover reads Rev 1.1' },
+  { wrong: /VT-d[^.]{0,40}Rev(ision)? 4\.1\b/i,
+    right: 'the current VT-d specification is Rev 5.20 (D51397-019, April 2026); Rev 4.1 is what the stale landing page serves' },
 ]
 
 // Fact ownership: topic pattern -> the one file allowed to make claims about it.
@@ -81,7 +87,7 @@ const OWNERSHIP = [
 const NAVIGATIONAL = new Set(['errata.md', '00-quickref.md'])
 
 /** True when a line is correcting a misconception rather than committing it. */
-const isCorrection = (line) => /errata|misconception|讹传|no longer exist|does not exist|stale manual|wrongly|rather than|instead of|not Skylake|\bnot\b.{0,20}CVE-/i.test(line)
+const isCorrection = (line) => /errata|misconception|讹传|no longer exist|does not exist|stale manual|\bwrong(ly)?\b|incorrect|rather than|instead of|unrelated|not Skylake|\bnot\b.{0,20}(CVE-|with an INTEL-SA|Rev)/i.test(line)
 
 // ------------------------------------------------------------------- helpers
 
@@ -308,6 +314,39 @@ if (skillText) {
       }
     }
   }
+}
+
+// ------------------------------------------- 11: the eval set must stay valid
+// A renamed chapter or a retired anchor would otherwise rot the eval silently.
+
+const evalPath = join(ROOT, 'eval', 'questions.yaml')
+if (existsSync(evalPath)) {
+  const text = readFileSync(evalPath, 'utf8')
+  const lines = text.split('\n')
+  const ids = new Set()
+  let count = 0
+  lines.forEach((line, i) => {
+    const n = i + 1
+    let m
+    if ((m = /^- id:\s*(\S+)/.exec(line))) {
+      count++
+      if (ids.has(m[1])) err(`eval/questions.yaml:${n}`, `duplicate question id "${m[1]}"`)
+      ids.add(m[1])
+    }
+    if ((m = /^\s*chapter:\s*(\S+)/.exec(line))) {
+      if (m[1] !== 'multiple' && !existsSync(join(REFS, m[1]))) {
+        err(`eval/questions.yaml:${n}`, `names chapter ${m[1]}, which does not exist`)
+      }
+    }
+    if ((m = /^\s*required_citation:\s*"?([^"\n]+?)"?\s*$/.exec(line))) {
+      const a = m[1].trim()
+      if (/^errata\.md\b/.test(a)) return
+      if (T1_PREFIX.test(a) && !T1_ANCHORS.some((re) => re.test(a)) && !T1_UNVERIFIED.test(a)) {
+        err(`eval/questions.yaml:${n}`, `malformed Tier-1 anchor "${a}" in required_citation`)
+      }
+    }
+  })
+  if (count < 80) warn('eval/questions.yaml', `${count} questions; the protocol specifies 80`)
 }
 
 // ----------------------------------------------------------- 10: drift check
