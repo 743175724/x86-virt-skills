@@ -51,6 +51,23 @@ for (const name of skills) {
 
 const isLink = (p) => { try { return lstatSync(p).isSymbolicLink() } catch { return false } }
 
+// Hermes resolves its home as: HERMES_HOME env var, else a platform default of
+// %LOCALAPPDATA%/hermes on Windows and ~/.hermes everywhere else; skills live in
+// <home>/skills. Verified against hermes_constants.get_hermes_home() in v0.21.3.
+//
+// This matters because an earlier version of this script hard-coded ~/.hermes on
+// every platform, so `--user` on Windows — the platform these skills target —
+// created a directory Hermes never reads and reported success.
+const hermesSkillsDir = () => {
+  const env = process.env.HERMES_HOME?.trim()
+  if (env) return join(env, 'skills')
+  if (platform() === 'win32') {
+    const local = process.env.LOCALAPPDATA?.trim()
+    return join(local || join(homedir(), 'AppData', 'Local'), 'hermes', 'skills')
+  }
+  return join(homedir(), '.hermes', 'skills')
+}
+
 for (const NAME of skills) {
   const SRC = join(ROOT, NAME)
 
@@ -61,7 +78,7 @@ for (const NAME of skills) {
   if (USER) {
     targets.push(
       { host: 'Codex (user)', path: join(homedir(), '.agents', 'skills', NAME) },
-      { host: 'Hermes (user)', path: join(homedir(), '.hermes', 'skills', NAME) },
+      { host: 'Hermes (user)', path: join(hermesSkillsDir(), NAME) },
       { host: 'Claude Code (user)', path: join(homedir(), '.claude', 'skills', NAME) },
     )
   }
@@ -105,7 +122,10 @@ ${list}
 
   Claude Code   reads .claude/skills/<name>/SKILL.md
   Codex         reads .agents/skills/<name>/SKILL.md, plus AGENTS.md at startup
-  Hermes        reads .agents/skills/<name>/SKILL.md (or ~/.hermes/skills with --user)
+  Hermes        does NOT scan this repo. It reads <HERMES_HOME>/skills — which is
+                ${hermesSkillsDir().replace(homedir(), '~')}
+                Use --user to install there, or add this repo's .agents/skills to
+                skills.external_dirs in Hermes's config.yaml.
 
 Anything else with filesystem access can start from <name>/index.json.
 Links point at the source, so edits are picked up with no reinstall; a copy is

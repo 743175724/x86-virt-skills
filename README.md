@@ -112,10 +112,16 @@ node tools/install.mjs          # into this repo
 node tools/install.mjs --user   # also into your home directory
 ```
 
-This places the skill where each host looks for it — `.agents/skills/` for Codex
-and Hermes, `.claude/skills/` for Claude Code — using directory junctions on
-Windows, which need no elevation. `AGENTS.md` at the repo root is a pointer, not
-a copy, so it cannot drift.
+This places each skill where its host looks for it, using directory junctions
+on Windows, which need no elevation. `AGENTS.md` at the repo root is a
+generated pointer, not a copy, so it cannot drift.
+
+**The hosts do not agree on where to look, and one of them does not look here
+at all.** Claude Code reads `.claude/skills/`, Codex reads `.agents/skills/`
+plus `AGENTS.md`, and **Hermes reads neither** — it scans `<HERMES_HOME>/skills`
+only, so it needs `--user` or an entry in its `skills.external_dirs`.
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the verified path for each host,
+the Hermes configuration, and troubleshooting.
 
 Any other agent with filesystem access can start from `<skill>/index.json`.
 
