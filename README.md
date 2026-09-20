@@ -139,6 +139,14 @@ Every lint rule added during the rebuild was proved non-vacuous by injecting a
 violation, confirming it fires, and removing it again. A silent rule and a
 broken rule look identical from the outside.
 
+Both checks, plus a smoke test of the install script, run in CI on every push
+and pull request against Node 20 and 24 — see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml). Each gate was verified
+to fail on a real regression before it was committed, for the same reason: a CI
+step that cannot fail is indistinguishable from one that is not running. CI
+does **not** run the behavioural eval, which needs one agent to answer from the
+skill and a different one to score.
+
 `eval/` holds a golden set per skill — 80 questions each — and `eval/RUNNER.md`,
 the scoring protocol both share. Run it in a fresh session; answering and scoring
 must be done by different agents.

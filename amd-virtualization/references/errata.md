@@ -51,7 +51,8 @@
 - 讹传：VMRUN 的一致性检查是 "CR4[63:11] 非零" 与 "EFER[63:15] 非零"。
 - Misconception: "VMRUN fails consistency checks when `CR4[63:11]` or `EFER[63:15]` is non-zero."
 
-- **Claim.** The current manual states these as "**any MBZ bit of CR4 is set**" and "**any MBZ bit of EFER is set**"; the fixed bit ranges come from the 2005 SVM manual and no longer hold — CR4 bits 11, 12, 16–18 and 20–24 and EFER bits 15, 17, 18 and 21 are all architecturally defined today, so the old form would reject a legal guest state.  `[APM2 §15.5]` `[1]` `C:high` `V:durable`
+- **Claim.** The current manual states these as "**any MBZ bit of CR4 is set**" and "**any MBZ bit of EFER is set**"; the fixed bit ranges come from the 2005 SVM manual and no longer hold — CR4 bits 11, 12, 16–18 and 20–23 and EFER bits 15, 17, 18 and 21 are all architecturally defined today, so the old form would reject a legal guest state.  `[APM2 §15.5]` `[1]` `C:high` `V:durable`
+- **Note.** Read the rule, not the constant. The point of this entry is that the manual states an **MBZ test**, so a hypervisor should test MBZ rather than hard-code any range; the enumeration above is illustrative and moves as AMD defines bits. The range itself was corrected from 20–24 to 20–23 on 2026-09-21 — Figure 3-7 prints CR4 bits 63:24 as Reserved, MBZ.
 - **Owner:** `04-world-switch.md`
 
 ### E06 · Exit codes are segmented, not intercept-bit positions

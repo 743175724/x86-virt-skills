@@ -580,7 +580,7 @@
     - "the backing-page address is looked up in the Physical APIC ID Table by guest physical APIC ID"
     - "for every valid destination the IRR bit is set atomically, IsRunning is checked, and if set a doorbell is sent using the Host Physical APIC ID from the table"
     - "if any destination is not scheduled, a `#VMEXIT` is taken"
-    - "for directed interrupts an invalid Logical APIC ID Table entry causes a `#VMEXIT`, while for broadcast IPIs invalid entries are simply ignored"
+    - "for directed interrupts an invalid **Physical** APIC table entry causes a `#VMEXIT`, while for broadcast IPIs invalid entries are simply ignored"
   required_citation: "APM2 §15.29.6.1"
   notes: "Chapter 07 section 7.6.1. The device-interrupt path in 7.6.2 is the same table lookups driven by a device ID instead of an ICR write - a bonus, not required."
 
@@ -1056,12 +1056,12 @@
     - "the trigger is SEV-SNP being enabled, not merely supported"
     - "only SEV-ES is affected, not SEV"
     - "the mitigation spans Zen 3 (Milan), Zen 4 (Genoa/Siena) and Zen 5 (Turin), so it is not a generational property"
-    - "the companion CVE-2025-48517 covers an SEV-ES guest being given an ASID from the range reserved for SNP guests, fixed at the same firmware levels - 1.37.23, 1.37.31 and 1.37.41"
+    - "the companion CVE-2025-48517 covers an SEV-ES guest being given an ASID from the range reserved for SNP guests, and is scoped to EPYC 9005 Turin and Turin Dense only, at SEV FW 1.37.41 only - the three-level list 1.37.23 / 1.37.31 / 1.37.41 is the bulletin-wide per-generation set for CVE-2025-48514, not 48517"
   must_not_include:
     - "SEV-ES is disabled on SNP-capable CPUs because of a Zen 5 generational change"
     - "the trigger is the CPU supporting SNP"
   required_citation: "AMD-SB-3023"
-  notes: "errata E17. Chapter 17 sections 17.1.1 and 17.1.2; the firmware levels are also in chapter 90 section 90.3. A CVE is not an architectural fact and carries no APM anchor, so requiring an APM section here would fail a correct answer. A second, independent route to the same symptom exists: KVM's `kvm_amd.ciphertext_hiding_asids` can assign all ASIDs from the joint range to SEV-SNP."
+  notes: "errata E17. Chapter 17 sections 17.1.1 and 17.1.2; the firmware levels are also in chapter 90 section 90.3. The 48517 item was corrected on 2026-09-21 after a scorer disputed it: an earlier draft gave it the same three firmware levels as 48514, which AMD-SB-3023 does not. A CVE is not an architectural fact and carries no APM anchor, so requiring an APM section here would fail a correct answer. A second, independent route to the same symptom exists: KVM's `kvm_amd.ciphertext_hiding_asids` can assign all ASIDs from the joint range to SEV-SNP."
 
 - id: diag-avic-default-state
   chapter: 90-dated-landscape.md
