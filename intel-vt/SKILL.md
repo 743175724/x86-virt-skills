@@ -28,7 +28,8 @@ performance chapters are written for Windows.
 ## How to use this skill
 
 **Read the one chapter your question maps to. Do not load the directory.**
-Chapters run 300–550 lines each; the routing table below resolves to a section.
+Chapters `01`–`18` run 310–570 lines each; `90-dated-landscape.md` and the
+index files are shorter. The routing table below resolves to a section.
 
 1. **Look up the route** in §Routing. If the question is a symptom rather than a
    topic, use `00-quickref.md` §0.2 instead — it maps failures to chapters.
@@ -70,9 +71,9 @@ find the owning chapter fast, then read that chapter.
 | **VT-d faults and fault reason codes**, ACPI DMAR, SIOV, DMA-attack surface | `12-vtd-faults-bios-siov.md` |
 | TDX: SEAMCALL/TDCALL leaves (§13.5, §13.6), TD lifecycle and legal call order, Secure EPT (§13.8), attestation (§13.13), **TDX CVEs and advisories, TDXRay (§13.21)** | `13-tdx.md` §13.7 |
 | Nested VMX, **VMCS shadowing**, vmcs02, nested EPT, nesting on a PC | `14-nested-virtualization.md` |
-| Transient-execution CVEs (L1TF/MDS/TAA/Spectre) and **mitigation MSRs**, VBS, HVCI, Credential Guard, TXT — not TDX advisories, those are `13` | `15-security.md` §15.5 |
+| Transient-execution CVEs (L1TF/MDS/TAA/Spectre) and **mitigation MSRs**, VBS, HVCI, Credential Guard, TXT — not TDX advisories, those are `13` | `15-security.md` §15.4.1–§15.4.2 (mitigation MSR addresses and bits) · §15.5 (CVE → mechanism matrix) · §15.7 (VBS) · §15.8 (HVCI) · §15.9 (Credential Guard) · §15.11 (TXT) |
 | Overhead numbers — VBS, utility VMs, WHP vs bare VMX, nesting, EPT | `16-performance.md` |
-| **Hyper-V, WHP/WHPX, WSL2, Sandbox, Kernel DMA Protection, "why no VT-x"** | `17-windows-platform.md` §17.1 |
+| **Hyper-V, WHP/WHPX, WSL2, Sandbox, Kernel DMA Protection, "why no VT-x"** | `17-windows-platform.md` §17.1 ("why no VT-x") · §17.2 (Hyper-V) · §17.3 (WHP/WHPX) · §17.4.1 (WSL2) · §17.4.2 (Sandbox) · §17.5 (Kernel DMA Protection) |
 | Intel vs AMD SVM/SEV, vs ARM, vs RISC-V; what a client PC actually has | `18-comparison-amd-arm-riscv.md` |
 | Cloud/product/market/roadmap status, GA dates, kernel merge versions | `90-dated-landscape.md` |
 | Document numbers, symptom triage, terminology, where a table lives | `00-quickref.md` |

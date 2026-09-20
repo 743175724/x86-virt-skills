@@ -4,7 +4,9 @@
 #   lookup     24  (02 05 06 07 08 10 11 12 13)
 #   mechanism  24
 #   diagnosis  20
-#   trap       12  (one per confirmed erratum - all must be present)
+#   trap       12  (11 of the 22 settled errata - E01-E04 and E16-E22 - plus the
+#                    TDXRay advisory mislabel, which never became an E-number.
+#                    E05-E15 have no trap question.  All 12 must be present.)
 #
 # Every must_include item is verifiable against the chapter named in `chapter`.
 # Every required_citation is an anchor that appears verbatim in that chapter.
@@ -375,8 +377,8 @@
   type: mechanism
   question: "Explain the PIR-to-VIRR merge in posted-interrupt processing, and why the order of operations inside it is a correctness argument rather than an implementation detail."
   must_include:
-    - "the processor clears ON first"
-    - "then acknowledges the notification interrupt at the local APIC"
+    - "the processor acknowledges the notification interrupt at the local APIC first, which yields the physical vector"
+    - "then clears ON atomically, after that acknowledge rather than before it"
     - "then performs an atomic read-and-clear of PIR"
     - "ORs the value read into VIRR on the virtual-APIC page"
     - "raises RVI to the highest vector taken from PIR if that is greater than the current RVI"
@@ -385,7 +387,7 @@
     - "if ON were cleared after PIR was read, a poster landing in between would see ON = 1, skip the notification, and leave its bit in a PIR the target had just emptied - a lost interrupt"
     - "SN suppresses the notification entirely while the target vCPU cannot use it; the interrupts still accumulate in PIR for the next merge"
   required_citation: "SDM 3C Ch.32"
-  notes: "Chapter 07 sections 7.8.3 and 7.8.4. An answer that describes the merge but not the ordering argument should lose the last three items."
+  notes: "Chapter 07 sections 7.8.3 and 7.8.4. An answer that describes the merge but not the ordering argument should lose the last three items. CORRECTED 2026-09-21: items 1 and 2 previously demanded that ON is cleared before the local-APIC acknowledge. SDM 3C section 32.6 orders the seven steps acknowledge, vector compare, clear ON, EOI, PIR merge, and chapter 07 line 412 says a rendering that clears ON first has the correctness property right and the step order wrong. ON is still cleared before the PIR read, which is what items 7 and 8 test."
 
 - id: vmcs-shadowing-mechanism
   chapter: 14-nested-virtualization.md
@@ -441,12 +443,12 @@
     - "queued invalidation is supported only where ECAP_REG.QI is set, enabled through GCMD_REG.QIE and observed through GSTS_REG.QIES"
     - "the queue is located by IQA_REG at 090h, with IQH_REG at 080h giving the offset hardware reads next and IQT_REG at 088h the offset software writes next"
     - "it is the only route to PASID-granular and device-TLB invalidation"
-    - "hardware completes an IOTLB invalidation descriptor only after all context-cache invalidation descriptors ahead of it have completed"
+    - "hardware completes an IOTLB invalidation descriptor only after all context-cache and PASID-cache invalidation descriptors ahead of it have completed"
     - "hardware completes a PASID-based IOTLB invalidation descriptor only after all context-cache and PASID-cache descriptors ahead of it have completed"
     - "software must always request IOTLB invalidation before the corresponding Device-TLB invalidation"
     - "the Invalidation Wait descriptor synchronises software with hardware, and its Fence (FN) flag makes hardware execute following descriptors only after the wait completes"
   required_citation: "VT-d 5.20 §6.5.2"
-  notes: "Chapter 10 sections 10.6.3 and 10.6.4."
+  notes: "Chapter 10 sections 10.6.3 and 10.6.4. CORRECTED 2026-09-21: the IOTLB item omitted the PASID-cache half. VT-d 5.20 section 6.5.2.12 states one rule for both IOTLB forms - iotlb_inv_dsc and p_iotlb_inv_dsc alike wait on the context-cache and PASID-cache descriptors ahead of them."
 
 - id: hvci-uses-ept
   chapter: 15-security.md
@@ -530,15 +532,15 @@
   type: mechanism
   question: "With VPID and EPT both on, which invalidation instruction do I need after which change? I keep getting stale translations."
   must_include:
-    - "the processor caches three kinds of mapping: linear mappings tagged with the current VPID and PCID, guest-physical mappings tagged with the current EP4TA, and combined mappings tagged with all three"
+    - "the processor caches three kinds of mapping: linear mappings tagged with the current VPID and PCID, guest-physical mappings tagged with the current EPTRTA, and combined mappings tagged with all three"
     - "guest-physical mappings carry no VPID tag, so no INVVPID type can invalidate them - removing one requires INVEPT"
-    - "INVEPT does invalidate combined mappings, because those carry an EP4TA as well"
+    - "INVEPT does invalidate combined mappings, because those carry an EPTRTA as well"
     - "with enable VPID set, VM entry and VM exit no longer invalidate cached linear or combined mappings, so every invalidation is the VMM's responsibility"
     - "making an EPT entry more permissive needs no invalidation because the processor never caches a negative result; making it more restrictive, or repointing it, does"
     - "a vCPU migrating to another logical processor needs INVVPID single-context for that VPID; recycling a VPID needs the same before first use"
     - "VPID 0000H is reserved for VMX root operation, and VM entry fails if enable VPID is 1 with a VPID of 0000H"
   required_citation: "SDM 3C Ch.31"
-  notes: "Chapter 06 section 6.6, including the invalidation-site table."
+  notes: "Chapter 06 section 6.6, including the invalidation-site table. CORRECTED 2026-09-21: both items said EP4TA. Chapter 08 line 206 records that rev 092 calls those 40 bits the EPTRTA and that EP4TA occurs zero times in Vol.3C and Vol.3D rev 092 and should not be used; the key was the last place in the repository still demanding the obsolete name."
 
 - id: ve-conversion-and-busy-field
   chapter: 06-address-translation.md
@@ -562,11 +564,11 @@
     - "the processor emulates the ICR writes that would send an IPI by posting directly into the target vCPU's posted-interrupt descriptor"
     - "it finds that descriptor through a PID-pointer table indexed by the target vCPU's APIC ID, bounded by the last PID-pointer index field"
     - "a PID-pointer table entry carries a valid bit in bit 0 alongside the 64-byte-aligned descriptor address"
-    - "only physical-addressing, flat-mode, unicast IPIs are covered"
+    - "only physical-addressing, unicast IPIs are covered"
     - "logical addressing, broadcast and shorthand forms, an index beyond the last PID-pointer index, and an invalid table entry all fall back to a trap-like APIC-write VM exit, basic exit reason 56"
     - "once posted, delivery follows the ordinary posted-interrupt path: set PIR, set ON if it was clear and SN is 0, send NV to NDST"
   required_citation: "SDM 3C Ch.32"
-  notes: "Chapter 07 section 7.9. IPI virtualization is a server-platform feature - see 18-comparison section 18.11."
+  notes: "Chapter 07 section 7.9. IPI virtualization is a server-platform feature - see 18-comparison section 18.11. CORRECTED 2026-09-21: the item said flat-mode. Chapter 07 line 445 retracts that wording in place - flat mode is a logical addressing form and is not accelerated - and the next item already covers the logical-addressing fallback."
 
 - id: interrupt-index-and-source-validation
   chapter: 11-vtd-interrupt-remapping.md
@@ -616,11 +618,11 @@
   question: "What is Hyper-V's enlightened VMCS and how does it relate to VMCS shadowing?"
   must_include:
     - "a virtual processor enables a VP assist page by writing its guest-physical address to the synthetic MSR at 0x40000073"
-    - "the VP assist page carries the enlightened VMCS"
+    - "the VP assist page does not hold the enlightened VMCS; it holds the field that enables the feature and the field that selects the currently active one, each enlightened VMCS being its own 4-KB page in guest memory"
     - "a guest hypervisor reads and writes that in-memory structure, which Hyper-V consumes at VM entry, instead of executing VMREAD and VMWRITE"
     - "it addresses the same cost that VMCS shadowing addresses in hardware - the inner hypervisor's field-access traps - but by a software contract instead of a hardware control"
   required_citation: "SDM 3C §27.6.15"
-  notes: "Chapter 17 section 17.2.3, cross-referenced from chapter 14 section 14.12.2."
+  notes: "Chapter 17 section 17.2.3, cross-referenced from chapter 14 section 14.12.2. CORRECTED 2026-09-21: the item said the VP assist page carries the enlightened VMCS. The TLFS nested-virtualization page says the L1 hypervisor chooses enlightened VMCSs by writing 1 to the corresponding field in the Virtual Processor Assist Page, that another field in the VP assist page controls the currently active enlightened VMCS, and that each enlightened VMCS is exactly one page (4 KB) in size - re-read live 2026-09-21."
 
 - id: vtl-isolation-slat
   chapter: 15-security.md
@@ -784,10 +786,10 @@
     - "the exit qualification is the 1-based index of the failing entry in the VM-entry MSR-load list"
     - "so the offending entry is at msr_load_area + 16 * (qualification - 1), here the third entry"
     - "each entry is 16 bytes: MSR index in bits 31:0, bits 63:32 reserved and must be 0, value in bits 127:64"
-    - "an entry fails if bits 63:32 are non-zero, if the index is IA32_FS_BASE (C0000100H), IA32_GS_BASE (C0000101H), IA32_BIOS_UPDT_TRIG (00000079H) or in the x2APIC range 00000800H to 000008FFH, or if a WRMSR with that index and value would fault"
+    - "an entry fails if bits 63:32 are non-zero, if the index is IA32_FS_BASE (C0000100H), IA32_GS_BASE (C0000101H) or in the x2APIC range 00000800H to 000008FFH, if it names an MSR writable only in SMM while the VM entry did not commence in SMM, if the processor refuses it for model-specific reasons, or if a WRMSR with that index and value would fault"
     - "MSRs the VM-entry and VM-exit controls load directly (IA32_EFER, IA32_PAT, IA32_PERF_GLOBAL_CTRL, IA32_BNDCFGS, IA32_DEBUGCTL) should not also be in the MSR areas"
   required_citation: "SDM 3C Ch.29"
-  notes: "Chapter 04 sections 4.7, 4.7.1 and 4.10 step 3."
+  notes: "Chapter 04 sections 4.7, 4.7.1 and 4.10 step 3. CORRECTED 2026-09-21: the item demanded IA32_BIOS_UPDT_TRIG (00000079H), which rev 092 section 29.4 does not list among the excluded indices - it is a survival from a much older revision. Chapter 04 line 296 says so in place, and the two conditions the item was missing (SMM-only MSRs, model-specific refusal) have been added."
 
 - id: vmxon-general-protection
   chapter: 01-vmx-intro.md
@@ -906,14 +908,14 @@
   type: diagnosis
   question: "My type-2 hypervisor runs fine on Linux and misbehaves or runs much slower on the same machine under Windows 11. What changed?"
   must_include:
-    - "on Linux the vendor module executes VMXON itself, so the host is in VMX root operation and your VMM owns the hardware"
+    - "on Linux enabling KVM puts the host into VMX root operation - the vendor module's enable hook calls the kernel's shared x86 virtualization layer, which executes VMXON - so your VMM owns the hardware"
     - "on a Windows machine with any Hyper-V-backed feature enabled the Windows hypervisor owns VMX root operation, and your VMM becomes a user-mode process whose guest is a Hyper-V partition reached through the Windows Hypervisor Platform"
     - "every guest exit is then handled twice: the hardware exits to the Windows hypervisor, which decides whether it owns the exit, and only then is an exit context returned to your user-mode code"
     - "you also lose the ability to program your own VM-execution controls - register access is by name through the API and the VMCS is never visible, so an optimisation the API does not expose is unavailable regardless of what the hardware supports"
     - "if the VMM runs inside a Hyper-V child partition instead, the nested exit-multiplication cost applies on top"
     - "this knowledge base records no measurement of the resulting difference carrying processor, workload and configuration - the direction follows from the mechanism, the magnitude does not"
   required_citation: "SDM 3C Ch.26"
-  notes: "Chapter 17 sections 17.1, 17.3.1, 17.3.2, 17.3.4 and 17.3.6; chapter 14 section 14.12; chapter 16 section 16.5."
+  notes: "Chapter 17 sections 17.1, 17.3.1, 17.3.2, 17.3.4 and 17.3.6; chapter 14 section 14.12; chapter 16 section 16.5. CORRECTED 2026-09-21: the item said the vendor module executes VMXON itself. It no longer does - vmx_enable_virtualization_cpu() in arch/x86/kvm/vmx/vmx.c calls x86_virt_get_ref(X86_FEATURE_VMX), and the VMXON is executed by x86_virt_cpu_vmxon() in arch/x86/virt/hw.c. Chapter 17 line 248 carries the correction; the conclusion the question tests is unchanged."
 
 - id: vbs-overhead-figure
   chapter: 16-performance.md
@@ -922,7 +924,7 @@
   must_include:
     - "the published figures disagree and none of them reaches this knowledge base with a complete condition set"
     - "the circulating figures are about 6% average frame-rate loss, a general '5-10%' system figure, and a '5-25%' gaming range"
-    - "the 6% figure reached this knowledge base only through secondary reporting and the original benchmark, processor, titles and settings were not read"
+    - "the 6% figure does have a primary source, found later: ComputerBase's own testing on a Ryzen 7 5800X with a Radeon RX 7900 XTX, about 6% on frame rate and about 8% on frame times with a large per-title spread - what the page this knowledge base cited for it fails to support is the citation, not the measurement"
     - "the '5-10%' and '5-25%' figures have no traceable primary source here"
     - "these must not be averaged into a single number"
     - "what can be stated is the mechanism: the hypervisor is resident so some operations become exits, second-level address translation is active for the whole machine and not only for VMs, and kernel page-permission changes require a transition to VTL1"
@@ -930,7 +932,7 @@
   must_not_include:
     - "expect around 10% on average"
   required_citation: "SDM 3C §31.3.2"
-  notes: "Chapter 16 sections 16.3.1, 16.3.2, 16.3.3 and 16.11 item 4; chapter 15 section 15.12; errata O4. Producing a single number is the failure being tested."
+  notes: "Chapter 16 sections 16.3.1, 16.3.2, 16.3.3 and 16.11 item 4; chapter 15 section 15.12; errata O4. Producing a single number is the failure being tested. CORRECTED 2026-09-21: the item said the 6% conditions were never read. Chapter 16 line 142, the owning chapter, records that the primary source was located after that section was written, and chapter 15 section 15.12 carries the conditions. The three figures are still unreconciled, which is what items 1, 2, 4 and 5 test."
 
 - id: modern-vmexit-cycles
   chapter: 16-performance.md

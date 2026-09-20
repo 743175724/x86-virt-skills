@@ -18,8 +18,8 @@
         "0.5 Windows PC: the five questions that come up most",
         "0.6 Reading order for someone new to VMX"
       ],
-      "bytes": 8361,
-      "sha256": "8ae52e3a4adbeda4bcb1b33b473c296c31eb8a18ba0251a6aea44b4442f80c4f"
+      "bytes": 8582,
+      "sha256": "7a784599e3c35343c819d3b42c5b90608df0ee96f9765b8ed6c4c90e6eb3d6b7"
     },
     {
       "path": "references/01-vmx-intro.md",
@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 60532,
-      "sha256": "3de567510d97ee4452fc2dce1c5b2f26c7d9d93796ddf0a27ce1cc1668034003"
+      "bytes": 60601,
+      "sha256": "54d9a58eda8aa630acd22e33efc1766a9fe945e14c8b610687400f4996042037"
     },
     {
       "path": "references/07-apic-virtualization.md",
@@ -385,8 +385,8 @@
         "16.12 Procedure for answering a performance question",
         "16.13 Out of scope for this chapter"
       ],
-      "bytes": 44470,
-      "sha256": "1da613a531f39879b7560b6c60f457b1df9c548c470beceb90a001b0572aaab9"
+      "bytes": 44685,
+      "sha256": "089e70598d2857644c896d7ecac8c2ab06c25659b7d14f13d95fa9b1edd42462"
     },
     {
       "path": "references/17-windows-platform.md",
@@ -406,8 +406,8 @@
         "17.10 Procedure for answering a Windows VT question",
         "17.11 Out of scope for this chapter"
       ],
-      "bytes": 53560,
-      "sha256": "716ead8142d466f64ae4243d6c2942a7104ab6b6d517fbdc57727927e268204d"
+      "bytes": 53641,
+      "sha256": "05f1673b5a03e409ae94b2458ffcb13c7e94c2820acf6ea208911278449fb90f"
     },
     {
       "path": "references/18-comparison-amd-arm-riscv.md",
@@ -429,8 +429,8 @@
         "18.12 Procedure for answering a cross-vendor question",
         "18.13 Out of scope for this chapter"
       ],
-      "bytes": 52795,
-      "sha256": "721a2afb4b3d0d4de7edc7466bd127113071f2cf6b34d108dd26ad09f2630b2f"
+      "bytes": 53942,
+      "sha256": "b9835de63fd33d0def420b3686f95efd8e08bb7b85668f81643fa90c5cbeb1a6"
     },
     {
       "path": "references/90-dated-landscape.md",
@@ -465,8 +465,8 @@
         "550–599 · Dated landscape (90)",
         "600–649 · Errata"
       ],
-      "bytes": 70452,
-      "sha256": "757d8787ccd0ca095dae7907ada69cac02e55f7811e874bc3050297ba1e40199"
+      "bytes": 70781,
+      "sha256": "ed8d90bdd450734a4ef55192e51a81e22e4505bf39ae8c847fd423e30ce58fa5"
     },
     {
       "path": "references/core-facts.md",
@@ -507,8 +507,8 @@
         "Settled corrections",
         "Open conflicts — do not pick a side"
       ],
-      "bytes": 24693,
-      "sha256": "412fe9237657c91822d7e33f94480b9417da0e3840196214c75f5ffe8ee224b1"
+      "bytes": 25195,
+      "sha256": "8a868b7ee3e3b5b7b1461378b6a04d4dc36c7fb8cbfbfd105df8b503c2990c32"
     }
   ]
 }

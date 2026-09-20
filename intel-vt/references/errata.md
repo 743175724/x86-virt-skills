@@ -208,7 +208,7 @@ For each of these the evidence genuinely disagrees. State both readings and mark
 - Conflict: was VT-d Rev 1.0 published in 2006-03 or 2006-08?
 
 - **Claim.** **2006-03** is the date carried forward in the VT-d revision history used across this material for Rev 1.0 (DMA remapping: root table, context table, second-level page tables). **2006-08** is the publication date of the Intel Technology Journal 10(3) architecture paper by Abramson et al. that first described VT-d publicly. Industry writeups additionally cite an announcement at Spring IDF 2006 without an Intel press release to anchor it. No Intel document consulted in this rebuild settles the Rev 1.0 date; cite the Rev 5.20 specification for anything current and flag the 1.0 date as unsettled.  `[8][623]` `C:low` `V:durable`
-- **Owner:** `10-vtd-dma-remapping.md`.
+- **Owner:** none — no chapter states a Rev 1.0 date, and this entry is the only record of the dispute. `10-vtd-dma-remapping.md` §10.1 owns the revision that should be cited instead (D51397-019, Rev 5.20, April 2026); the 2006-08 Intel Technology Journal paper is `bibliography.md` [623].
 
 ### O3 · TME-MK key strength: AES-128 or AES-256
 
@@ -232,7 +232,7 @@ For each of these the evidence genuinely disagrees. State both readings and mark
 - Conflict: the H100 + TDX confidential-inference study is recorded under two conflicting arXiv identifiers and dates.
 
 - **Claim.** The same result set — average TTFT up 21.8% (Mistral-7B) and 27.8% (Qwen3-30B-A3B), global token throughput down 17.7% and 21.1%, on an Intel TDX confidential instance with a single H100 80GB in CC mode — is recorded in one place as **arXiv:2607.19353, "Benchmarking Confidential GPU Inference on NVIDIA H100", dated 2026-05-20**, and in another as an unnumbered arXiv paper attributed to **Mozilla and dated 2026-07**. At most one attribution can be right and neither was re-verified against arXiv in this rebuild. Cite the numbered identifier, flag the discrepancy, and re-verify before relying on the provenance.  `[630]` `C:low` `V:durable`
-- **Owner:** `16-performance.md`.
+- **Owner:** none — no chapter carries this result set; "H100" appears nowhere in `16-performance.md` or any other chapter, so this entry is its only record. The nearest chapter context is `16-performance.md` §16.2.7, which owns the one TDX overhead figure the chapters do state.
 
 ### O6 · Out of Hypervisor's own reported results
 

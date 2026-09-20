@@ -79,7 +79,8 @@ No values are reproduced here. Each row says which chapter owns the authoritativ
 | ACPI DMAR subtables | `12-vtd-faults-bios-siov.md` §12.5 |
 | SEAMCALL `TDH.*` / TDCALL `TDG.*` leaves with leaf numbers | `13-tdx.md` §13.5, §13.6 |
 | Secure-EPT states | `13-tdx.md` §13.8 |
-| CVE → mechanism → mitigation MSR/bit | `15-security.md` §15.5 |
+| Mitigation MSR addresses and bit definitions | `15-security.md` §15.4.1 (IA32_SPEC_CTRL 48H, IA32_PRED_CMD 49H, IA32_FLUSH_CMD 10BH, IA32_TSX_CTRL 122H, IA32_MCU_OPT_CTRL 123H), §15.4.2 (IA32_ARCH_CAPABILITIES 10AH) |
+| CVE → mechanism → mitigation matrix | `15-security.md` §15.5 |
 | Intel ↔ AMD ↔ ARM ↔ RISC-V correspondences | `18-comparison-amd-arm-riscv.md` §18.10 |
 
 ---
