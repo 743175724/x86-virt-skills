@@ -193,4 +193,14 @@ must be done by different agents.
 ## Licence
 
 Apache-2.0. Intel, AMD and Microsoft documents are cited, never reproduced; see
-each skill's `references/bibliography.md` for its source list.
+each skill's `references/bibliography.md` for its source list. Each chapter
+names the publication number and revision it was verified against, so the
+sources can be re-fetched rather than redistributed.
+
+One caveat, stated because it is still true of the history rather than the
+working tree: between `c40421e` and `736cc35` a 12.5 MB copy of the Intel VT-d
+specification and its text extractions were committed under `.scratch/` as
+working artifacts of a verification pass. They are untracked and gitignored
+now, but the blobs remain in the pack, so a fresh `git clone` still fetches
+about 14.7 MB of them. Removing them for good needs a history rewrite and a
+force-push.

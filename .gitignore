@@ -4,3 +4,16 @@
 
 # Pre-refactor snapshots, superseded by the tracked sources
 *.zip
+
+# Vendor specification PDFs and their text extractions.
+#
+# These are working artifacts of the verification passes: the chapters are
+# written and checked against them, but the documents themselves are Intel's
+# and AMD's and carry their own terms. The README's position is that they are
+# cited, never reproduced, and a 12.5 MB copy of the VT-d specification sitting
+# in .scratch/ contradicted that for several commits.
+#
+# Re-fetch them locally instead; every chapter names the publication number and
+# revision it was verified against.
+*.pdf
+.scratch/**/pdf/
