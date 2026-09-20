@@ -14,8 +14,9 @@
 > Architecture Specification, order **D51397-019, Rev 5.20, April 2026** — the revision printed
 > on the PDF cover. The intel.com landing page for this specification is stale: it shows a
 > 2023 date and its content endpoint still serves **Rev 4.1**, so a reader who trusts the page
-> rather than the cover will work from a superseded document. Rev 5.20 also renamed
-> first-level/second-level to **first-stage/second-stage**. See `errata.md` E21.
+> rather than the cover will work from a superseded document. Rev 5.20 spells the translation
+> stages **first-stage/second-stage** throughout; that rename is older than this revision — the
+> Revision History dates it to Rev 3.4, December 2021. See `errata.md` E21.
 
 VT-d is not a device on a bus. It is one or more **remapping hardware units** in the root complex,
 each owning a 4-KByte memory-mapped register region whose location firmware reports through ACPI
@@ -43,7 +44,7 @@ endpoint driver would name.
 
 - **Claim.** Chapter 3 of the VT-d specification is titled "DMA Remapping" and defines domains and address translation in §3.2, legacy mode address translation in §3.4.2 and scalable mode address translation in §3.4.3.  `[VT-d 5.20 Ch.3]` `[8]` `C:high` `V:durable`
 - **Claim.** The mode a remapping hardware unit operates in is selected by the Translation Table Mode (TTM) field, bits 11:10 of the Root Table Address Register.  `[VT-d 5.20 §11.4.5]` `[8]` `C:high` `V:durable`
-- **Claim.** RTADDR_REG.TTM = 00b selects legacy mode and RTADDR_REG.TTM = 01b selects scalable mode.  `[VT-d 5.20 §3.11.4]` `[8]` `C:high` `V:durable`
+- **Claim.** RTADDR_REG.TTM = 00b selects legacy mode and RTADDR_REG.TTM = 01b selects scalable mode.  `[VT-d 5.20 §11.4.5]` `[8]` `C:high` `V:durable`
 - **Claim.** RTADDR_REG.TTM programmed to 11b selects Abort DMA Mode on hardware reporting ADMS = 1 in the Extended Capability Register; programming 11b where ADMS = 0, or programming 10b at all, is a fault condition.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** RTADDR_REG bit 7 is SSIRWE (Second Stage I/O Read/Write Enable) and bits 63:12 are RTA, the root-table address.  `[VT-d 5.20 §11.4.5]` `[8]` `C:high` `V:durable`
 - **Claim.** Setting RTADDR_REG.SSIRWE while TTM is programmed to legacy mode (00b) is an invalid programming fault condition.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
@@ -174,7 +175,8 @@ domain id and memory-type controls.
 | 4:2 | AW — Address Width |
 | 8:6 | PGTT — PASID Granular Translation Type |
 | 9 | SSADE — Second Stage Access/Dirty Enable |
-| 63:12 | SSPTPTR — Second Stage Page Table Pointer |
+| (HAW-1):12 | SSPTPTR — Second Stage Page Table Pointer |
+| 63:HAW | Reserved |
 | 79:64 | DID — Domain Identifier |
 | 87 | PWSNP — Page-walk Snoop |
 | 88 | PGSNP — Page Snoop |
@@ -183,11 +185,12 @@ domain id and memory-type controls.
 | 131:130 | FSPM — First Stage Paging Mode |
 | 132 | WPE — Write Protect Enable |
 | 135 | EAFE — Extended Accessed Flag Enable |
-| 191:140 | FSPTPTR — First Stage Page Table Pointer |
+| (HAW+127):140 | FSPTPTR — First Stage Page Table Pointer |
+| 191:(HAW+128) | Reserved |
 
 - **Claim.** A scalable-mode PASID-table entry is 512 bits wide.  `[VT-d 5.20 §9.6]` `[8]` `C:high` `V:durable`
-- **Claim.** In a scalable-mode PASID-table entry, P is bit 0, FPD is bit 1, AW is bits 4:2, PGTT is bits 8:6, SSADE is bit 9, SSPTPTR is bits 63:12 and DID is bits 79:64.  `[VT-d 5.20 §9.6]` `[8]` `C:high` `V:durable`
-- **Claim.** In a scalable-mode PASID-table entry, PWSNP is bit 87, PGSNP is bit 88, PAT is bits 127:96, SRE is bit 128, FSPM is bits 131:130, WPE is bit 132, EAFE is bit 135 and FSPTPTR is bits 191:140.  `[VT-d 5.20 §9.6]` `[8]` `C:high` `V:durable`
+- **Claim.** In a scalable-mode PASID-table entry, P is bit 0, FPD is bit 1, AW is bits 4:2, PGTT is bits 8:6, SSADE is bit 9 and DID is bits 79:64; unlike the root, context and PASID-directory entries, the §9.6 bit table states the pointer bounds in terms of HAW, giving SSPTPTR as bits (HAW-1):12 with bits 63:HAW Reserved.  `[VT-d 5.20 §9.6]` `[8]` `C:high` `V:durable`
+- **Claim.** In a scalable-mode PASID-table entry, PWSNP is bit 87, PGSNP is bit 88, PAT is bits 127:96, SRE is bit 128, FSPM is bits 131:130, WPE is bit 132, EAFE is bit 135, and FSPTPTR is bits (HAW+127):140 with bits 191:(HAW+128) Reserved.  `[VT-d 5.20 §9.6]` `[8]` `C:high` `V:durable`
 - **Claim.** PGTT encodings 000b, 101b, 110b and 111b are invalid; PGTT = 001b requires ECAP_REG.FSTS to be Set and PGTT = 010b requires the corresponding second-stage support bit, otherwise the entry is treated as invalidly programmed.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** PGTT = 011b selects nested translation, in which the FSPTPTR of a present scalable-mode PASID-table entry is itself translated through the second stage.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** PGTT = 100b selects pass-through translation.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
@@ -225,8 +228,9 @@ First-stage paging entries reuse the IA-32e paging format, with VT-d-specific re
 
 ### 10.4.8 Second-stage paging entries (§9.8)
 
-Second-stage entries are a different format from the CPU's EPT entries and from first-stage entries:
-read and write are separate bits at 0 and 1, and there is no Present bit.
+Second-stage entries are, in the specification's own words, "bitwise compatible with the Intel 64
+processor's EPT paging entry format" — and correspondingly unlike first-stage entries: read and
+write are separate bits at 0 and 1, and there is no Present bit.
 
 | Bits (SS-PTE, 4 KB page) | Field |
 |---|---|
@@ -250,7 +254,7 @@ read and write are separate bits at 0 and 1, and there is no Present bit.
 - **Claim.** In a second-stage PTE mapping a 4-KByte page, R is bit 0, W is bit 1, EMT is bits 5:3, IPAT is bit 6, A is bit 8, D is bit 9, SNP is bit 11, ADDR is bits (HAW-1):12, IR is bit 61 and IW is bit 62.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
 - **Claim.** In second-stage SS-PDPE and SS-PDE entries, bit 7 is PS (Page Size): 1 maps a 1-GByte or 2-MByte page respectively, 0 references the next-level second-stage table.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
 - **Claim.** The SNP field at bit 11 indicates whether accesses to the page must snoop processor caches, and is treated as reserved(0) on implementations reporting SC = 0 in the Extended Capability Register.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
-- **Claim.** IR and IW (bits 61 and 62) are treated as Reserved(0) when Second Stage I/O Read/Write bits are not enabled; when enabled, IW = 0 denies write permission and IR = 0 denies read permission for the region controlled by the entry.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
+- **Claim.** When Second Stage I/O Read/Write bits are not enabled the two bits are treated asymmetrically: IW (bit 62) is treated as Reserved(0) while IR (bit 61) is merely ignored. When they are enabled, IW = 0 denies write permission and IR = 0 denies read permission for the region controlled by the entry.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
 - **Claim.** IPAT and EMT are ignored by hardware when the Extended Memory Type Enable (EMTE) field is Clear in the relevant scalable-mode PASID-table entry or when the Translation Table Mode is legacy (TTM = 00b).  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
 - **Claim.** Second-stage A and D bits at positions 8 and 9 are ignored by hardware when SSADE = 0 in the relevant scalable-mode PASID-table entry.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
 - **Claim.** In second-stage paging entries the address field is a Host Physical Address; in the 1-GByte and 2-MByte page-mapping forms, reserved fields 29:12 and 20:12 respectively must be zero.  `[VT-d 5.20 §9.8]` `[8]` `C:high` `V:durable`
@@ -343,7 +347,7 @@ capability registers.
 
 - **Claim.** In CAP_REG, ND is bits 2:0, RWBF bit 4, PLMR bit 5, PHMR bit 6, CM bit 7, SAGAW bits 12:8, MGAW bits 21:16, ZLR bit 22, FRO bits 33:24, SSLPS bits 37:34, PSI bit 39, NFR bits 47:40, MAMV bits 53:48, DWD bit 54, DRD bit 55, FS1GP bit 56, PI bit 59, FS5LP bit 60, ECMDS bit 61, ESIRTPS bit 62 and ESRTPS bit 63.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** In Rev 5.20 CAP_REG bit 3 is plain **Reserved (RsvdZ)** while **only bit 23 carries the DEP "Deprecated" marking**; both read as 0. The distinction matters when reading the register table — bit 3 lost the advanced-fault-logging capability outright rather than being deprecated in place.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
-- **Claim.** CAP_REG.ND encodes domain-id width: 000b = 4-bit (16 domains), 001b = 6-bit (64), 010b = 8-bit (256), 011b = 10-bit (1024), 100b = 12-bit (4K).  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
+- **Claim.** CAP_REG.ND encodes domain-id width: 000b = 4-bit (16 domains), 001b = 6-bit (64), 010b = 8-bit (256), 011b = 10-bit (1024), 100b = 12-bit (4K), 101b = 14-bit (16K), 110b = 16-bit (64K) and 111b reserved — which is why the DID fields in the context-entry and the scalable-mode PASID-table entry are 16 bits wide.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** The Maximum Guest Address Width is computed as N+1 where N is the value in CAP_REG.MGAW; an implementation supporting 48-bit MGAW reports 47 (101111b).  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** CAP_REG.SSLPS bit 0 indicates support for a 21-bit offset to page frame (2 MB) and bit 1 a 30-bit offset (1 GB); bits 2 and 3 are reserved.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** If the register base address is X and CAP_REG.FRO reports Y, the address of the first fault recording register is X + (16 * Y).  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
@@ -355,7 +359,7 @@ capability registers.
 | Bits | Field | Bits | Field |
 |---|---|---|---|
 | 0 | C — Page-walk Coherency | 40 | PASID |
-| 1 | QI — Queued Invalidation | 41 | DIT — Device-TLB |
+| 1 | QI — Queued Invalidation | 41 | DIT — Device-TLB Inv. Throttle |
 | 2 | DT — Device-TLB support | 42 | PDS — Page-request Drain |
 | 3 | IR — Interrupt Remapping | 43 | SMTS — Scalable Mode |
 | 4 | EIM — Extended Interrupt Mode | 44 | VCS — Virtual Command |
@@ -468,8 +472,8 @@ the only route to PASID-granular and device-TLB invalidation.
 | 6h | PASID-based IOTLB Invalidate (`p_iotlb_inv_dsc`) | §6.5.2.4 |
 | 7h | PASID-cache Invalidate (`pc_inv_dsc`) | §6.5.2.2 |
 | 8h | PASID-based-Device-TLB Invalidate (`p_dev_tlb_inv_dsc`) | §6.5.2.6 |
-| 9h | Page Group Response (`pgrp_resp_dsc`) | §7.6.1 |
-| Ah | HPT Cache Invalidate | §6.5.2.7 |
+| 9h | Page Group Response (`page_grp_resp_dsc`) | §7.6.1 |
+| Ah | HPT Cache Invalidate (`hpt_inv_desc`) | §6.5.2.7 |
 
 - **Claim.** Invalidation descriptor type 1h is the Context-cache Invalidate Descriptor, 2h the IOTLB Invalidate Descriptor, 3h the Device-TLB Invalidate Descriptor, 4h the Interrupt Entry Cache Invalidate Descriptor and 5h the Invalidation Wait Descriptor.  `[VT-d 5.20 §6.5.2]` `[8]` `C:high` `V:durable`
 - **Claim.** Invalidation descriptor type 6h is the PASID-based IOTLB Invalidate Descriptor, 7h the PASID-cache Invalidate Descriptor, 8h the PASID-based-Device-TLB Invalidate Descriptor and Ah the HPT Cache Invalidate Descriptor.  `[VT-d 5.20 §6.5.2]` `[8]` `C:high` `V:durable`
@@ -477,8 +481,8 @@ the only route to PASID-granular and device-TLB invalidation.
 
 ### 10.6.4 Ordering and completion rules (§6.5.2.12)
 
-- **Claim.** Hardware completes a PASID-based IOTLB invalidation descriptor only after all context-cache and PASID-cache invalidation descriptors ahead of it in the invalidation queue are completed.  `[VT-d 5.20 §6.5.2.12]` `[8]` `C:high` `V:durable`
-- **Claim.** Hardware completes an IOTLB invalidation descriptor only after all context-cache invalidation descriptors ahead of it in the invalidation queue are completed.  `[VT-d 5.20 §6.5.2.12]` `[8]` `C:high` `V:durable`
+- **Claim.** One rule covers both IOTLB forms: hardware executes an IOTLB invalidation descriptor (`iotlb_inv_dsc`) or a PASID-based IOTLB invalidation descriptor (`p_iotlb_inv_dsc`) only after all context-cache *and* PASID-cache invalidation descriptors ahead of it in the invalidation queue are completed.  `[VT-d 5.20 §6.5.2.12]` `[8]` `C:high` `V:durable`
+- **Claim.** Hardware executes a PASID-cache invalidation descriptor only after all context-cache invalidation descriptors ahead of it in the invalidation queue are completed, and executes a Device-TLB invalidation descriptor only after all IOTLB and Interrupt Entry Cache invalidation descriptors ahead of it are completed.  `[VT-d 5.20 §6.5.2.12]` `[8]` `C:high` `V:durable`
 - **Claim.** Software must always request IOTLB invalidation before requesting the corresponding Device-TLB invalidation.  `[VT-d 5.20 §6.5.2.5]` `[8]` `C:high` `V:durable`
 - **Claim.** If the Fence (FN) flag is 1 in an Invalidation Wait Descriptor, hardware must execute descriptors following it only after the wait command is completed.  `[VT-d 5.20 §6.5.2.12]` `[8]` `C:high` `V:durable`
 - **Claim.** The Invalidation Wait Descriptor allows software to synchronize with hardware for descriptors submitted ahead of it, and hardware generation of invalidation completion events is specified in §6.5.2.10.  `[VT-d 5.20 §6.5.2.9]` `[8]` `C:high` `V:durable`
@@ -496,7 +500,7 @@ the only route to PASID-granular and device-TLB invalidation.
 - **Claim.** VT-d §4.5 gives recommended software sequences to enable ATS (§4.5.1) and to disable ATS (§4.5.2).  `[VT-d 5.20 §4.5]` `[8]` `C:high` `V:durable`
 - **Claim.** Handling of ATS protocol errors is specified in §4.2.1, root-port control of ATS address types in §4.2.2, and handling of translation requests in §4.2.3.  `[VT-d 5.20 §4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** Device TLBs in System-on-Chip integrated devices are treated separately in §4.4.  `[VT-d 5.20 §4.4]` `[8]` `C:high` `V:durable`
-- **Claim.** Rev 5.20 adds the Host Permission Table in §4.2.4, a permission structure consulted when processing translated requests, with its entry formats HPTL4E through HPTL1E in §9.12.  `[VT-d 5.20 §4.2.4]` `[8]` `C:high` `V:durable`
+- **Claim.** The Host Permission Table — a permission structure consulted when processing translated requests — is specified in §4.2.4, with its entry formats HPTL4E through HPTL1E in §9.12. It was added in **Rev 5.0** (August 2024), not Rev 5.20; Rev 5.20's only HPT change was making some §7.1.3 fault conditions Not Applicable when HPT is disabled.  `[VT-d 5.20 §4.2.4]` `[8]` `C:high` `V:durable`
 
 ### 10.7.2 Page requests and PASID
 
@@ -507,7 +511,7 @@ is owned by `12-vtd-faults-bios-siov.md`. What belongs here is the enabling plum
 - **Claim.** PASID support is enumerated by ECAP_REG.PASID (bit 40), and the supported PASID width is reported by ECAP_REG.PSS at bits 39:35.  `[VT-d 5.20 §11.4.3]` `[8]` `C:high` `V:durable`
 - **Claim.** The PASID field in a scalable-mode context-entry's RID_PASID occupies 20 bits (83:64), consistent with the 20-bit PASID space.  `[VT-d 5.20 §9.4]` `[8]` `C:high` `V:durable`
 - **Claim.** Supervisor Request support is enumerated by ECAP_REG.SRS (bit 31) and Execute Request support by ECAP_REG.ERS (bit 30).  `[VT-d 5.20 §11.4.3]` `[8]` `C:high` `V:durable`
-- **Claim.** Requests carrying an Execute-Requested (ER) field set are rejected on hardware reporting Major Version 8 and above in VER_REG unless the configuration permits them, and on Major Version 7 and below when ECAP_REG.ERS is 0.  `[VT-d 5.20 §7.1.3]` `[8]` `C:medium` `V:durable`
+- **Claim.** A request-with-PASID carrying a Set Execute-Requested (ER) field is a fault condition **unconditionally** on hardware reporting Major Version 8 and above in VER_REG — there is no configuration that permits it — and on Major Version 7 and below it is a fault only when ECAP_REG.ERS is 0. ERS itself is reported as Clear by every conforming implementation, being planned for deprecation.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** VT-d §3.12.7 explicitly covers Intel Scalable I/O Virtualization capable devices as a category of DMA request origination, alongside SR-IOV capable devices in §3.12.6.  `[VT-d 5.20 §3.12.7]` `[8]` `C:high` `V:durable`
 
 ## 10.8 Special request handling in Chapter 3
@@ -530,6 +534,7 @@ is owned by `12-vtd-faults-bios-siov.md`. What belongs here is the enabling plum
 5. **The GCMD_REG one-shot mask matters.** Writing a naively-constructed value re-triggers SRTP,
    WBF or SIRTP, or clears TE/QIE/IRE. Always build the command from GSTS_REG masked with
    96FFFFFFh.
-6. **Bit 3 of CAP_REG and bits 5/24/28 of ECAP_REG are deprecated in Rev 5.20.** Material written
-   against earlier revisions assigns them meanings (notably advanced fault logging) that no longer
-   apply — see `12-vtd-faults-bios-siov.md`.
+6. **Bit 3 of CAP_REG is plain Reserved (RsvdZ); the DEP "Deprecated" marking sits on CAP_REG bit 23
+   and on ECAP_REG bits 5, 24 and 28.** Material written against earlier revisions assigns all of
+   them meanings (notably advanced fault logging, removed in Rev 4.0) that no longer apply — see
+   `12-vtd-faults-bios-siov.md`.

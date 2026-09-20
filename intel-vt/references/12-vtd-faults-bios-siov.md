@@ -1,6 +1,6 @@
 # 12. VT-d Faults, BIOS Reporting, Performance Monitoring and SIOV
 
-> **中文速览**：本章补齐旧版技能完全缺失的三块内容。第一块是**故障处理**：不可恢复故障与可恢复故障的分野、primary fault logging、Fault Recording Register 的逐位格式，以及一张覆盖 legacy 与 scalable 两套编码的**故障原因码表**（LRT/LCT/LSS/LGN/RTA/SRT/SCT/SPD/SPT/SFS/SSS/SGN/HPT）。第二块是可恢复故障路径：page request queue、page request descriptor 与 page group response。第三块是 **ACPI DMAR 表**及其七种子结构（DRHD/RMRR/ATSR/RHSA/ANDD/SATC/SIDP），外加性能监控与 SIOV。最后是安全面：DMA 攻击、pre-boot DMA 保护缺口，以及 5520/5500 #53 这条**Intel 自家的**中断重映射勘误。
+> **中文速览**：本章补齐旧版技能完全缺失的三块内容。第一块是**故障处理**：不可恢复故障与可恢复故障的分野、primary fault logging、Fault Recording Register 的逐位格式，以及一张覆盖 legacy 与 scalable 两套编码的**故障原因码表**（LRT/LCT/LSS/LGN/RTA/SRT/SCT/SPD/SPT/SFS/SSS/SGN/HPT）。第二块是可恢复故障路径：page request queue、page request descriptor 与 page group response。第三块是 **ACPI DMAR 表**及其七种子结构（DRHD/RMRR/ATSR/RHSA/ANDD/SATC/SIDP），外加性能监控与 SIOV。最后是安全面：DMA 攻击、pre-boot DMA 保护缺口，以及 5520/5500 #47 与 #53 这两条**Intel 自家的**中断重映射勘误。
 
 **Maps to:** Intel VT-d Architecture Specification Rev 5.20 Ch.7 "Address Translation Faults", Ch.8 "BIOS Considerations", Ch.10 "Performance Monitoring" [8]; Intel Scalable I/O Virtualization Technical Specification [21]
 **Owns:** VT-d fault taxonomy and fault-reason codes, fault recording registers, the page request queue and page group response flow, the ACPI DMAR table and its remapping structures, VT-d performance monitoring, SIOV/ADI, VT-d security considerations
@@ -20,12 +20,17 @@ something, or not?
 - **Claim.** When remapping hardware detects a recoverable fault on a translation request from a Device-TLB it is not reported to software as a fault; instead hardware sends a successful translation completion with limited or no permissions, and the Device-TLB detects the fault.  `[VT-d 5.20 §7.1.2]` `[8]` `C:high` `V:durable`
 - **Claim.** A device may report a recoverable fault either in a device-specific manner or, if it supports the PCI Express Page Request Services capability, by issuing a page-request message to the remapping hardware.  `[VT-d 5.20 §7.1.2]` `[8][200]` `C:high` `V:durable`
 - **Claim.** Device-TLB implementations must ensure that a device request which led to a reported translation fault does not reuse the same faulty translation on retry after software has signalled that the fault was handled.  `[VT-d 5.20 §7.1.2]` `[8]` `C:high` `V:durable`
-- **Claim.** If a recoverable page fault is reported in a device-specific manner rather than through Page Request Services, software must itself ensure stale IOTLB entries in the remapping hardware are invalidated.  `[VT-d 5.20 §7.1.2]` `[8]` `C:high` `V:durable`
+- **Claim.** If a recoverable page fault is reported in a device-specific manner rather than through Page Request Services, the specification says software *should* ensure that stale IOTLB entries in the remapping hardware in the root-complex are invalidated.  `[VT-d 5.20 §7.1.2]` `[8]` `C:high` `V:durable`
 
 ### 12.1.1 "Qualified" faults and FPD
 
 - **Claim.** A non-recoverable fault condition is considered "qualified" if software can suppress reporting of the fault by setting one of the Fault Processing Disable (FPD) bits in the context-entry, scalable-mode context-entry, scalable-mode PASID-directory entry or scalable-mode PASID-table entry.  `[VT-d 5.20 §7.1.1]` `[8]` `C:high` `V:durable`
 - **Claim.** For a request encountering a qualified non-recoverable fault, if remapping hardware encountered any translation structure entry with FPD = 1, it must not report the fault to software.  `[VT-d 5.20 §7.1.1]` `[8]` `C:high` `V:durable`
+- **Claim.** Table 30 marks each fault condition Qualified or not, and FPD therefore cannot suppress every fault: in the legacy range the four **non-qualified** reasons are 1h (LRT.2), 8h (LRT.1), 9h (LCT.1) and Ah (LRT.3), and all five root-table-address faults 30h–34h (RTA.1–RTA.5) are likewise non-qualified.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
+
+The pattern behind that list is worth holding onto: the non-qualified legacy reasons are exactly the ones
+raised at or before the root-entry, which hardware reaches before it has read any entry carrying an FPD
+bit. FPD is therefore an observability control over the *context-entry-and-below* part of the walk only.
 
 ## 12.2 Primary fault logging
 
@@ -35,11 +40,11 @@ where it was removed: the GCMD_REG bits that drove it (29 and 28) are reserved, 
 plain Reserved (RsvdZ) and bit 23 is the one marked Deprecated — see `10-vtd-dma-remapping.md` §10.5.1 and §10.5.3.
 
 - **Claim.** The remapping architecture defines Primary Fault Logging as the default fault logging method that must be supported by all implementations of the architecture.  `[VT-d 5.20 §7.2]` `[8]` `C:high` `V:durable`
-- **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is **CAP_REG.NFR + 1** (the NFR field reports N, not the count — a ring walk driven by NFR alone is short by one register) and whose base is **register-base + 16 × CAP_REG.FRO**, with FSTS_REG.FRI giving the index to start from; you cannot walk the fault ring without both → register layout in `10-vtd-dma-remapping.md` §10.5.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
+- **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is **CAP_REG.NFR + 1** (the NFR field reports N, not the count — a ring walk driven by NFR alone is short by one register) and whose base is **register-base + 16 × CAP_REG.FRO**, with FSTS_REG.FRI giving the index to start from; you cannot walk the fault ring without both → register layout in `10-vtd-dma-remapping.md` §10.5. Both the NFR and FRO formulas are stated in §11.4.2, which §7.2.1 cross-references rather than restating.  `[VT-d 5.20 §7.2.1]` `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** Hardware maintains an internal index referencing the Fault Recording Register in which the next non-recoverable fault will be recorded; the index resets to zero when both TES and IES are Clear in the Global Status Register, increments on each recorded fault, and wraps from N-1 to 0.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Hardware maintains the Primary Pending Fault (PPF) field in the Fault Status Register as the logical OR of the Fault (F) fields across all Fault Recording Registers, recomputed whenever any F field is updated by hardware or software.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** If the Fault Recording Register referenced by the internal index already has its F field Set, hardware sets the Primary Fault Overflow (PFO) field in the Fault Status Register and the new fault information is not recorded.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
-- **Claim.** Hardware compares the source-id of the currently faulting request against the SID field of each Fault Recording Register whose F field is Set, and does not record the fault information if it finds a match.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
+- **Claim.** Fault compression is optional: *if* hardware supports compression of multiple faults from the same requester, it compares the source-id of the currently faulting request against the SID field of each Fault Recording Register whose F field is Set and does not record the fault information on a match; implementations that do not support compression skip the check, and the specification only *recommends* compression for units with a limited number of fault recording registers.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** When PPF is Clear at the time of recording, hardware records the internal index in the Fault Recording Index (FRI) field of the Fault Status Register, sets the F field, increments the internal index, and an interrupt may be generated.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Software is expected to process reported non-recoverable faults in circular FIFO fashion starting from the register referenced by FRI until it finds a Fault Recording Register with F Clear.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** To recover from a primary fault overflow, software must process the pending faults in every Fault Recording Register, clear each F field, and then clear PFO by writing 1 to it; hardware then resumes recording from the current internal index.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
@@ -86,7 +91,7 @@ plain Reserved (RsvdZ) and bit 23 is the one marked Deprecated — see `10-vtd-d
 - **Claim.** PFO, IQE, ICE and ITE are RW1CS (sticky, write-1-to-clear) while PPF and FRI are read-only status.  `[VT-d 5.20 §11.4.7.1]` `[8]` `C:high` `V:durable`
 - **Claim.** In FECTL_REG, IM (Interrupt Mask) is bit 31 with a default value of 1, IP (Interrupt Pending) is read-only at bit 30, and bits 29:0 are RsvdP.  `[VT-d 5.20 §11.4.7.2]` `[8]` `C:high` `V:durable`
 - **Claim.** Non-recoverable faults are reported to software using a message-signaled interrupt controlled through the Fault Event Control Register, with vector, delivery mode and address programmed through the Fault Event Data and Fault Event Address Registers.  `[VT-d 5.20 §7.3]` `[8]` `C:high` `V:durable`
-- **Claim.** A Fault Event may be generated when a fault is recorded causing PPF to be Set, or when an Invalidation Queue Error causes the IQE field in the Fault Status Register to be Set.  `[VT-d 5.20 §7.3]` `[8]` `C:high` `V:durable`
+- **Claim.** §7.3 lists four Fault Event trigger conditions, not two: a recorded fault causing PPF to be Set, an invalidation queue error causing IQE to be Set, an invalid Device-TLB invalidation completion response causing ICE to be Set, and a Device-TLB invalidation completion time-out causing ITE to be Set. The event is suppressed if any of PPF, PFO, IQE, ICE or ITE is already Set.  `[VT-d 5.20 §7.3]` `[8]` `C:high` `V:durable`
 
 Because FECTL_REG.IM defaults to 1, fault interrupts are masked out of reset; a driver that
 programs the fault event registers but never clears IM will silently log faults it never sees.
@@ -113,22 +118,22 @@ Interrupt-remapping reasons (20h–2Bh) are owned by `11-vtd-interrupt-remapping
 
 ### 12.3.1 Legacy-mode fault reasons
 
-| Reason | Condition code | Meaning |
-|---|---|---|
-| 1h | LRT.2 | The Present (P) field in the root-entry used to process a request is 0 |
-| 2h | LCT.2 | The Present (P) field in the context-entry used to process a request is 0 |
-| 3h | LCT.4.x | Invalid programming of a context-entry: unsupported AW, unsupported TT, or error accessing the second-stage paging entry through SSPTPTR |
-| 4h | LGN.1.x | Address overflow in second-stage translation (above MGAW/AW, or above HAW for translated and pass-through requests) |
-| 5h | LGN.2 | Write or AtomicOp request encountered lack of write permission |
-| 6h | LGN.3 | Read or AtomicOp request encountered lack of read permission |
-| 7h | LSS.1 | Error accessing a second-stage paging entry referenced through a preceding second-stage paging entry |
-| 8h | LRT.1 | Error accessing a root-entry referenced through the RTA field of RTADDR_REG |
-| 9h | LCT.1 | Error accessing a context-entry referenced through the CTP field of a root-entry |
-| Ah | LRT.3 | Non-zero reserved field in a root-entry with P Set |
-| Bh | LCT.3 | Non-zero reserved field in a context-entry with P Set |
-| Ch | LSS.2 | Non-zero reserved field in a second-stage paging entry with at least one of R or W Set |
-| Dh | LCT.5 | The TT field in a present context-entry specifies blocking of translation requests and translated requests |
-| Eh | LGN.4 | Output address after remapping falls in the interrupt address range FEEx_xxxxh |
+| Reason | Condition code | Qualified | Meaning |
+|---|---|---|---|
+| 1h | LRT.2 | No | The Present (P) field in the root-entry used to process a request is 0 |
+| 2h | LCT.2 | Yes | The Present (P) field in the context-entry used to process a request is 0 |
+| 3h | LCT.4.x | Yes | Invalid programming of a context-entry: unsupported AW, unsupported TT, or error accessing the second-stage paging entry through SSPTPTR |
+| 4h | LGN.1.x | Yes | Address overflow in second-stage translation (above MGAW/AW, or above HAW for translated and pass-through requests) |
+| 5h | LGN.2 | Yes | Write or AtomicOp request encountered lack of write permission |
+| 6h | LGN.3 | Yes | Read or AtomicOp request encountered lack of read permission |
+| 7h | LSS.1 | Yes | Error accessing a second-stage paging entry referenced through a preceding second-stage paging entry |
+| 8h | LRT.1 | No | Error accessing a root-entry referenced through the RTA field of RTADDR_REG |
+| 9h | LCT.1 | No | Error accessing a context-entry referenced through the CTP field of a root-entry |
+| Ah | LRT.3 | No | Non-zero reserved field in a root-entry with P Set |
+| Bh | LCT.3 | Yes | Non-zero reserved field in a context-entry with P Set |
+| Ch | LSS.2 | Yes | Non-zero reserved field in a second-stage paging entry with at least one of R or W Set |
+| Dh | LCT.5 | Yes | The TT field in a present context-entry specifies blocking of translation requests (without PASID) and translated requests |
+| Eh | LGN.4 | Yes | Output address after remapping falls in the interrupt address range FEEx_xxxxh |
 
 - **Claim.** Legacy-mode fault reason 1h is a Clear Present field in the root-entry (condition LRT.2) and 2h a Clear Present field in the context-entry (LCT.2).  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Legacy-mode fault reason 3h (LCT.4) is invalid programming of a context-entry, covering an unsupported Address-Width value, an unsupported Translation-Type value, and an error accessing the second-stage paging entry referenced through SSPTPTR.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
@@ -155,10 +160,10 @@ Interrupt-remapping reasons (20h–2Bh) are owned by `11-vtd-interrupt-remapping
 | 38h–3Ah | SRT | Scalable-mode root-table |
 | 40h–49h | SCT | Scalable-mode context-table |
 | 50h–52h | SPD | Scalable-mode PASID-directory |
-| 58h–60h | SPT | Scalable-mode PASID-table |
+| 58h–5Dh, 60h | SPT | Scalable-mode PASID-table (5Eh and 5Fh are unassigned) |
 | 70h–77h, 90h–91h | SFS | First-stage paging structures |
 | 78h–7Dh | SSS | Second-stage paging structures |
-| 80h–89h | SGN | Scalable-mode general |
+| 80h–89h | SGN | Scalable-mode general (82h and 88h are unassigned) |
 | A0h–A5h | HPT | Host Permission Table |
 
 - **Claim.** Scalable-mode root-table fault reasons are 38h (error accessing a scalable-mode root-entry through RTA), 39h (Clear Present field in the UP/LP fields of a scalable-mode root-entry) and 3Ah (non-zero reserved field in a scalable-mode root-entry with the corresponding present field Set).  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
@@ -174,14 +179,14 @@ Interrupt-remapping reasons (20h–2Bh) are owned by `11-vtd-interrupt-remapping
 - **Claim.** Fault reason 60h is a Translated Request whose address exceeds the size of the HPT governed by the HPT Size field, when HPT is enabled.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** First-stage fault reasons are 70h (error accessing a first-stage paging entry), 71h (Clear Present field in a first-stage paging entry), 72h (non-zero reserved field with P Set) and 73h (error accessing the FS-PML4 or FS-PML5 entry through FSPTPTR).  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** First-stage nested-translation fault reasons are 74h (ADDR in a first-stage paging entry above the MGAW/AW limit), 75h and 76h (read of the FS-PML4/PML5 entry or of a first-stage paging entry blocked by lack of read permission in the nested second stage) and 77h (A/D/EA flag update blocked by lack of write permission in the nested second stage).  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
-- **Claim.** Fault reason 90h is hardware encountering a needed first-stage paging-structure update while set up not to snoop processor caches (ECAP_REG.SMPWC = 0 or PWSNP = 0 in the PASID-table entry), and 91h a failure to update an Accessed, Dirty or Extended-Accessed flag in a first-stage paging structure.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
+- **Claim.** Fault reason 90h is hardware encountering a needed A/D bit update in a first-stage paging-structure entry while set up not to snoop processor caches (ECAP_REG.SMPWC = 0 or PWSNP = 0 in the PASID-table entry), and 91h a failure to update an Accessed, Dirty or Extended-Accessed flag in a first-stage paging structure.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Second-stage scalable-mode fault reasons are 78h (error accessing a second-stage paging entry), 79h (a second-stage paging entry with R = W = 0 or with the effective read and write permissions both denied), 7Ah (non-zero reserved field with at least one permission bit set) and 7Bh (error accessing the second-stage paging entry referenced through SSPTPTR in the PASID-table entry).  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 7Ch is a needed second-stage A/D bit update while set up not to snoop processor caches, and 7Dh a failure to update the Accessed or Dirty bit in second-stage tables.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Scalable-mode general fault reason 80h is a non-canonical input address for first-stage translation, where address bits 63:N differ from bit N-1 with N = 48 for 4-level paging and 57 for 5-level paging.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 81h is a first-stage translation for a request with user privilege (PR = 0) that encountered a present first-stage paging entry with U/S = 0.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 83h is an input address that is a Host Address greater than the Host Address Width supported by the DMA remapping hardware.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 84h is an address above the MGAW/AW limit in an untranslated or translation request using second-stage-only translation (PGTT = 010b) in scalable mode.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
-- **Claim.** Fault reasons 85h and 86h are scalable-mode lack of write permission and lack of read permission respectively; pass-through translations do not encounter these conditions.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
+- **Claim.** Fault reasons 85h and 86h are scalable-mode lack of write permission and lack of read permission respectively; pass-through translations do not encounter 85h, and first-stage *or* pass-through translations do not encounter 86h.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 87h is an output address in the interrupt address range FEEx_xxxxh detected in scalable mode, covering untranslated requests, translation requests through a non-pass-through PASID-table entry, and translated requests.  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 89h relates to a PASID value in a request exceeding the size reported by the corresponding field in the Extended Capability Register.  `[VT-d 5.20 §7.1.3]` `[8]` `C:medium` `V:durable`
 - **Claim.** Host Permission Table fault reasons are A0h (error accessing an HPT entry through a preceding HPT entry), A1h (non-zero reserved field in an HPT entry), A2h (error accessing the HPT entry referenced through the HPT Root field in a PASID-table entry), A3h (HPT walk terminated before a non-zero PPi for a translated zero-length read), A4h (lack of write permission in the HPT tables) and A5h (lack of read permission in the HPT tables).  `[VT-d 5.20 §7.1.3]` `[8]` `C:high` `V:durable`
@@ -197,7 +202,7 @@ Interrupt-remapping fault reasons occupy 20h–2Bh and are owned by
 - **Claim.** When a Page Request Descriptor is written to the Page Request Queue, hardware sets the Pending Page Request (PPR) field in the Page Request Status Register.  `[VT-d 5.20 §7.5]` `[8]` `C:high` `V:durable`
 - **Claim.** When hardware encounters a Page Request Queue full condition while attempting to write a page request, it sets the Page Request Overflow (PRO) field in the Page Request Status Register.  `[VT-d 5.20 §7.5]` `[8]` `C:high` `V:durable`
 - **Claim.** In the Page Request Status Register, PPR is bit 0 and PRO is bit 1, both RW1CS, with bits 31:2 reserved.  `[VT-d 5.20 §11.4.11.4]` `[8]` `C:high` `V:durable`
-- **Claim.** The Page Request Queue Head and Tail registers carry their queue offsets in bits 18:5, with bits 4:0 and 63:19 reserved.  `[VT-d 5.20 §11.4.11.1]` `[8]` `C:high` `V:durable`
+- **Claim.** The Page Request Queue Head and Tail registers carry their queue offsets in bits 18:5, with bits 4:0 and 63:19 reserved.  `[VT-d 5.20 §11.4.11.1]` `[VT-d 5.20 §11.4.11.2]` `[8]` `C:high` `V:durable`
 - **Claim.** In the Page Request Queue Address Register, PQA occupies bits 63:12 and PQS (Page Queue Size) bits 2:0, with bits 11:3 reserved.  `[VT-d 5.20 §11.4.11.3]` `[8]` `C:high` `V:durable`
 - **Claim.** A Page Request Event interrupt is suppressed if PPR or PRO is already Set; otherwise the Interrupt Pending (IP) field in the Page Request Event Control Register is Set, and the event is generated only if the Interrupt Mask (IM) field is Clear.  `[VT-d 5.20 §7.5]` `[8]` `C:high` `V:durable`
 - **Claim.** If IP was 1 when software clears IM, the Page Request Event interrupt is generated and IP is cleared; if IP was 1 when software clears both PPR and PRO, IP is cleared without an interrupt.  `[VT-d 5.20 §7.5]` `[8]` `C:high` `V:durable`
@@ -215,7 +220,7 @@ Interrupt-remapping fault reasons occupy 20h–2Bh and are owned by
 | 65 | WRR — Write Requested |
 | 64 | RDR — Read Requested |
 | 63:54 | Reserved |
-| 53 | PMR — Privileged Mode Requested |
+| 53 | PMR — Privilege Mode Requested |
 | 52 | EXR — Execute Requested |
 | 51:32 | PASID |
 | 31:16 | RID — Requester-ID |
@@ -233,7 +238,7 @@ Interrupt-remapping fault reasons occupy 20h–2Bh and are owned by
 
 - **Claim.** A Page Group Response Descriptor is issued by software in response to a page request that indicated it was the last request in a group, and must be issued only after servicing all page requests with the same Page Request Group Index.  `[VT-d 5.20 §7.6.1]` `[8]` `C:high` `V:durable`
 - **Claim.** The Page Group Response Descriptor is written by software to the Invalidation Queue and its Type field, formed from bits 11:9 and bits 3:0, carries the value 9h.  `[VT-d 5.20 §7.6.1]` `[8]` `C:high` `V:durable`
-- **Claim.** The Page Group Response Descriptor is a 256-bit descriptor and results in an invalid descriptor error if submitted to an invalidation queue configured for 128-bit descriptors (IQA_REG.DW = 0).  `[VT-d 5.20 §7.6.1]` `[8]` `C:high` `V:durable`
+- **Claim.** The Page Group Response Descriptor is a 256-bit descriptor and results in an invalid descriptor error if submitted to an invalidation queue configured for 128-bit descriptors (IQA_REG.DW = 0).  `[VT-d 5.20 §7.6]` `[8]` `C:high` `V:durable`
 - **Claim.** Implementations reporting ECAP_REG.PRS as Clear treat Page Group Response Descriptors as invalid descriptors.  `[VT-d 5.20 §7.6.1]` `[8]` `C:high` `V:durable`
 
 Response codes (Table 32):
@@ -246,7 +251,7 @@ Response codes (Table 32):
 | Fh | Response Failure | Servicing encountered a non-recoverable error |
 
 - **Claim.** Page group response codes are 0h Success, 1h Invalid Request, 2h–Eh Reserved and Fh Response Failure.  `[VT-d 5.20 §7.6]` `[8]` `C:high` `V:durable`
-- **Claim.** The Response Code follows the response code definition in the Page Group Response message specified by the PCI Express specification.  `[VT-d 5.20 §7.6]` `[8][200]` `C:high` `V:durable`
+- **Claim.** The Response Code follows the response code definition in the Page Group Response message specified by Address Translation Services in the PCI Express Base Specification Revision 4.0 or later.  `[VT-d 5.20 §7.6.1]` `[8][200]` `C:high` `V:durable`
 
 ## 12.5 ACPI DMAR table (Ch.8)
 
@@ -337,7 +342,7 @@ domain.
 ## 12.6 Performance monitoring (Ch.10)
 
 - **Claim.** VT-d Chapter 10 specifies performance monitoring, with discovery and enumeration in §10.1, configuration registers in §10.2, event counters in §10.3, filter support in §10.4, configuration error checks in §10.5, interrupt generation in §10.6 and the event list in §10.7.  `[VT-d 5.20 Ch.10]` `[8]` `C:high` `V:durable`
-- **Claim.** Performance monitoring support is enumerated by ECAP_REG.PMS at bit 51; if an implementation does not support performance monitoring, PERFCAP_REG reads as 0 and the other performance monitoring registers are not supported.  `[VT-d 5.20 §10.1]` `[8]` `C:high` `V:durable`
+- **Claim.** Performance monitoring support is enumerated by ECAP_REG.PMS at bit 51 (the bit number is given in §11.4.3, not §10.1); if an implementation does not support performance monitoring, PERFCAP_REG reads as 0 and the other performance monitoring registers are not supported.  `[VT-d 5.20 §10.1]` `[VT-d 5.20 §11.4.3]` `[8]` `C:high` `V:durable`
 - **Claim.** The locations of the performance monitoring configuration, freeze, overflow and counter register groups are reported to software through dedicated offset registers rather than being fixed.  `[VT-d 5.20 §10.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Software configures a counter by specifying an Event Group Index and an Event Select bitmask in the corresponding Performance Monitoring Counter Configuration Register.  `[VT-d 5.20 §10.1]` `[8]` `C:high` `V:durable`
 - **Claim.** An Event Capability Register corresponding to each Event Group indicates the events supported in that group; when its ES field is zero, software should not configure any counter to use that group.  `[VT-d 5.20 §10.1]` `[8]` `C:high` `V:durable`
@@ -356,9 +361,10 @@ Function per tenant; SIOV asks it only to replicate the fast-path queue resource
 a PASID, and let software compose the rest.
 
 **Document status.** The SIOV specification has not been revised since 2020 — treat it as
-stale-but-current. Note also a metadata discrepancy recorded below.
+stale-but-current. Its revision number is also widely miscited; the cover is authoritative, as
+recorded below.
 
-- **Claim.** The Intel Scalable I/O Virtualization Technical Specification PDF cover reads "September 2020, Order Number: 337679-002, Rev 1.1"; secondary sources and the skill's own bibliography entry describe it as Rev 1.0, and the PDF cover governs.  `[SIOV Ch.1]` `[21][204]` `C:high` `V:durable`
+- **Claim.** The Intel Scalable I/O Virtualization Technical Specification PDF cover and revision history read "September 2020, Order Number: 337679-002, Rev 1.1" — revision 1.0 was the June 2018 technical-preview release. Secondary sources still widely cite "Rev 1.0"; the PDF cover governs, and this skill's bibliography entries [21] and [204] already record Rev 1.1.  `[no-spec]` `[21][204]` `C:high` `V:durable`
 - **Claim.** Intel Scalable IOV distinguishes intercepted-path accesses, which go through the virtual device composition module, from direct-path accesses, which are mapped directly to the device; the device implementation controls which operations fall in which category.  `[SIOV §1.2.1]` `[21]` `C:high` `V:durable`
 - **Claim.** Intercepted-path accesses typically include initialization, control, configuration, management, QoS, error processing and reset, while direct-path accesses typically include data-path work submission and work completion processing.  `[SIOV §1.2.1]` `[21]` `C:high` `V:durable`
 - **Claim.** Scalable IOV defines the granularity of sharing of a device as an "Assignable Device Interface" (ADI); each ADI instance encompasses the set of device resources allocated by software to support the direct-path operations for a virtual device.  `[SIOV §1.2.2]` `[21]` `C:high` `V:durable`
@@ -373,7 +379,7 @@ stale-but-current. Note also a metadata discrepancy recorded below.
 - **Claim.** ADI interrupts may be stored in an Interrupt Message Storage (IMS) rather than in MSI or MSI-X structures, specified in SIOV §2.5.1, with ADI interrupt isolation in §2.5.2.  `[SIOV §2.5.1]` `[21]` `C:high` `V:durable`
 - **Claim.** For interrupt isolation across devices, the host platform should support interrupt remapping for all interrupt messages programmed in MSI, MSI-X or IMS on the device.  `[SIOV §3.2]` `[21]` `C:high` `V:durable`
 - **Claim.** PASID-granular address translation enables upstream requests from each ADI to have a unique address translation, and the address space a PASID targets may be HPA, HVA, HIOVA, GPA, GVA or GIOVA depending on how the DMA remapping hardware is programmed.  `[SIOV §3.1]` `[21]` `C:high` `V:durable`
-- **Claim.** SIOV describes Intel platform support as three-stage scalable mode address translation: Requester-ID selects root and context structures, the PASID selects the PASID structures, and the PASID-table entry selects first-level, second-level, pass-through or nested translation.  `[SIOV §3.1]` `[21]` `C:high` `V:durable`
+- **Claim.** SIOV describes Intel platform support as three-stage scalable mode address translation: (1) the Requester-ID selects the root and context structures, (2) the PASID selects the PASID structures, whose entry specifies first-level, second-level, pass-through or nested translation along with references to the page tables, and (3) the address is then translated by the first-level, second-level or both page-table structures according to that type. The translation type is chosen at stage 2; stage 3 is the walk itself.  `[SIOV §3.1]` `[21]` `C:high` `V:durable`
 - **Claim.** SIOV §3.3 specifies PASID translation as a platform requirement, distinct from address-space isolation in §3.1 and interrupt isolation in §3.2.  `[SIOV §3.3]` `[21]` `C:high` `V:durable`
 - **Claim.** The VT-d specification itself treats Intel Scalable I/O Virtualization capable devices as a distinct category when identifying the origination of DMA requests, in §3.12.7.  `[VT-d 5.20 §3.12.7]` `[8]` `C:high` `V:durable`
 - **Claim.** SIOV's reference software model divides responsibilities between a host driver (§4.1), the VDCM (§4.2), a guest driver (§4.3) and the composed virtual device (§4.4).  `[SIOV §4.1]` `[21]` `C:high` `V:durable`
@@ -384,7 +390,7 @@ space, BARs and MSI-X structures in silicon. SIOV keeps one Function and one Req
 distinguishes tenants by PASID, so the per-instance hardware cost is the queue resources alone and
 the "configuration space" is emulated by the VDCM.
 
-- **Claim.** Because all ADIs share the hosting function's Requester ID and are distinguished only by PASID, SIOV's per-instance hardware cost does not include a replicated PCIe Function, configuration space or Requester ID as SR-IOV's does.  `[SIOV §1.2.3]` `[21]` `C:high` `V:durable`
+- **Claim.** Because all ADIs share the hosting function's Requester ID and are distinguished only by PASID, SIOV's per-instance hardware cost does not include a replicated Requester ID as SR-IOV's does; SIOV §1.2.3 states the SIOV half, and the SR-IOV half rests on VT-d §3.12.6, which requires PF and each VF to carry a uniquely identifiable source-id.  `[SIOV §1.2.3]` `[VT-d 5.20 §3.12.6]` `[21][8][200]` `C:high` `V:durable`
 
 ## 12.8 Security considerations
 
@@ -392,7 +398,7 @@ the "configuration space" is emulated by the VDCM.
 
 - **Claim.** The fault architecture blocks requests rather than merely logging them: a non-recoverable fault causes the request to be blocked, and the blocking is independent of whether the fault is reported to software.  `[VT-d 5.20 §7.1.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Setting FPD suppresses fault *reporting* only; it does not permit the faulting request, so an FPD-heavy configuration degrades observability rather than isolation.  `[VT-d 5.20 §7.1.1]` `[8]` `C:high` `V:durable`
-- **Claim.** Because hardware suppresses recording of a fault whose source-id matches an already-pending Fault Recording Register, a device generating a storm of identical faults will not fill the fault log, but a device varying its source-id can drive PFO.  `[VT-d 5.20 §7.2.1]` `[8]` `C:medium` `V:durable`
+- **Claim.** On hardware that supports fault compression, recording of a fault whose source-id matches an already-pending Fault Recording Register is suppressed, so a device generating a storm of identical faults will not fill the fault log while a device varying its source-id can still drive PFO. Because compression is optional, an implementation without it will log and overflow on identical repeated faults too.  `[VT-d 5.20 §7.2.1]` `[8]` `C:medium` `V:durable`
 
 ### 12.8.2 The pre-boot DMA protection gap
 
@@ -405,11 +411,11 @@ VT-d cannot cover on its own, which is exactly what DMAR flag bit 2 exists to de
 
 ### 12.8.3 The Intel 5520/5500 interrupt-remapping erratum
 
-The old edition of this skill attributed this erratum to the wrong party. It is **Intel's** erratum, in
-Intel's own chipset specification update, against Intel silicon.
+The old edition of this skill attributed this to the wrong party. These are **Intel's** errata, in Intel's
+own chipset specification update, against Intel silicon — and there are two of them, #47 and #53.
 
-- **Claim.** Intel documented an interrupt-remapping defect in the Intel 5500/5520/X58 chipset specification update as errata #47 and #53, which make the interrupt remapping unit unreliable on affected steppings.  `[VT-d 5.20 Ch.?]` `[201][202]` `C:low` `V:durable`
-- **Claim.** The documented mitigation for the 5500/5520 interrupt-remapping erratum is to disable interrupt remapping in BIOS on affected platforms, and hypervisor and OS vendors added quirks that refuse to enable interrupt remapping on the affected chipset steppings.  `[VT-d 5.20 Ch.?]` `[202]` `C:low` `V:durable`
+- **Claim.** Intel documented the interrupt-remapping defect in the **Intel 5520 and Intel 5500 Chipset Specification Update** (Document Number 321329-015US, February 2015) as erratum **#47**, "Receiving two identical interrupt requests in back to back cycles may corrupt attributes of remapped interrupt, or hang subsequent interrupt-remap-cache invalidation command", and erratum **#53**, "In-flight remap-able interrupts not drained on interrupt invalidation command". That document covers the 5520/5500 IOH only — X58 appears nowhere in it. The VT-d architecture specification documents no chipset errata, so no VT-d section anchors this.  `[no-spec]` `[201]` `C:high` `V:durable`
+- **Claim.** Both errata carry the same workaround: BIOS sets bit 25 at Dev/Func 14/4 offset 168h and de-features interrupt remapping by clearing ECAP_REG.IR (bit 3) and the INTR_REMAP bit in the ACPI DMAR Flags field; hypervisor and OS vendors added matching quirks that refuse to enable interrupt remapping on the affected steppings (device IDs 3403h/3406h). The equivalent X58 defect is carried as erratum #69 in the separate X58 Express Chipset Specification Update, which this pass could not retrieve from Intel — that half is attested only by the Linux and Xen quirks.  `[no-spec]` `[201][202]` `C:medium` `V:durable`
 - **Claim.** With interrupt remapping disabled, the architectural source-id verification described in `11-vtd-interrupt-remapping.md` is not performed, so an assigned device can direct interrupt requests that the platform would otherwise have blocked under fault reason 26h.  `[VT-d 5.20 §5.1.4.1]` `[8]` `C:high` `V:durable`
 
 The general lesson is the one worth carrying: DMA remapping without interrupt remapping is not
@@ -429,5 +435,5 @@ remapping, raise an arbitrary interrupt vector on an arbitrary CPU.
    256-bit descriptor, so an invalidation queue configured for 128-bit descriptors rejects it.
 6. **RMRR is a stated isolation compromise, not a bug.** The specification explicitly pushes the
    security analysis of reserved memory out of scope.
-7. **SIOV's revision is 1.1 on the PDF cover, not 1.0**, and the document has not been revised since
-   September 2020. Cite the cover.
+7. **SIOV's revision is 1.1 on the PDF cover, not 1.0** — 1.0 was the June 2018 technical preview — and the
+   document has not been revised since September 2020. Cite the cover.

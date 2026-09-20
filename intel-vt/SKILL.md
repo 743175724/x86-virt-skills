@@ -42,8 +42,9 @@ Chapters run 300–550 lines each; the routing table below resolves to a section
    authoritative for the full tables; the restated values are a convenience, and
    if they ever disagree, the owning chapter wins.
 3. **Check `errata.md` before writing anything** that touches a commonly
-   circulated claim. It carries 28 entries, 22 settled corrections and 6 recorded
-   open conflicts. Where it disagrees with a familiar statement, it wins.
+   circulated claim. It carries 28 entries: 22 settled corrections, 2 more
+   (O3, O6) settled later but kept under their original numbers because the
+   misconception still circulates, and 4 genuinely open conflicts. Where it disagrees with a familiar statement, it wins.
 4. **Stop.** One chapter plus `errata.md` answers almost everything. Pull a second
    chapter only when the question genuinely spans two (for example, EPT violation
    handling needs `06` for the structures and `05` for the qualification layout).

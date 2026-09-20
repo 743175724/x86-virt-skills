@@ -2,7 +2,7 @@
 
 > **中文速览**：本文件收录关于 Intel VT 的常见讹传及其纠正。很多讹传以中文流传，因此每条都给出中英双语表述。**动笔或回答前必查本文件**：如果你要写的内容与这里某一条相冲突，按本文件改口径。每条都附真实出处；找不到出处的条目要么删掉，要么明确标注"来源未核实"。文末"Open conflicts"一节列出证据相互矛盾、本次重构**不做裁决**的条目——引用这些话题时必须同时给出两种说法。
 
-**How to use.** Each entry gives the misconception in Chinese and English, the correction as a claim line with a real citation, and the chapter file that owns the underlying fact. Entries E01–E22 are settled. Entries O1–O6 are open conflicts: do not pick a side, state both.
+**How to use.** Each entry gives the misconception in Chinese and English, the correction as a claim line with a real citation, and the chapter file that owns the underlying fact. Entries E01–E22 are settled. Entries O1–O6 were opened as conflicts: do not pick a side, state both — except O3 and O6, which later re-reads settled (O3 by `13-tdx.md` §13.4, O6 by reading both Out-of-Hypervisor publications) and which now record the resolution rather than the conflict. O1, O2, O4 and O5 remain genuinely open.
 
 **Citations.** Every entry carries at least one `[N]`. Where the only available source is weak, the entry says so and carries `C:low`. Nothing here cites a bare filename.
 
@@ -161,7 +161,7 @@
 - 讹传：Intel 处理器上没有 ASID 机制，ASID 是 AMD 独有的。
 - Misconception: "Intel processors have no ASID mechanism; ASID is AMD-only."
 
-- **Claim.** The claim is wrong as stated. Intel has **two** address-space identifier mechanisms with different scopes: **PCID** tags linear-address translations by process context, and **VPID** (a 16-bit VMCS field, with `INVVPID` to invalidate) tags them by virtual-processor/VM context. What is true is narrower: Intel does not use the *name* ASID and does not use a single identifier for both roles, whereas AMD's 32-bit ASID covers the VM-tagging role alone. The misstatement circulates in Chinese forum material and is repeated downstream.  `[SDM 3C §27.6.12]` `[1][3][618][632]` `C:high` `V:durable`
+- **Claim.** The claim is wrong as stated. Intel has **two** address-space identifier mechanisms with different scopes: **PCID** tags linear-address translations by process context, and **VPID** (a 16-bit VMCS field, with `INVVPID` to invalidate) tags them by virtual-processor/VM context. What is true is narrower: Intel does not use the *name* ASID and does not use a single identifier for both roles, whereas AMD's 32-bit ASID covers the VM-tagging role alone. The misstatement circulates in Chinese forum material and is repeated downstream. The mirror-image error is equally common and equally wrong: AMD is **not** short a process-level tag. AMD APM Vol.2 §5.5.1 defines PCID in the same terms Intel does — CR4.PCIDE, the current 12-bit PCID in CR3[11:0], CPUID function 1 ECX[PCID], INVPCID — so both vendors run a guest-managed process tag plus a hypervisor-managed VM tag, and the only real differences are the VM tag's width (VPID 16 bits, ASID 32) and its invalidation interface.  `[SDM 3C §27.6.12]` `[AMD APM 2 §5.5.1]` `[1][3][41][618][632]` `C:high` `V:durable`
 - **Owner:** `06-address-translation.md` (VPID); the cross-vendor framing → `18-comparison-amd-arm-riscv.md`.
 
 ### E20 · SDM chapter numbers have been renumbered
@@ -215,7 +215,7 @@ For each of these the evidence genuinely disagrees. State both readings and mark
 - 争议：TDX 的内存加密是 AES-128-XTS 还是 AES-256？
 - Conflict: is TDX memory encryption AES-128-XTS or AES-256?
 
-- **Claim.** Both appear in Intel material and the difference is generation-dependent, but the two sources do not state it the same way. The TDX base architecture describes the MKTME/TME-MK engine as providing memory encryption using **AES-128-XTS**. Intel's TDX feature-readiness support article gives the TDX AES key strength as **128 bit on 4th/5th-Gen Xeon and 256 bit on Xeon 6** (both E-core and P-core). Until the base specification's own text is re-read for a per-generation qualifier, state the generation with the number and do not write an unqualified "TDX uses AES-128-XTS".  `[11][585]` `C:medium` `V:durable`
+- **Claim.** **Settled since this entry was opened; kept here under its original number because the misconception still circulates.** The re-read recorded in `13-tdx.md` §13.4 found that the TDX ISA specification defines the TME-MK interoperation without fixing a data-encryption key length, and that the 128-bit figure in the base architecture describes the per-HKID AES-XTS **tweak** key, not a fixed data-key length. Intel's TDX feature-readiness support article then gives the key strength per generation: **128 bit on 4th/5th-Gen Xeon and 256 bit on Xeon 6** (both E-core and P-core). The correction is therefore: always state the generation with the number, and never write an unqualified "TDX uses AES-128-XTS".  `[11][14][585]` `C:medium` `V:durable`
 - **Owner:** `13-tdx.md`.
 
 ### O4 · VBS/HVCI overhead
@@ -239,5 +239,5 @@ For each of these the evidence genuinely disagrees. State both readings and mark
 - 争议：OoH 论文自身给出的收益是"13×/6×/16×"还是"约 14% / 约 0.5%"？
 - Conflict: does the OoH paper report "13x / 6x / 16x" improvements, or "about 14% / about 0.5%"?
 
-- **Claim.** The two figure sets come from different versions of the same work and are routinely mixed. The SC'22 result quoted is that EPML speeds up CRIU checkpointing by **13x** and Boehm garbage collection by **6x** relative to SPML, `/proc` and `userfaultfd`, with **16x** less overhead on the monitored application. The arXiv preprint abstract instead reports a checkpoint-time reduction of about **14%** and an overhead of about **0.5%**. Always say which version a number comes from; do not merge them.  `[607][608]` `C:medium` `V:durable`
+- **Claim.** **Settled since this entry was opened; kept here under its original number because the two figure sets are still mixed downstream.** Both are correct, for different publications, so there is no evidentiary conflict to adjudicate. The arXiv preprint 2202.13483 ("Out of Hypervisor (OoH): When Nested Virtualization Becomes Practical", 2022-02-27, never revised) reports EPML reducing CRIU checkpointing time by about **14%** at about **0.5%** overhead against SPML, `/proc` and `userfaultfd`. The retitled and extended SC'22 paper ("Out of Hypervisor (OoH): Efficient Dirty Page Tracking in Userspace Using Hardware Virtualization Features"), which adds Boehm garbage collection, reports **13x** faster CRIU checkpointing, up to **6x** faster Boehm GC and about **16x** less overhead on the monitored application. Name the publication with the number; never merge the two.  `[607][608]` `C:high` `V:durable`
 - **Owner:** `14-nested-virtualization.md`.

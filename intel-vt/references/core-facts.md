@@ -51,7 +51,7 @@
 
 - **Claim.** APIC virtualization is controlled from §27.6.8, with APIC-timer virtualization added later at §27.6.27; the three capabilities normally grouped as APICv are APIC-register virtualization, virtual-interrupt delivery and posted-interrupt processing.  `[SDM 3C §27.6.8]` `[1]` `C:high` `V:durable`
 - **Claim.** APIC virtualization and virtual interrupts are specified in Vol.3C Ch.32, which is the owning reference for the virtual-APIC page and the posted-interrupt descriptor.  → `07-apic-virtualization.md`.  `[SDM 3C Ch.32]` `[1]` `C:high` `V:durable`
-- **Claim.** APICv shipped enabled by default in KVM, whereas AMD's AVIC was disabled by default for years under erratum #1235 — the asymmetry is real and is documented in `errata.md` E08.  `[612]` `C:high` `V:durable`
+- **Claim.** The posted-interrupt descriptor and the posted-interrupt notification vector are VM-execution control fields (encodings 2016H and 0002H), and `07-apic-virtualization.md` owns the descriptor's layout and the notification path; the VT-d side of the same mechanism is in `11-vtd-interrupt-remapping.md`.  `[SDM 3C §27.6.8]` `[1]` `C:high` `V:durable`
 
 ## 08 · VMX instructions → `08-vmx-instructions.md`
 
@@ -105,15 +105,15 @@
 
 ## 17 · Software ecosystem → `17-windows-platform.md`
 
-- **Claim.** The kernel-side reference for Intel TDX, including the platform binding of module versions and the host enabling requirements, is the kernel.org x86 TDX document.  `[575]` `C:high` `V:durable`
-- **Claim.** QEMU exposes TDX through a `tdx-guest` object under `confidential-guest-support`, with documented limitations on irqchip splitting, read-only private memory and SMM.  `[580]` `C:medium` `V:durable`
-- **Claim.** Which kernel, QEMU, libvirt, distro and hypervisor release first carried a given feature is a dated fact; chapter 17 owns the durable architecture, chapter 90 owns the version numbers.  `[574][577]` `C:high` `V:durable`
+- **Claim.** VMX root operation has exactly one owner per logical processor — the software that executed VMXON — and on a Windows PC with any Hyper-V-backed feature enabled that owner is the Windows hypervisor, with the Windows kernel itself running as a VTL0 guest.  → `17-windows-platform.md` §17.1.  `[SDM 3C Ch.26]` `[1][461]` `C:high` `V:durable`
+- **Claim.** A third-party VMM on such a machine is not a hypervisor but a user-mode process whose guest is a Hyper-V partition reached through the Windows Hypervisor Platform, which reports exits as API-level exit contexts rather than as hardware exit reasons.  → `17-windows-platform.md` §17.3.  `[no-spec]` `[465]` `C:high` `V:durable`
+- **Claim.** Which Windows build, kernel, QEMU, libvirt, distro or hypervisor release first carried a given feature is a dated fact; chapter 17 owns the durable Windows architecture and chapter 90 owns the version numbers.  `[no-spec]` `[574][577]` `C:high` `V:durable`
 
 ## 18 · Cross-vendor comparison → `18-comparison-amd-arm-riscv.md`
 
 - **Claim.** The deepest structural difference is VMCS opacity: Intel's VMCS layout is architecturally undefined and reachable only through VMREAD/VMWRITE, which is why the comparison with AMD's publicly laid-out VMCB is a design-philosophy difference and not a feature gap.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
 - **Claim.** Interrupt virtualization is the largest Intel/AMD asymmetry in practice: APICv shipped enabled, AVIC did not (`errata.md` E08).  `[612][631]` `C:high` `V:durable`
-- **Claim.** TLB tagging is functionally equivalent across vendors but differently factored — Intel splits it into PCID and VPID, AMD uses a single ASID (`errata.md` E19).  `[SDM 3C §27.6.12]` `[1][618]` `C:high` `V:durable`
+- **Claim.** Both vendors run two tag namespaces, not one: a guest-managed process tag (PCID on both, CR3[11:0] with CR4.PCIDE) and a hypervisor-managed VM tag (Intel's 16-bit VPID, AMD's 32-bit VMCB ASID); "Intel has no ASID mechanism" and "AMD folds both roles into one ASID" are both wrong (`errata.md` E19).  → `18-comparison-amd-arm-riscv.md` §18.3.2.  `[SDM 3C §27.6.12]` `[1][41][618]` `C:high` `V:durable`
 - **Claim.** Market-share framing of the Intel/AMD contest is a dated fact and belongs to chapter 90, not to the architectural comparison.  `[597]` `C:medium` `V:durable`
 
 ## 90 · Dated landscape → `90-dated-landscape.md`

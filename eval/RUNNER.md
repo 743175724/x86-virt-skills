@@ -1,6 +1,10 @@
-# intel-vt evaluation protocol
+# Skill evaluation protocol
 
-The single behavioural test seam for this skill: **given a question, can a fresh
+Shared by every skill in this repository. The question set, the answers and the
+run reports are per skill, under `eval/<skill>/`; this file is the scoring
+contract they all use.
+
+The single behavioural test seam for a skill: **given a question, can a fresh
 agent that has only this skill answer it correctly, completely, and traceably?**
 
 Nothing here tests file structure or internal headings — those are implementation
@@ -11,13 +15,13 @@ details that should be free to change. `tools/lint.mjs` covers the formal side.
 Any agent that can read files can run this on itself. No vendor API required.
 
 1. Start a **fresh session** with no prior Intel VT context in the conversation.
-   A session that has already discussed VMX will pass questions the skill alone
-   would fail, which is exactly the measurement error this protocol exists to
-   avoid.
-2. Load the skill the way its host normally would — `intel-vt/SKILL.md`, then
+   A session that has already discussed the subject will pass questions the
+   skill alone would fail, which is exactly the measurement error this protocol
+   exists to avoid.
+2. Load the skill the way its host normally would — `<skill>/SKILL.md`, then
    whatever chapters the routing table sends you to. **Do not pre-load every
    chapter**: part of what is being measured is whether the routing works.
-3. For each question in `eval/questions.yaml`, answer from the skill alone. No
+3. For each question in `eval/<skill>/questions.yaml`, answer from the skill alone. No
    web search, no recall from pre-training that the skill does not support. If
    the skill does not contain the answer, say so — that is a legitimate result
    and more useful than a confident guess.
@@ -26,10 +30,10 @@ Any agent that can read files can run this on itself. No vendor API required.
      not. Partial credit per item, not per question.
    - **must_not_include** — if any listed misconception appears, the question
      scores **zero** regardless of everything else. These are the trap items.
-   - **required_citation** — the answer must name the Intel document and the
-     chapter or section. A bare "per the SDM" does not count.
-5. Write results to `eval/results/<agent>-<YYYY-MM-DD>.md` using the template
-   below.
+   - **required_citation** — the answer must name the vendor document and the
+     chapter, section or table. A bare "per the manual" does not count.
+5. Write results to `eval/<skill>/results/<agent>-<YYYY-MM-DD>.md` using the
+   template below.
 
 ## Pass bar
 
@@ -52,7 +56,7 @@ interest. Two rules keep it usable:
   valid` and the answer said "bit 7 indicates the linear address is recorded",
   that is a hit. If the answer said "bit 7 indicates the physical address is
   valid", that is a miss *and* a trap violation. Do not argue the answer into
-  a hit.
+  a hit. (That example is from `intel-vt`; the principle is the point.)
 - **A refutation is not a violation.** `must_not_include` catches an answer that
   *asserts* a misconception, not one that names it in order to correct it.
   "The claim that Intel has no ASID mechanism is wrong — it has PCID and VPID"
@@ -69,7 +73,7 @@ interest. Two rules keep it usable:
 ## Result template
 
 ```markdown
-# intel-vt eval — <agent name and version> — <date>
+# <skill> eval — <agent name and version> — <date>
 
 Skill commit: <git rev-parse --short HEAD>
 Questions: <n>  ·  must_include: <hit>/<total> (<pct>%)  ·  trap violations: <n>  ·  citations valid: <pct>%
@@ -96,8 +100,8 @@ fact present but not found | citation missing
 | Right chapter, fact absent | content gap — add it to that chapter |
 | Wrong chapter | routing table entry in `SKILL.md` |
 | Fact present but not surfaced | the chapter buries it; promote to `00-quickref.md` |
-| Answer right, citation missing | the claim line lacks a Tier-1 anchor — `lint.mjs` should have caught it |
-| Trap violation | the misconception survives somewhere in the corpus; grep for it and add a `MISCONCEPTIONS` rule to `lint.mjs` so it can never come back |
+| Answer right, citation missing | the claim line lacks a Tier-1 anchor — `tools/lint.mjs` should have caught it |
+| Trap violation | the misconception survives somewhere in the corpus; grep for it and add a `misconceptions` rule to `<skill>/lint.config.json` so it can never come back |
 
 That last row matters most: every trap that fires should end the day as a
 deterministic lint rule, so the same error cannot be reintroduced silently.

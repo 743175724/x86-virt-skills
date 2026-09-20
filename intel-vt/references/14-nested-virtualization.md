@@ -28,7 +28,7 @@ The standard terminology, used by the Turtles paper and adopted verbatim by the 
 
 - **Claim.** Because L1's own handling of one L2 exit is itself a long sequence of trapping operations, a single L2 VM exit can cascade into 40–50 exits from L1 to L0 — the "exit multiplication" effect that dominates nested overhead.  `[SDM 3C §28.1.2]` `[303]` `C:medium` `V:durable`
 
-- **Claim.** The Turtles project (OSDI '10) was the first complete x86 nested implementation and reported performance within 6–8% of single-level virtualization for common workloads, using multi-dimensional paging for MMU virtualization and multi-level device assignment for I/O.  `[SDM 3C §26.3]` `[302]` `C:medium` `V:durable`
+- **Claim.** The Turtles project (OSDI '10) was the first complete x86 nested implementation and reported performance within 6–8% of single-level virtualization for common workloads, using multi-dimensional paging for MMU virtualization and multi-level device assignment for I/O.  `[no-spec]` `[302]` `C:medium` `V:durable`
 
 ---
 
@@ -42,7 +42,7 @@ L1 thinks it is manipulating a VMCS. It is not: it is manipulating a memory imag
 | `vmcs12` | L1 | how L1 wants to run L2 | never |
 | `vmcs02` | L0 | how L0 actually runs L2 | yes, while L2 runs |
 
-- **Claim.** KVM names the three structures vmcs01 ("the VMCS that L0 built for L1"), vmcs12 ("the VMCS that L1 builds for L2") and vmcs02 ("the VMCS which L0 builds to actually run L2"); the same naming appears in the Turtles paper as VMCS0→1, VMCS1→2 and VMCS0→2.  `[SDM 3C §27.1]` `[300]` `[302]` `C:high` `V:durable`
+- **Claim.** KVM names the three structures vmcs01 ("the VMCS that L0 built for L1"), vmcs12 ("the VMCS that L1 builds for L2") and vmcs02 ("the VMCS which L0 builds to actually run L2"); the Turtles paper uses the identical names — it writes VMCS01, VMCS12 and VMCS02, not an arrow notation.  `[no-spec]` `[300]` `[302]` `C:high` `V:durable`
 
 - **Claim.** vmcs12 can be an ordinary software structure because the VMCS data format is architecturally implementation-specific — bytes 8 and beyond of a VMCS region hold "VMCS data (implementation-specific format)" and may only be reached through VMREAD/VMWRITE, so L1 cannot depend on any particular layout; see `02-vmcs.md` for the field-encoding scheme.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
 
@@ -56,7 +56,7 @@ Without help, every VMREAD and VMWRITE that L1 executes traps to L0. L1 executes
 
 ### 14.3.1 The control and the shadow-VMCS indicator
 
-- **Claim.** "VMCS shadowing" is a secondary processor-based VM-execution control; software discovers support for its 1-setting by reading the VMX capability MSR IA32_VMX_PROCBASED_CTLS2.  `[SDM 3C §27.2]` `[SDM 3D App.A]` `[1]` `[2]` `C:high` `V:durable`
+- **Claim.** "VMCS shadowing" is a secondary processor-based VM-execution control; it is bit 14 of that 32-bit vector, and software discovers support for its 1-setting by reading the VMX capability MSR IA32_VMX_PROCBASED_CTLS2.  `[SDM 3C §27.6.2]` `[SDM 3C §27.2]` `[SDM 3D App.A.3.3]` `[1]` `[2]` `C:high` `V:durable`
 
 - **Claim.** Every VMCS is either an ordinary VMCS or a shadow VMCS, and the type is carried by the **shadow-VMCS indicator: bit 31 of the first 4 bytes of the VMCS region** — 0 means ordinary, 1 means shadow. Bits 30:0 of the same doubleword are the VMCS revision identifier.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
 
@@ -86,15 +86,15 @@ Without help, every VMREAD and VMWRITE that L1 executes traps to L0. L1 executes
 
 - **Claim.** The bitmaps are therefore a per-field intercept policy: L0 clears a bit for every field it is willing to let L1 read or write directly out of the shadow VMCS, and sets a bit for every field whose access it must still emulate; because encodings with any bit set in 63:15 always exit, only the low 32K of the encoding space can ever be shadowed.  `[SDM 3C §27.6.15]` `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
 
-- **Claim.** KVM builds these bitmaps at module init from two tables of field encodings — the read-only shadow fields and the read/write shadow fields — and clears the corresponding bitmap bits only for fields in those tables, leaving everything else intercepted.  `[SDM 3C §27.6.15]` `[301]` `C:medium` `V:durable`
+- **Claim.** KVM builds these bitmaps at module init from two tables of field encodings — the read-only shadow fields and the read/write shadow fields — and clears the corresponding bitmap bits only for fields in those tables, leaving everything else intercepted (`init_vmcs_shadow_fields()` memsets both bitmaps to 0xFF first).  `[no-spec]` `[301]` `C:medium` `V:durable`
 
 ### 14.3.4 Shadow ↔ vmcs12 synchronisation rules
 
 The shadow VMCS is hardware-format memory; vmcs12 is L0's software image of L1's intent. They must be reconciled at every transition where either side could have changed.
 
-- **Claim.** Before L0 resumes L1 with shadowing enabled, L0 copies the shadowed fields from vmcs12 into the shadow VMCS, so that L1's subsequent VMREADs observe the state L0 believes it has; KVM performs this in `copy_vmcs12_to_shadow()`.  `[SDM 3C §27.10]` `[301]` `C:high` `V:durable`
+- **Claim.** Before L0 resumes L1 with shadowing enabled, L0 copies the shadowed fields from vmcs12 into the shadow VMCS, so that L1's subsequent VMREADs observe the state L0 believes it has; KVM performs this in `copy_vmcs12_to_shadow()`.  `[no-spec]` `[301]` `C:high` `V:durable`
 
-- **Claim.** When L1 next exits to L0, L0 copies the writable shadowed fields back out of the shadow VMCS into vmcs12 before interpreting L1's intent; KVM performs this in `copy_shadow_to_vmcs12()`, whose comment reads "Copy the writable VMCS shadow fields back to the VMCS12, in case they have been modified by the L1 guest."  `[SDM 3C §27.10]` `[301]` `C:high` `V:durable`
+- **Claim.** When L1 next exits to L0, L0 copies the writable shadowed fields back out of the shadow VMCS into vmcs12 before interpreting L1's intent; KVM performs this in `copy_shadow_to_vmcs12()`, whose comment reads "Copy the writable VMCS shadow fields back to the VMCS12, in case they have been modified by the L1 guest."  `[no-spec]` `[301]` `C:high` `V:durable`
 
 - **Claim.** Fields that are not shadowed keep trapping, so L0 sees those writes immediately and no synchronisation is needed for them; the shadow set is consequently chosen as the fields L1 touches most often per L2 exit, not as "all fields".  `[SDM 3C §27.6.15]` `[301]` `[303]` `C:medium` `V:durable`
 
@@ -112,7 +112,7 @@ vmcs02 is a merge. Its host-state area must be L0's, because a real VM exit from
 
 - **Claim.** The guest-state area of vmcs02 is taken from vmcs12 — L1's chosen register and non-register state for L2 — with L0 overriding the fields it owns, including the VMCS-link pointer, and with the guest-state checks of VM entry then applying to the merged result.  `[SDM 3C §27.4]` `[SDM 3C Ch.29]` `[1]` `[300]` `C:high` `V:durable`
 
-- **Claim.** KVM splits the merge into a rarely changing part and a per-entry part: `prepare_vmcs02_early()` establishes the controls and the fields derived from vmcs01, and `prepare_vmcs02()` completes the guest state from vmcs12 before VMLAUNCH/VMRESUME of L2.  `[SDM 3C §27.3]` `[301]` `C:high` `V:durable`
+- **Claim.** KVM splits the merge into a rarely changing part and a per-entry part: `prepare_vmcs02_early()` establishes the controls and the fields derived from vmcs01, and `prepare_vmcs02()` completes the guest state from vmcs12 before VMLAUNCH/VMRESUME of L2.  `[no-spec]` `[301]` `C:high` `V:durable`
 
 ### 14.4.2 Control merging
 
@@ -124,13 +124,13 @@ The merging rule is not uniform. For intercepts, L0 needs the **union** (anythin
 
 - **Claim.** MSR bitmaps: an MSR may be passed through to L2 only if **both** vmcs01 and vmcs12 permit it, so the merged bitmap is the intersection of the two pass-through sets — equivalently the union of the two intercept sets; if L1 does not use MSR bitmaps at all, L0 must intercept every MSR access.  `[SDM 3C §27.6.9]` `[1]` `[301]` `C:high` `V:durable`
 
-- **Claim.** I/O: rather than merge two 8-KByte I/O bitmaps, KVM sets unconditional I/O exiting in vmcs02 and clears "use I/O bitmaps", then consults vmcs12's I/O bitmap in software to decide whether the exit belongs to L1; see `02-vmcs.md` for the I/O-bitmap fields.  `[SDM 3C §27.6.4]` `[1]` `[301]` `C:medium` `V:durable`
+- **Claim.** I/O: rather than merge the two I/O bitmaps A and B — each 4 KBytes, 8 KBytes in total, covering ports 0000H–7FFFH and 8000H–FFFFH — KVM sets unconditional I/O exiting in vmcs02 and clears "use I/O bitmaps", then consults vmcs12's I/O bitmap in software to decide whether the exit belongs to L1; see `02-vmcs.md` for the I/O-bitmap fields.  `[SDM 3C §27.6.4]` `[1]` `[301]` `C:medium` `V:durable`
 
 - **Claim.** Pin-based controls are unioned, with the VMX-preemption timer treated specially (§14.9): L0 must keep its own external-interrupt and NMI exiting regardless of what L1 asked for, because host interrupts must reach L0.  `[SDM 3C §27.6.1]` `[1]` `[301]` `C:high` `V:durable`
 
 - **Claim.** Processor-based controls split into two groups: "exiting" controls are unioned with vmcs12's, while the controls that select L0's own mechanisms — enable EPT, enable VPID, unrestricted guest, and the secondary controls behind them — are set from L0's configuration and are not simply copied from vmcs12; see `02-vmcs.md`.  `[SDM 3C §27.6.2]` `[1]` `[301]` `C:medium` `V:durable`
 
-- **Claim.** Time-stamp counter offsets compose additively: the offset programmed in vmcs02 is the sum of L0's offset for L1 and the offset L1 programmed for L2, so that L2 sees both adjustments; with TSC scaling the multipliers compose multiplicatively.  `[SDM 3C §27.6.5]` `[1]` `[301]` `C:medium` `V:durable`
+- **Claim.** Time-stamp counter offsets compose additively: with no TSC scaling in play the offset programmed in vmcs02 is the sum of L0's offset for L1 and the offset L1 programmed for L2, so that L2 sees both adjustments; when TSC scaling is active the two multipliers compose multiplicatively and L0's offset is first scaled by L1's multiplier before the two offsets are added.  `[SDM 3C §27.6.5]` `[1]` `[301]` `C:medium` `V:durable`
 
 - **Claim.** CR0 and CR4 guest/host masks are unioned — a bit owned by either level must trap — while the read shadows are composed so that L2 observes the value L1 intends it to observe.  `[SDM 3C §27.6.6]` `[1]` `[301]` `C:medium` `V:durable`
 
@@ -140,9 +140,9 @@ The merging rule is not uniform. For intercepts, L0 needs the **union** (anythin
 
 - **Claim.** On a VM exit from L2, the processor writes guest state and VM-exit information into vmcs02; if the exit is to be reflected, L0 must copy the affected state into vmcs12 so that L1's VMREADs see a coherent picture. KVM does this in `sync_vmcs02_to_vmcs12()`, called from `__nested_vmx_vmexit()`, and it covers fields that are only modified after L2 runs, such as the VMX-preemption timer value.  `[SDM 3C Ch.30]` `[301]` `C:high` `V:durable`
 
-- **Claim.** Rarely read fields are synchronised lazily rather than on every exit, which is why KVM separates a "rare" sync path; combined with VMCS shadowing this keeps the per-exit copying proportional to what L1 actually reads.  `[SDM 3C §27.9]` `[301]` `[304]` `C:medium` `V:durable`
+- **Claim.** Rarely read fields are synchronised lazily rather than on every exit, which is why KVM separates a "rare" sync path; combined with VMCS shadowing this keeps the per-exit copying proportional to what L1 actually reads (`sync_vmcs02_to_vmcs12_rare()`, gated on `need_sync_vmcs02_to_vmcs12_rare`).  `[no-spec]` `[301]` `[304]` `C:medium` `V:durable`
 
-- **Claim.** Nested state that lives outside any hardware VMCS — the current vmcs12, the shadow VMCS contents and L0's nesting bookkeeping — must be saved and restored explicitly for a VM with nesting enabled to be migrated or snapshotted; the kernel exposes this as `KVM_CAP_NESTED_STATE` with `KVM_GET_NESTED_STATE` / `KVM_SET_NESTED_STATE`.  `[SDM 3C §27.11]` `[318]` `C:high` `V:durable`
+- **Claim.** Nested state that lives outside any hardware VMCS — the current vmcs12, the shadow VMCS contents and L0's nesting bookkeeping — must be saved and restored explicitly for a VM with nesting enabled to be migrated or snapshotted; the kernel exposes this as `KVM_CAP_NESTED_STATE` with `KVM_GET_NESTED_STATE` / `KVM_SET_NESTED_STATE`.  `[no-spec]` `[318]` `C:high` `V:durable`
 
 ### 14.4.4 How a bad merge fails
 
@@ -152,7 +152,7 @@ A merge bug does not usually produce a subtle misbehaviour; it produces one of t
 
 - **Claim.** If the merged guest state is illegal, the failure is a VM exit rather than a fall-through — the exit reason has bit 31 set to indicate a VM-entry failure — so L0 must be able to distinguish "L1 gave me a bad vmcs12" (reflect a VM-entry failure to L1) from "I merged it wrongly" (an L0 bug); see `04-vm-entry.md`.  `[SDM 3C Ch.29]` `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
 
-- **Claim.** If the merge is legal but too permissive, nothing fails: L2 simply gets a capability L1 never granted it, which is the security-relevant failure mode and the reason the intercept merge is a union rather than a copy.  `[SDM 3C §27.6.2]` `[1]` `[301]` `C:medium` `V:durable`
+- **Claim.** If the merge is legal but too permissive, nothing fails: L2 simply gets a capability L1 never granted it, which is the security-relevant failure mode and the reason the intercept merge is a union rather than a copy.  `[no-spec]` `[301]` `C:medium` `V:durable`
 
 ---
 
@@ -162,9 +162,9 @@ Every L2 exit lands in L0. L0 then decides between two outcomes: handle it silen
 
 - **Claim.** Reflecting an exit to L1 means writing the VM-exit information fields of vmcs12 (exit reason, exit qualification, and the relevant event and instruction-information fields) and then performing a virtual VM exit: loading L1's state from vmcs12's host-state area and resuming L1 as if the hardware had exited to it; see `05-vm-exit.md` for the information fields themselves.  `[SDM 3C §27.9]` `[SDM 3C §30.5]` `[1]` `[300]` `C:high` `V:durable`
 
-- **Claim.** The decision is a two-question test in KVM: does L0 itself need this exit (its own intercepts, shadow-structure maintenance, host interrupts, emulation), and does L1's vmcs12 configuration ask for it? These are the `nested_vmx_l0_wants_exit()` and `nested_vmx_l1_wants_exit()` predicates consulted by `nested_vmx_reflect_vmexit()`.  `[SDM 3C §27.9]` `[301]` `C:medium` `V:durable`
+- **Claim.** The decision is a two-question test in KVM: does L0 itself need this exit (its own intercepts, shadow-structure maintenance, host interrupts, emulation), and does L1's vmcs12 configuration ask for it? These are the `nested_vmx_l0_wants_exit()` and `nested_vmx_l1_wants_exit()` predicates consulted by `nested_vmx_reflect_vmexit()`, in that order — L0's need trumps L1's.  `[no-spec]` `[301]` `C:medium` `V:durable`
 
-- **Claim.** An exit caused purely by L0's own bookkeeping — for example a missing entry in a structure L1 cannot see — is never visible to L1: L0 fixes the structure and re-enters L2 directly, which is why L1 cannot count exits to detect that it is nested with any reliability.  `[SDM 3C §27.9]` `[301]` `[302]` `C:medium` `V:durable`
+- **Claim.** An exit caused purely by L0's own bookkeeping — for example a missing entry in a structure L1 cannot see — is never visible to L1: L0 fixes the structure and re-enters L2 directly, which is why L1 cannot count exits to detect that it is nested with any reliability.  `[no-spec]` `[301]` `[302]` `C:medium` `V:durable`
 
 ### 14.5.1 Life of an L2 VM exit
 
@@ -181,7 +181,7 @@ Putting §14.3 to §14.5 together, one reflected exit runs as follows:
 
 - **Claim.** The virtual VM exit is a software construction: nothing in the architecture performs it, so every field L1 can observe after an exit — guest state, exit reason, exit qualification, event information — exists in vmcs12 only because L0 wrote it there.  `[SDM 3C §27.9]` `[SDM 3C §30.3]` `[1]` `[300]` `C:high` `V:durable`
 
-- **Claim.** Steps 4 and 5 are where correctness bugs concentrate, because they are the only place where values must be translated between L0's and L1's frames of reference rather than copied; the recurring nested-EPT exit-qualification corrections are exactly this class of bug.  `[SDM 3C §27.9.1]` `[301]` `[319]` `C:medium` `V:durable`
+- **Claim.** Steps 4 and 5 are where correctness bugs concentrate, because they are the only place where values must be translated between L0's and L1's frames of reference rather than copied; the recurring nested-EPT exit-qualification corrections are exactly this class of bug.  `[no-spec]` `[301]` `[319]` `C:medium` `V:durable`
 
 ---
 
@@ -305,7 +305,7 @@ Add a third dimension (L2-guest-virtual → L2-guest-physical → L1-guest-physi
 
 - **Claim.** The conservative fallback, taken by hypervisors for years, is simply not to expose APICv to L1: L1 then uses the legacy virtual-APIC path and every L2 interrupt costs exits, which is correct but slow.  `[SDM 3C §27.6.8]` `[1]` `[304]` `[320]` `C:medium` `V:durable`
 
-- **Claim.** On Windows hosts the same constraint shows up as a feature-exposure decision rather than a tunable: the set of virtualization features a nested Hyper-V guest sees is fixed by the host's exposure policy, and features the host hypervisor does not project are simply absent from the L1 guest.  `[SDM 3C §27.6.8]` `[311]` `[316]` `C:medium` `V:durable`
+- **Claim.** On Windows hosts the same constraint shows up as a feature-exposure decision rather than a tunable: the set of virtualization features a nested Hyper-V guest sees is fixed by the host's exposure policy, and features the host hypervisor does not project are simply absent from the L1 guest.  `[no-spec]` `[311]` `[316]` `C:medium` `V:durable`
 
 ---
 
@@ -313,7 +313,7 @@ Add a third dimension (L2-guest-virtual → L2-guest-physical → L1-guest-physi
 
 L1 does not discover the hardware. It discovers what L0 tells it the hardware is.
 
-- **Claim.** The VMX capability MSRs occupy a contiguous block of architectural MSR addresses: IA32_VMX_BASIC at 480H, IA32_VMX_PINBASED_CTLS at 481H, IA32_VMX_PROCBASED_CTLS at 482H, IA32_VMX_EXIT_CTLS at 483H, IA32_VMX_ENTRY_CTLS at 484H, IA32_VMX_MISC at 485H, the CR0/CR4 FIXED0/FIXED1 pairs at 486H–489H, IA32_VMX_VMCS_ENUM at 48AH, IA32_VMX_PROCBASED_CTLS2 at 48BH, IA32_VMX_EPT_VPID_CAP at 48CH, the TRUE_* controls at 48DH–490H and IA32_VMX_VMFUNC at 491H.  `[SDM 4 §2.1]` `[SDM 3D App.A]` `[5]` `[2]` `C:high` `V:durable`
+- **Claim.** The VMX capability MSRs occupy a contiguous block of architectural MSR addresses: IA32_VMX_BASIC at 480H, IA32_VMX_PINBASED_CTLS at 481H, IA32_VMX_PROCBASED_CTLS at 482H, IA32_VMX_EXIT_CTLS at 483H, IA32_VMX_ENTRY_CTLS at 484H, IA32_VMX_MISC at 485H, the CR0/CR4 FIXED0/FIXED1 pairs at 486H–489H, IA32_VMX_VMCS_ENUM at 48AH, IA32_VMX_PROCBASED_CTLS2 at 48BH, IA32_VMX_EPT_VPID_CAP at 48CH, the TRUE_* controls at 48DH–490H, IA32_VMX_VMFUNC at 491H, IA32_VMX_PROCBASED_CTLS3 at 492H and IA32_VMX_EXIT_CTLS2 at 493H.  `[SDM 4 §2.1]` `[SDM 3D App.A]` `[5]` `[2]` `C:high` `V:durable`
 
 - **Claim.** RDMSR and WRMSR of these addresses from L1 either exit via the MSR bitmap or are intercepted outright, so L0 returns synthesised values describing only the subset of VMX it is prepared to emulate; exposing a control L0 cannot emulate is a correctness bug, not merely a performance one.  `[SDM 3C §27.6.9]` `[SDM 3D App.A]` `[1]` `[2]` `[301]` `C:medium` `V:durable`
 
@@ -333,39 +333,41 @@ On a Windows machine nested VMX is not an exotic server configuration. It is the
 
 - **Claim.** VMXON causes a VM exit unconditionally in VMX non-root operation, so the first hypervisor to enter VMX root operation owns it: once the Windows hypervisor is running, the Windows kernel itself executes as a guest and any other VMM on the machine is by definition nested.  `[SDM 3C §28.1.2]` `[1]` `[315]` `C:high` `V:durable`
 
-- **Claim.** Enabling VBS, WSL2, Windows Sandbox, Docker Desktop's Hyper-V backend or the Hyper-V role all start the Windows hypervisor, after which third-party virtualization applications can no longer drive VT-x directly and must use the platform's own interface; see `15-security.md` for the VBS side.  `[SDM 3C §26.7]` `[315]` `[323]` `C:high` `V:durable`
+- **Claim.** Enabling VBS, WSL2, Windows Sandbox, Docker Desktop's Hyper-V backend or the Hyper-V role all start the Windows hypervisor; Microsoft's stated reason is that "only one software component at a time can use this hardware", so third-party virtualization applications "such as VMware and VirtualBox" cannot then drive the extensions directly and either fail to start VMs or fall back to a slower emulated mode; see `15-security.md` for the VBS side.  `[no-spec]` `[315]` `[323]` `[474]` `[475]` `[481]` `C:high` `V:durable`
 
-- **Claim.** The Windows Hypervisor Platform (WHP) is the user-mode API that lets a third-party virtualization stack create partitions, map memory and run virtual processors on the Windows hypervisor instead of on the bare hardware, which is how QEMU, VMware Workstation and VirtualBox continue to work on a Hyper-V-enabled machine.  `[SDM 3C §26.3]` `[314]` `[315]` `C:high` `V:durable`
+- **Claim.** The Windows Hypervisor Platform (WHP) is the user-mode API — `WinHvPlatform.dll` in System32, headers in the Windows SDK — that lets a third-party virtualization stack create partitions (`WHvCreatePartition`), map guest-physical memory (`WHvMapGpaRange`) and create and run virtual processors (`WHvCreateVirtualProcessor`, `WHvRunVirtualProcessor`) on the Windows hypervisor instead of on the bare hardware; which products use it is ecosystem information and belongs to `90-dated-landscape.md`.  `[no-spec]` `[314]` `[465]` `C:high` `V:durable`
 
-- **Claim.** A VMM reached through WHP is not executing VMXON itself: the exit multiplication and merging costs of §14.1 and §14.4 are paid by the Windows hypervisor on its behalf, which is the architectural reason such configurations are slower than the same VMM on a machine with no hypervisor loaded.  `[SDM 3C §28.1.2]` `[1]` `[314]` `C:medium` `V:durable`
+- **Claim.** A VMM reached through WHP is not executing VMXON itself: the exit multiplication and merging costs of §14.1 and §14.4 are paid by the Windows hypervisor on its behalf, which is the architectural reason such configurations are slower than the same VMM on a machine with no hypervisor loaded.  `[no-spec]` `[314]` `C:medium` `V:durable`
 
 ### 14.12.2 Exposing VMX to a Hyper-V guest
 
-- **Claim.** Hyper-V exposes the virtualization extensions to a guest VM — making that guest an L1 — with `Set-VMProcessor -VMName <name> -ExposeVirtualizationExtensions $true`, which must be issued while the VM is off.  `[SDM 3C §26.6]` `[311]` `[313]` `C:high` `V:durable`
+- **Claim.** Hyper-V exposes the virtualization extensions to a guest VM — making that guest an L1 — with `Set-VMProcessor -VMName <VMName> -ExposeVirtualizationExtensions $true`, which Microsoft documents must be issued "while the virtual machine is in the OFF state"; `$false` disables it again, also only on a stopped VM.  `[no-spec]` `[311]` `[313]` `[479]` `C:high` `V:durable`
 
-- **Claim.** With the extensions exposed, the L1 guest sees the VMX feature bit, the capability MSRs of §14.11 and enough of the VMX instruction set to run its own hypervisor; Microsoft documents Intel VT-x with EPT as the processor requirement on the Intel side.  `[SDM 3C §26.6]` `[SDM 3C §31.3]` `[311]` `C:high` `V:durable`
+- **Claim.** With the extensions exposed, the L1 guest sees the VMX feature bit, the capability MSRs of §14.11 and enough of the VMX instruction set to run its own hypervisor; Microsoft's Intel-side prerequisite heading reads "Intel processor with VT-x and EPT technology", with a Windows Server 2016 / Windows 10 or later host and VM configuration version 8.0 or higher.  `[SDM 3C §26.6]` `[SDM 3C §31.3]` `[311]` `[479]` `C:high` `V:durable`
 
-- **Claim.** Nested exposure is incompatible with dynamic memory and with runtime memory resize for that VM: while Hyper-V is running inside the guest, the VM must be turned off to change its memory assignment, and memory does not fluctuate even when dynamic memory is configured.  `[SDM 3C §26.3]` `[311]` `[312]` `C:high` `V:durable`
+- **Claim.** Exposing the extensions is **not** by itself incompatible with dynamic memory or runtime memory resize — Microsoft states that simply enabling nested virtualization has no such effect and that the incompatibility appears only while Hyper-V is actually running inside the VM; once it is running, the VM must be turned off to change its memory assignment, so memory does not fluctuate even when dynamic memory is configured.  `[no-spec]` `[311]` `[312]` `C:high` `V:durable`
 
-- **Claim.** Exposing virtualization extensions also constrains mobility and save/restore of the L1 VM, because the nested state of §14.4.3 is bound to the host's processor feature set; Microsoft's guidance is to treat an L1 VM as pinned to a host whose features match.  `[SDM 3C §27.11]` `[311]` `[312]` `C:medium` `V:durable`
+  > "When Hyper-V is running inside a virtual machine, the virtual machine must be turned off to adjust its memory. Meaning that even if dynamic memory is enabled, the amount of memory doesn't fluctuate. Simply enabling nested virtualization has no effect on dynamic memory or runtime memory resize. […] The incompatibility only occurs while Hyper-V is running in the VM." [311]
 
-- **Claim.** Hyper-V additionally defines an "enlightened VMCS": a shared-memory structure that an aware L1 uses instead of VMREAD/VMWRITE, which removes the same exits that VMCS shadowing removes but in software and without needing the hardware control of §14.3.  `[SDM 3C §27.10]` `[316]` `C:medium` `V:durable`
+- **Claim.** Live migration of an L1 partition is supported rather than forbidden, but it is not transparent to L1: Microsoft documents that in the case of nested virtualization the L1 hypervisor may need to be aware of migrations, and that it can ask to be notified through the synthetic MSR `HV_X64_MSR_REENLIGHTENMENT_CONTROL` (40000106H), enumerated by the `AccessReenlightenmentControls` privilege. Neither the nested-virtualization page nor the troubleshooting guide states a migration or save/restore prohibition for an L1 VM.  `[no-spec]` `[316]` `[311]` `[312]` `C:medium` `V:durable`
+
+- **Claim.** Hyper-V additionally defines an "enlightened VMCS": a shared-memory structure that an aware L1 uses instead of VMREAD/VMWRITE, which removes the same exits that VMCS shadowing removes but in software and without needing the hardware control of §14.3; each enlightened VMCS is exactly one 4-KByte page, is made current through a field of the virtual-processor assist page rather than by VMPTRLD, and carries a "clean fields" mask telling L0 which parts to reload on a nested VM entry.  `[no-spec]` `[316]` `C:medium` `V:durable`
 
 ### 14.12.3 Interaction with VBS and HVCI
 
-- **Claim.** VBS runs the secure kernel at a higher virtual trust level than the normal Windows kernel and enforces the boundary with SLAT — on Intel parts, EPT — so a machine with VBS enabled is already using the nested-capable path described in this chapter for its own security architecture; see `15-security.md`, which owns VBS and HVCI.  `[SDM 3C §31.3]` `[1]` `[323]` `[317]` `C:high` `V:durable`
+- **Claim.** VBS runs the secure kernel at a higher virtual trust level (VTL1) than the normal Windows kernel (VTL0), and each VTL has its own hypervisor-managed guest-physical memory access protections; Microsoft lists Second Level Address Translation — on Intel parts, EPT — among the hardware VBS requires, so a machine with VBS enabled is already using the nested-capable path described in this chapter for its own security architecture; see `15-security.md`, which owns VBS and HVCI.  `[no-spec]` `[323]` `[317]` `[476]` `C:high` `V:durable`
 
-- **Claim.** Because the hypervisor is resident whenever VBS is on, a nested guest on such a machine is L1 to the Windows hypervisor, and the memory its own guests touch is translated through two software-composed dimensions exactly as in §14.6; see `15-security.md` for the security consequences.  `[SDM 3C §31.3.2]` `[1]` `[323]` `C:medium` `V:durable`
+- **Claim.** Because the hypervisor is resident whenever VBS is on, a nested guest on such a machine is L1 to the Windows hypervisor, and the memory its own guests touch is translated through two software-composed dimensions exactly as in §14.6; see `15-security.md` for the security consequences.  `[no-spec]` `[323]` `C:medium` `V:durable`
 
-- **Claim.** VBS and nested exposure are separately configured: turning on nested virtualization for a guest does not turn on VBS inside that guest, and a guest that is to run VBS itself needs both the exposed extensions and its own VBS configuration (see `15-security.md`).  `[SDM 3C §26.7]` `[311]` `[323]` `C:medium` `V:durable`
+- **Claim.** VBS and nested exposure are separately configured: turning on nested virtualization for a guest does not turn on VBS inside that guest, and a guest that is to run VBS itself needs both the exposed extensions and its own VBS configuration (see `15-security.md`).  `[no-spec]` `[311]` `[323]` `C:medium` `V:durable`
 
 ### 14.12.4 The practical shape of nesting on a Windows PC
 
-- **Claim.** The Windows features that pull the hypervisor in are ordinary desktop features, not server roles: memory integrity and other VBS-dependent protections, WSL2, Windows Sandbox, Docker Desktop's Hyper-V backend, and Hyper-V itself — once any of them is on, the hypervisor is resident even when no virtual machine is running; see `15-security.md`.  `[SDM 3C §26.7]` `[315]` `[323]` `C:high` `V:durable`
+- **Claim.** The Windows features that pull the hypervisor in are ordinary desktop features, not server roles: memory integrity and other VBS-dependent protections, WSL2, Windows Sandbox, Docker Desktop's Hyper-V backend, and Hyper-V itself — once any of them is on, the hypervisor is resident even when no virtual machine is running; see `15-security.md`.  `[no-spec]` `[315]` `[323]` `[474]` `[475]` `[481]` `C:high` `V:durable`
 
-- **Claim.** The stack on such a machine is therefore three-deep whenever a second VMM is used: the Windows hypervisor is L0, the Windows kernel and any WHP-hosted VMM sit at L1, and that VMM's guests are L2 — so the merging, reflection and shadow-EPT machinery of §14.4 to §14.6 is on the critical path of an everyday developer workload.  `[SDM 3C §26.3]` `[314]` `[315]` `C:medium` `V:durable`
+- **Claim.** The stack on such a machine is therefore three-deep whenever a second VMM is used: the Windows hypervisor is L0, the Windows kernel and any WHP-hosted VMM sit at L1, and that VMM's guests are L2 — so the merging, reflection and shadow-EPT machinery of §14.4 to §14.6 is on the critical path of an everyday developer workload.  `[no-spec]` `[314]` `[315]` `C:medium` `V:durable`
 
-- **Claim.** Running a hypervisor *inside* a Hyper-V VM adds a fourth conceptual level and is the case that `-ExposeVirtualizationExtensions` enables; it is supported, but the memory-management and mobility restrictions of §14.12.2 apply to that VM for as long as the extensions are exposed.  `[SDM 3C §26.6]` `[311]` `[312]` `C:high` `V:durable`
+- **Claim.** Running a hypervisor *inside* a Hyper-V VM is the case that `-ExposeVirtualizationExtensions` enables; it is exactly the three-level L0/L1/L2 stack of §14.1 and adds no further hardware level. Microsoft supports one level of nesting, including in production for Hyper-V on Hyper-V, and the memory restriction of §14.12.2 applies for as long as the inner hypervisor is running.  `[no-spec]` `[311]` `[312]` `C:high` `V:durable`
 
 - **Claim.** The diagnostic consequence is that "VT-x is not available" from a third-party VMM on a Windows PC is normally a statement about who owns VMX root operation, not about firmware: the fix is either to use the platform API or to remove the feature that started the hypervisor.  `[SDM 3C §28.1.2]` `[314]` `[315]` `C:high` `V:durable`
 
@@ -373,21 +375,21 @@ On a Windows machine nested VMX is not an exotic server configuration. It is the
 
 ## 14.13 Academic lineage
 
-- **Claim.** The Turtles Project (IBM Research – Haifa, OSDI '10) established both the mechanism and the vocabulary used in this chapter — merged VMCSs, multi-dimensional paging, multi-level device assignment — and won the conference's best-paper award.  `[SDM 3C §26.3]` `[302]` `C:medium` `V:durable`
+- **Claim.** The Turtles Project (IBM Research – Haifa, OSDI '10) established both the mechanism and the vocabulary used in this chapter — merged VMCSs, multi-dimensional paging, multi-level device assignment — and won the conference's best-paper award.  `[no-spec]` `[302]` `C:medium` `V:durable`
 
-- **Claim.** ELI (ASPLOS '12) attacked the interrupt half of the same problem in software by delivering physical interrupts directly to guests, anticipating the direction later taken in hardware by APIC virtualization and posted interrupts; see `07-apic-virtualization.md`.  `[SDM 3C Ch.32]` `[321]` `C:medium` `V:durable`
+- **Claim.** ELI (ASPLOS '12) attacked the interrupt half of the same problem in software by delivering physical interrupts directly to guests, anticipating the direction later taken in hardware by APIC virtualization and posted interrupts; see `07-apic-virtualization.md`.  `[no-spec]` `[321]` `C:medium` `V:durable`
 
-- **Claim.** Dune (OSDI '12) used VT-x to provide a *process* abstraction rather than a machine abstraction, running ordinary processes in VMX non-root operation so that they could safely use privileged hardware features such as page tables and ring protection.  `[SDM 3C §26.2]` `[305]` `C:medium` `V:durable`
+- **Claim.** Dune (OSDI '12) used VT-x to provide a *process* abstraction rather than a machine abstraction, running ordinary processes in VMX non-root operation so that they could safely use privileged hardware features such as page tables and ring protection.  `[no-spec]` `[305]` `C:medium` `V:durable`
 
-- **Claim.** NEVE (SOSP '17) showed the same overheads on ARM and proposed hardware extensions — logging and deferring hypervisor-instruction traps — reporting up to an order of magnitude improvement over the then-current architecture and directly influencing ARM's nested-virtualization support.  `[SDM 3C §26.3]` `[306]` `C:medium` `V:durable`
+- **Claim.** NEVE (SOSP '17) showed the same overheads on ARM and proposed hardware extensions — logging and deferring hypervisor-instruction traps — reporting up to an order of magnitude improvement over the then-current architecture and directly influencing ARM's nested-virtualization support.  `[no-spec]` `[306]` `C:medium` `V:durable`
 
-- **Claim.** SeKVM (IEEE S&P 2021, with the multiprocessor memory-model extension at SOSP 2021) produced machine-checked proofs for a commodity KVM-derived hypervisor, making the trusted core of the L0 layer a formally verified artefact rather than an assumption.  `[SDM 3C §26.1]` `[322]` `C:medium` `V:durable`
+- **Claim.** SeKVM (IEEE S&P 2021, with the multiprocessor memory-model extension at SOSP 2021) produced machine-checked proofs for a commodity KVM-derived hypervisor, making the trusted core of the L0 layer a formally verified artefact rather than an assumption.  `[no-spec]` `[322]` `C:medium` `V:durable`
 
-- **Claim.** Out of Hypervisor (OoH) inverted the usual framing: instead of emulating hardware inside a VM so that a hypervisor can run there, expose individual hypervisor-oriented features (PML, SPP, CAT, EPT) to the guest OS so that processes inside a VM can use them.  `[SDM 3C §31.3.6]` `[307]` `C:medium` `V:durable`
+- **Claim.** Out of Hypervisor (OoH) inverted the usual framing: instead of emulating hardware inside a VM so that a hypervisor can run there, expose individual hypervisor-oriented features (PML, SPP, CAT, EPT) to the guest OS so that processes inside a VM can use them.  `[no-spec]` `[307]` `C:medium` `V:durable`
 
-- **Claim.** **Publication-venue correction:** OoH was published at SC '22 (IEEE/ACM Supercomputing, Dallas, November 2022); arXiv:2202.13483 is the February 2022 preprint. The frequent attribution of OoH to SOSP in 2022 is wrong.  `[SDM 3C §31.3.6]` `[307]` `[308]` `[309]` `C:high` `V:durable`
+- **Claim.** **Publication-venue correction:** OoH was published at SC '22 (IEEE/ACM Supercomputing, Dallas, November 2022); arXiv:2202.13483 is the February 2022 preprint. The frequent attribution of OoH to SOSP in 2022 is wrong.  `[no-spec]` `[307]` `[308]` `[309]` `C:high` `V:durable`
 
-- **Claim.** **Unresolved conflict in OoH's own reported results (`C:low`).** The arXiv preprint's abstract states that EPML "reduces CRIU checkpointing time by about 14% while leading to a negligible overhead (of about 0.5%)", whereas the later write-up reports that EPML speeds up CRIU checkpointing by 13× and Boehm garbage collection by 6× with 16× less overhead on applications. Both figures are reproduced here with their sources; they are not averaged and no choice between them is made.  `[SDM 3C §31.3.6]` `[307]` `[309]` `C:low` `V:durable`
+- **Claim.** **Unresolved conflict in OoH's own reported results (`C:low`).** The arXiv preprint's abstract states that EPML "reduces CRIU checkpointing time by about 14% while leading to a negligible overhead (of about 0.5%)", whereas the later write-up reports that EPML speeds up CRIU checkpointing by 13× and Boehm garbage collection by 6× with 16× less overhead on applications. Both figures are reproduced here with their sources; they are not averaged and no choice between them is made.  `[no-spec]` `[307]` `[309]` `C:low` `V:durable`
 
   > "The results show that EPML reduces CRIU checkpointing time by about 14% while leading to a negligible overhead (of about 0.5%) compared to SPML, /proc, and userfaultfd." — arXiv:2202.13483 abstract [307]
   >

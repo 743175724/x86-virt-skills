@@ -1,0 +1,87 @@
+{
+  "$comment": "Lint rules for intel-vt. Extracted verbatim from tools/lint.mjs when the linter became config-driven; behaviour is unchanged. Every regex is {re, flags} because an implicit flag set is how a rule silently stops matching.",
+  "displayName": "Intel VT",
+
+  "archChapter": { "re": "^(0[1-9]|1[0-4])-" },
+  "datedFile": "90-dated-landscape.md",
+  "navigational": ["errata.md", "00-quickref.md"],
+
+  "$comment_claimFreeFiles": "Empty on purpose. This skill's core-facts.md carries claim lines and is a sourced fact layer, not a pure index. The sibling amd-virtualization made the opposite choice; the rule is per-skill for exactly that reason.",
+  "claimFreeFiles": [],
+
+  "anchors": {
+    "prefix": { "re": "^(SDM [34]|VT-d |TDX-|ISAEXT |SIOV )" },
+    "unverified": { "re": "(Ch|§)\\.?\\?$" },
+    "grammar": [
+      { "re": "^SDM 3[ABCD] (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-Z](\\.[0-9]+)*)$" },
+      { "re": "^SDM 4 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$" },
+      { "re": "^VT-d 5\\.20 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-Z](\\.[0-9]+)*)$" },
+      { "re": "^TDX-(BASE|ABI|ISA|GHCI|SEAMLDR|CONNECT|MIG|PART) (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$" },
+      { "re": "^ISAEXT (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$" },
+      { "re": "^SIOV (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$" }
+    ]
+  },
+
+  "$comment_offSpec": "Subjects that appear nowhere in the Intel SDM. A claim about one of these whose ONLY anchor is an SDM section is citation filler: the section number resolves, but to an unrelated subject. This defect reached 44 claims in chapter 15 before a PDF check caught it.",
+  "offSpec": {
+    "subjects": { "re": "\\b(HVCI|VBS|VTL[0-9]?|trustlet|Credential Guard|securekernel|Kerberos|BitLocker|Hyper-V|WSL2?|WHPX?|Windows Sandbox|Defender|ZombieLoad|Downfall|Retbleed|retpoline|L1TF|Foreshadow|RIDL|Fallout|VENOM|CVE-\\d{4}-\\d+)\\b", "flags": "i" },
+    "primaryAnchor": { "re": "^SDM 3[ABCD] " },
+    "sourceHints": { "re": "microsoft|learn\\.microsoft|kernel\\.org|lore\\.kernel|security-center|INTEL-SA|nvd\\.nist|cve\\.org|arxiv|usenix|acm\\.org|ieee", "flags": "i" },
+    "message": "the SDM does not document it"
+  },
+
+  "$comment_deadTitles": "SDM chapters renumbered out of existence in rev 092. Citing them means the author worked from a stale manual.",
+  "deadTitles": [
+    { "text": "Virtualization of System Resources", "message": "cites SDM chapter \"Virtualization of System Resources\", which no longer exists in rev 092 — the author used a stale manual" },
+    { "text": "Handling Boundary Conditions in a VMM", "message": "cites SDM chapter \"Handling Boundary Conditions in a VMM\", which no longer exists in rev 092 — the author used a stale manual" },
+    { "text": "Managing State", "message": "cites SDM chapter \"Managing State\", which no longer exists in rev 092 — the author used a stale manual" }
+  ],
+
+  "bannedHosts": {
+    "mode": "resolve",
+    "inBibliography": "off",
+    "hosts": ["xem.github.io", "kanxue.com", "csdn.net", "cnblogs.com", "juejin.cn", "baike.baidu.com", "51cto.com"]
+  },
+
+  "legacyDocs": [],
+
+  "misconceptions": [
+    { "wrong": { "re": "CVE-2019-11091[^)]{0,40}ZombieLoad|ZombieLoad[^.]{0,40}CVE-2019-11091", "flags": "i" },
+      "right": "ZombieLoad is CVE-2018-12130 (MFBDS)" },
+    { "wrong": { "re": "bit 7[^.]{0,60}guest-physical address[^.]{0,20}valid", "flags": "i" },
+      "right": "EPT-violation qualification bit 7 is guest-LINEAR-address valid" },
+    { "wrong": { "re": "MBEC[^.]{0,40}Skylake", "flags": "i" },
+      "right": "MBEC shipped with Kaby Lake" },
+    { "wrong": { "re": "PML[^.]{0,40}Skylake", "flags": "i" },
+      "right": "PML shipped with Broadwell Xeon (2015)" },
+    { "wrong": { "re": "SOSP.?22[^.]{0,20}(OoH|Out of Hypervisor)|Out of Hypervisor[^.]{0,20}SOSP", "flags": "i" },
+      "right": "Out of Hypervisor was published at SC’22" },
+    { "wrong": { "re": "TDXRay[^.]{0,80}INTEL-SA-01271|INTEL-SA-01271[^.]{0,80}TDXRay", "flags": "i" },
+      "right": "TDXRay has no INTEL-SA number; Intel responded with announcement INTEL-2026-04-02-001. INTEL-SA-01271 is an unrelated Gaudi advisory" },
+    { "wrong": { "re": "(SIOV|Scalable I/O Virtualization)[^.]{0,60}Rev(ision)? 1\\.0", "flags": "i" },
+      "right": "the SIOV specification cover reads Rev 1.1" },
+    { "wrong": { "re": "VT-d[^.]{0,40}Rev(ision)? 4\\.1\\b", "flags": "i" },
+      "right": "the current VT-d specification is Rev 5.20 (D51397-019, April 2026); Rev 4.1 is what the stale landing page serves" }
+  ],
+
+  "correctionHints": { "re": "not Skylake|\\bnot\\b.{0,20}(CVE-|with an INTEL-SA|Rev)", "flags": "i" },
+
+  "ownership": {
+    "crossRefEscape": { "re": "\\bsee\\b|\\bcross-ref|→|`\\d\\d-[a-z-]+\\.md`", "flags": "i" },
+    "rules": [
+      { "topic": { "re": "\\bVMCS field encoding|VM-execution control field", "flags": "i" }, "owner": "02-vmcs.md" },
+      { "topic": { "re": "\\bVM-instruction error\\b", "flags": "i" }, "owner": "08-vmx-instructions.md" },
+      { "topic": { "re": "\\bposted-interrupt descriptor\\b", "flags": "i" }, "owner": "07-apic-virtualization.md" },
+      { "topic": { "re": "\\bSEAMCALL\\b|\\bTDCALL\\b|\\bSecure.EPT\\b", "flags": "i" }, "owner": "13-tdx.md" },
+      { "topic": { "re": "\\bVMCS shadowing\\b|\\bvmcs02\\b", "flags": "i" }, "owner": "14-nested-virtualization.md" },
+      { "topic": { "re": "\\bHVCI\\b|\\bVBS\\b", "flags": "i" }, "owner": "15-security.md" }
+    ]
+  },
+
+  "terminology": [],
+
+  "$comment_orphanExemptBelow": "IDs 1-25 are the preloaded Intel specification set; they are allowed to sit uncited.",
+  "orphanExemptBelow": 26,
+
+  "eval": { "questions": "eval/intel-vt/questions.yaml", "expected": 80 }
+}

@@ -12,11 +12,11 @@
 
 Virtual Machine Extensions do not change the meaning of any pre-existing instruction. They add a second, orthogonal axis to the privilege model: a logical processor is either in **VMX root operation**, where a virtual-machine monitor runs, or in **VMX non-root operation**, where guest software runs. Both forms of operation support all four privilege levels, so a guest operating system keeps running at CPL 0 and sees the machine it was written for. What changes in VMX non-root operation is not what instructions mean but which instructions and events hand control back to the VMM.
 
-- **Claim.** VMX defines two forms of processor operation: VMX root operation, in which a VMM runs, and VMX non-root operation, in which guest software runs; both support all four privilege levels.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** Software in VMX root operation behaves largely as it does outside VMX operation, with two principal differences: the VMX instruction set is available, and the values that software may load into control registers are restricted.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** VMX non-root operation is restricted not by altering instruction semantics but by making selected instructions and events cause transitions to the VMM, which is what allows an unmodified guest operating system to run at CPL 0.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** A transition from VMX root operation into VMX non-root operation is a VM entry; a transition from VMX non-root operation back to VMX root operation is a VM-exit.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** Both kinds of VMX transition are managed by the virtual-machine control structure (VMCS), whose format and field set are owned by `02-vmcs.md`.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
+- **Claim.** VMX defines two forms of processor operation: VMX root operation, in which a VMM runs, and VMX non-root operation, in which guest software runs; both support all four privilege levels.  `[SDM 3C §26.3]` `[1]` `C:high` `V:durable`
+- **Claim.** Software in VMX root operation behaves largely as it does outside VMX operation, with two principal differences: the VMX instruction set is available, and the values that software may load into control registers are restricted.  `[SDM 3C §26.3]` `[1]` `C:high` `V:durable`
+- **Claim.** VMX non-root operation is restricted not by altering instruction semantics but by making selected instructions and events cause transitions to the VMM, which is what allows an unmodified guest operating system to run at CPL 0.  `[SDM 3C §26.3]` `[1]` `C:high` `V:durable`
+- **Claim.** A transition from VMX root operation into VMX non-root operation is a VM entry; a transition from VMX non-root operation back to VMX root operation is a VM-exit.  `[SDM 3C §26.3]` `[1]` `C:high` `V:durable`
+- **Claim.** Both kinds of VMX transition are managed by the virtual-machine control structure (VMCS), whose format and field set are owned by `02-vmcs.md`.  `[SDM 3C §26.5]` `[1]` `C:high` `V:durable`
 
 This is the direct answer to the classical x86 virtualization problem. On pre-VMX IA-32 a set of sensitive instructions did not fault when executed outside CPL 0, so a monitor could not intercept them merely by deprivileging the guest (§1.10.1). VMX makes interception a property of the *mode*, configured per virtual machine by the VMM, rather than a property of the instruction encoding.
 
@@ -55,9 +55,9 @@ The life cycle of a VMM on one logical processor is a strict sequence. Software 
 7. Enter the guest with VMLAUNCH (first entry after VMCLEAR) or VMRESUME (subsequent entries), service each VM-exit, re-enter.
 8. Execute VMXOFF to leave VMX operation, after which CR4.VMXE may be cleared.
 
-- **Claim.** A logical processor enters VMX operation by executing VMXON and leaves it by executing VMXOFF; VMXOFF is the only architectural exit from VMX operation.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** A VMM must use VMLAUNCH for the first VM entry with a given VMCS after that VMCS has been made clear by VMCLEAR, and VMRESUME for subsequent VM entries with the same VMCS; the underlying launch-state model is owned by `02-vmcs.md` §2.4.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** Processor state that a VM-exit does not save into the VMCS — notably the general-purpose registers — is the VMM's responsibility to save and restore in software around each VM entry.  `[SDM 3C Ch.26]` `[1]` `C:medium` `V:durable`
+- **Claim.** A logical processor enters VMX operation by executing VMXON and leaves it by executing VMXOFF; VMXOFF is the only architectural exit from VMX operation.  `[SDM 3C §26.4]` `[1]` `C:high` `V:durable`
+- **Claim.** A VMM must use VMLAUNCH for the first VM entry with a given VMCS after that VMCS has been made clear by VMCLEAR, and VMRESUME for subsequent VM entries with the same VMCS; the underlying launch-state model is owned by `02-vmcs.md` §2.4.  `[SDM 3C §27.11.3]` `[1]` `C:high` `V:durable`
+- **Claim.** Processor state that a VM-exit does not save into the VMCS — notably the general-purpose registers — is the VMM's responsibility to save and restore in software around each VM entry: the guest-state area holds CR0, CR3, CR4, DR7, RSP, RIP, RFLAGS, the segment and descriptor-table registers and a set of MSRs, and no general-purpose register other than RSP.  `[SDM 3C §27.4.1]` `[1]` `C:high` `V:durable`
 
 That last point is a deliberate cost trade. VMX saves and restores only the state whose correctness the hardware must guarantee (control registers, the hidden parts of segment registers, descriptor-table registers, the instruction pointer and flags) and leaves cheap-to-save state to software. It is why a production VM entry path is a hand-written assembly stub wrapped around VMLAUNCH/VMRESUME rather than a single instruction.
 
@@ -104,8 +104,8 @@ The `(value | FIXED0) & FIXED1` idiom is the whole of the fixed-bit rule express
 
 ## 1.3 Discovering VMX: CPUID.1:ECX.VMX[bit 5]
 
-- **Claim.** CPUID function 1 returns a VMX feature flag in ECX bit 5, written CPUID.1:ECX.VMX[bit 5]; the value 1 indicates that the processor supports VMX operation.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** When CPUID.1:ECX.VMX[bit 5] is 0, the VMX capability MSRs are not architecturally defined on that processor, so software must test the CPUID bit before reading them.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
+- **Claim.** CPUID function 1 returns a VMX feature flag in ECX bit 5, written CPUID.1:ECX.VMX[bit 5]; the value 1 indicates that the processor supports VMX operation.  `[SDM 3C §26.6]` `[1]` `C:high` `V:durable`
+- **Claim.** Every VMX capability MSR from 480H upwards is listed in the architectural-MSR table with the existence condition CPUID.01H:ECX[5] = 1, so a processor that reports 0 in that bit does not architecturally define them and software must test the CPUID bit before reading them.  `[SDM 4 §2.1]` `[5]` `C:high` `V:durable`
 - **Claim.** The detailed capabilities of a processor's VMX implementation are reported not by CPUID but by a family of read-only VMX capability MSRs, enumerated in the VMX capability reporting facility appendix.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
 
 CPUID answers only "does this part implement VMX at all". Every other question a VMM has — which controls exist, which of them may be turned off, how large a VMCS is, what memory type it must use — is answered by the capability MSRs. A correct VMM therefore never infers feature availability from a model number.
@@ -116,10 +116,10 @@ CPUID answers only "does this part implement VMX at all". Every other question a
 
 Even on a processor that supports VMX, platform firmware decides whether VMXON is permitted. That decision lives in one MSR which firmware writes and then locks; the lock holds until the next power-up reset, which is what makes a "Intel VT-x: Disabled" firmware setting effective against software that runs afterwards.
 
-- **Claim.** IA32_FEATURE_CONTROL is MSR address 3AH.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** IA32_FEATURE_CONTROL bit 0 is the lock bit: while it is 0, execution of VMXON causes a general-protection exception; once it is set to 1, WRMSR to IA32_FEATURE_CONTROL causes a general-protection exception until the next power-up reset.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** IA32_FEATURE_CONTROL bit 1 enables VMXON in SMX operation and bit 2 enables VMXON outside SMX operation; VMXON checks the bit that matches the current SMX state and causes a general-protection exception if that bit is clear.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** Because the lock bit makes the MSR read-only once firmware has set it, system firmware uses IA32_FEATURE_CONTROL to offer a durable platform option that disables VMX and that operating-system software cannot override at run time.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
+- **Claim.** IA32_FEATURE_CONTROL is MSR address 3AH and is cleared to zero when a logical processor is reset.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
+- **Claim.** IA32_FEATURE_CONTROL bit 0 is the lock bit: while it is 0, execution of VMXON causes a general-protection exception; once it is set to 1, WRMSR to IA32_FEATURE_CONTROL causes a general-protection exception until the next power-up reset.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
+- **Claim.** IA32_FEATURE_CONTROL bit 1 enables VMXON in SMX operation and bit 2 enables VMXON outside SMX operation; VMXON checks the bit that matches the current SMX state and causes a general-protection exception if that bit is clear; to enable VMX, firmware must set bit 1, bit 2 or both, as well as the lock bit.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
+- **Claim.** Because the lock bit makes the MSR read-only once firmware has set it, system firmware uses IA32_FEATURE_CONTROL to offer a durable platform option that disables VMX and that operating-system software cannot override at run time.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
 
 A VMM that finds bit 0 set and bit 2 clear must report "VMX disabled by firmware" rather than retry: there is no software path to change the MSR before the next power cycle. A VMM that finds bit 0 clear may set bits 0 and 2 itself, which is what the Linux kvm_intel module does at load time [106].
 
@@ -127,13 +127,13 @@ A VMM that finds bit 0 set and bit 2 clear must report "VMX disabled by firmware
 
 ## 1.5 CR4.VMXE and the CR0/CR4 fixed-bit MSRs
 
-- **Claim.** System software enables VMX by setting CR4.VMXE, which is CR4 bit 13; VMXON causes an invalid-opcode exception if executed with CR4.VMXE = 0.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** Once a logical processor is in VMX operation it is not possible to clear CR4.VMXE; the bit can be cleared only after VMXOFF.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
+- **Claim.** System software enables VMX by setting CR4.VMXE, which is CR4 bit 13; VMXON causes an invalid-opcode exception if executed with CR4.VMXE = 0.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
+- **Claim.** Once a logical processor is in VMX operation it is not possible to clear CR4.VMXE; the bit can be cleared only after VMXOFF.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
 - **Claim.** The values CR0 and CR4 may hold in VMX operation are constrained by four capability MSRs: IA32_VMX_CR0_FIXED0 at 486H, IA32_VMX_CR0_FIXED1 at 487H, IA32_VMX_CR4_FIXED0 at 488H and IA32_VMX_CR4_FIXED1 at 489H.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
-- **Claim.** The fixed-bit rule is: if bit N of the FIXED0 MSR is 1 then bit N of the corresponding control register must be 1 in VMX operation, and if bit N of the FIXED1 MSR is 0 then bit N of that control register must be 0.  `[SDM 3C Ch.26]` `[2]` `C:high` `V:durable`
-- **Claim.** In VMX operation, an attempt by CLTS, LMSW or MOV to CR to give a fixed bit an unsupported value causes a general-protection exception.  `[SDM 3C Ch.26]` `[1]` `C:medium` `V:durable`
-- **Claim.** The first processors to support VMX operation required CR0.PE, CR0.NE, CR0.PG and CR4.VMXE to be 1 in VMX operation, which restricted VMX operation to paged protected mode and therefore prevented guest software from running in unpaged protected mode or in real-address mode.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** The guest-side half of that restriction was later removed by the unrestricted-guest control; see `03-nonroot-operation.md` §3.12 rather than assuming the first-generation rule still applies.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** The fixed-bit rule is: if bit N of the FIXED0 MSR is 1 then bit N of the corresponding control register must be 1 in VMX operation, and if bit N of the FIXED1 MSR is 0 then bit N of that control register must be 0; each bit is therefore fixed to 0, fixed to 1, or flexible.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** In VMX operation, including VMX root operation, an attempt by CLTS, LMSW or MOV to CR to give a fixed bit an unsupported value causes a general-protection exception, and neither VM entry nor VM exit can set such a bit to an unsupported value.  `[SDM 3C §26.8]` `[1]` `C:high` `V:durable`
+- **Claim.** The first processors to support VMX operation required CR0.PE, CR0.NE, CR0.PG and CR4.VMXE to be 1 in VMX operation, which restricted VMX operation to paged protected mode and therefore prevented guest software from running in unpaged protected mode or in real-address mode.  `[SDM 3C §26.8]` `[1]` `C:high` `V:durable`
+- **Claim.** The guest-side half of that restriction was later removed by the unrestricted-guest control; see `03-nonroot-operation.md` §3.12 rather than assuming the first-generation rule still applies.  `[SDM 3C §28.6]` `[1]` `C:high` `V:durable`
 
 The distinction matters when reading older material. The fixed-bit MSRs constrain CR0 and CR4 **in VMX operation**, that is, for the VMM's own register values. A guest's CR0.PE and CR0.PG are checked separately at VM entry, and it is those guest checks that the unrestricted-guest control relaxes.
 
@@ -143,15 +143,17 @@ The distinction matters when reading older material. The fixed-bit MSRs constrai
 
 IA32_VMX_BASIC is the first MSR a VMM reads after CPUID. It supplies the revision identifier that must be stamped into every VMXON region and VMCS, the size and memory type of those regions, and the flag that tells software whether the "true" control-capability MSRs exist.
 
-- **Claim.** IA32_VMX_BASIC is MSR address 480H and is read-only.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** IA32_VMX_BASIC is MSR address 480H and is read-only.  `[SDM 3D App.A]` `[SDM 4 §2.1]` `[2][5]` `C:high` `V:durable`
 - **Claim.** IA32_VMX_BASIC bits 30:0 contain the 31-bit VMCS revision identifier that software must write into the first four bytes of every VMXON region and every VMCS region; bit 31 of the MSR is always 0.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
 - **Claim.** IA32_VMX_BASIC bits 44:32 report the number of bytes software should allocate for the VMXON region and for each VMCS region; the reported value is never greater than 4096.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
-- **Claim.** IA32_VMX_BASIC bits 53:50 report the memory type the logical processor uses to access the VMXON region, the VMCS and referenced data structures; the value 0 means uncacheable and the value 6 means write-back.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
-- **Claim.** IA32_VMX_BASIC bit 48, when 1, indicates that physical addresses used for the VMXON region, the VMCS and structures referenced by VMCS pointer fields are limited to 32 bits.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
-- **Claim.** IA32_VMX_BASIC bit 49, when 1, indicates support for the dual-monitor treatment of SMIs and SMM, whose mechanics are owned by `09-smm-seam.md`.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
-- **Claim.** IA32_VMX_BASIC bit 54, when 1, indicates that the processor reports instruction information on VM exits due to the INS and OUTS instructions.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
+- **Claim.** IA32_VMX_BASIC bits 53:50 report the memory type that should be used for the VMCS, for the data structures a VMCS references — I/O bitmaps, virtual-APIC page and the MSR areas for VMX transitions — and for the MSEG header; the value 0 means uncacheable, the value 6 means write-back, and values 1–5 and 7–15 are not used.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** IA32_VMX_BASIC bit 48, when 1, indicates that physical addresses used for the VMXON region, the VMCS and structures referenced by VMCS pointer fields are limited to 32 bits.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** IA32_VMX_BASIC bit 49, when 1, indicates support for the dual-monitor treatment of SMIs and SMM, whose mechanics are owned by `09-smm-seam.md`.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** IA32_VMX_BASIC bit 54, when 1, indicates that the processor reports instruction information on VM exits due to the INS and OUTS instructions.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
 - **Claim.** IA32_VMX_BASIC bit 55, when 1, indicates that the IA32_VMX_TRUE_PINBASED_CTLS, IA32_VMX_TRUE_PROCBASED_CTLS, IA32_VMX_TRUE_EXIT_CTLS and IA32_VMX_TRUE_ENTRY_CTLS MSRs are supported and report which default-1 controls may be cleared; the default-1 rule itself is explained in `02-vmcs.md` §2.8.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
-- **Claim.** IA32_VMX_BASIC bit 56, when 1, indicates that VM entry allows injection of a software interrupt, software exception or privileged software exception with an instruction length of 0.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
+- **Claim.** IA32_VMX_BASIC bit 56, when 1, indicates that software can use VM entry to deliver a hardware exception with or without an error code, regardless of vector; the separate capability to inject a software interrupt, software exception or privileged software exception with an instruction length of 0 is IA32_VMX_MISC bit 30, not this bit.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** IA32_VMX_BASIC bit 58, when 1, indicates VMX nested-exception support: software may indicate that an injected event is a nested exception, and VM exits indicate whether an event is an exception encountered during FRED event delivery; any processor that supports FRED transitions provides this support.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** Bits 47:45, bit 57 and bits 63:59 of IA32_VMX_BASIC are reserved and are read as 0.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
 
 The revision identifier is not decorative. A VMCS stamped with another processor generation's revision identifier is rejected by VMPTRLD, and that rejection is precisely the mechanism that makes an implementation-specific, undocumented VMCS layout safe across generations.
 
@@ -168,7 +170,8 @@ A single `rdmsr 0x480` answers five separate questions, and reading it is the fa
 | Memory type | 53:50 | Which memory type must the regions use — 6 means write-back? |
 | INS/OUTS reporting | 54 | Will VM exits on string I/O carry instruction information? |
 | "True" MSRs present | 55 | Must default-1 controls be read from the ordinary or the "true" capability MSRs? |
-| Zero-length injection | 56 | May VM entry inject a software event with instruction length 0? |
+| Hardware-exception injection | 56 | May VM entry deliver a hardware exception with or without an error code, whatever the vector? |
+| Nested-exception support | 58 | May an injected event be marked as a nested exception? |
 
 A VMM should record all of these once per logical processor at initialisation. Re-reading them per VM entry is wasted work; ignoring bit 55 in particular is the mistake that leaves CR3 exiting enabled forever on a machine that supports EPT (see `02-vmcs.md` §2.8.4).
 
@@ -176,8 +179,8 @@ A VMM should record all of these once per logical processor at initialisation. R
 
 IA32_VMX_BASIC is the head of a contiguous block of read-only MSRs. Knowing the whole block by address is useful because a VMX capability dump is the first artefact worth collecting from any machine whose behaviour is in question.
 
-- **Claim.** The VMX capability MSRs occupy a contiguous block beginning at 480H; besides those named elsewhere in this chapter, the block includes IA32_VMX_MISC at 485H, IA32_VMX_VMCS_ENUM at 48AH, IA32_VMX_EPT_VPID_CAP at 48CH and the secondary VM-exit control capability MSR at 493H.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
-- **Claim.** IA32_VMX_MISC at 485H reports implementation parameters that no other MSR carries, including the rate at which the VMX-preemption timer decrements relative to the time-stamp counter, the activity states the implementation supports, and the number of CR3-target values it provides.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
+- **Claim.** The VMX capability MSRs occupy a contiguous block beginning at 480H; besides those named elsewhere in this chapter, the block includes IA32_VMX_MISC at 485H, IA32_VMX_VMCS_ENUM at 48AH, IA32_VMX_EPT_VPID_CAP at 48CH and the secondary VM-exit control capability MSR at 493H.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
+- **Claim.** IA32_VMX_MISC at 485H reports implementation parameters that no other MSR carries, including the rate at which the VMX-preemption timer decrements relative to the time-stamp counter, the activity states the implementation supports, and the number of CR3-target values it provides.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
 
 | MSR | Address | Read it for | Owner |
 |---|---|---|---|
@@ -200,13 +203,13 @@ IA32_VMX_BASIC is the head of a contiguous block of read-only MSRs. Knowing the 
 
 ## 1.7 The VMXON region
 
-- **Claim.** The operand of VMXON is a memory operand holding the 4-KByte-aligned physical address of the VMXON region.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
-- **Claim.** The VMXON region must be aligned on a 4-KByte boundary, so bits 11:0 of its physical address must be 0, and VMXON fails if the address sets any bit beyond the processor's physical-address width.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
-- **Claim.** Software should allocate the VMXON region with the size reported in IA32_VMX_BASIC bits 44:32 and must write the VMCS revision identifier from IA32_VMX_BASIC bits 30:0 into the first four bytes of the region before executing VMXON.  `[SDM 3C Ch.26]` `[1]` `C:high` `V:durable`
+- **Claim.** The operand of VMXON is a memory operand holding the 4-KByte-aligned physical address of the VMXON region; the operand is always 64 bits and always in memory.  `[SDM 3C §26.7]` `[1]` `C:high` `V:durable`
+- **Claim.** The VMXON region must be aligned on a 4-KByte boundary, so bits 11:0 of its physical address must be 0, and the pointer must not set any bit beyond the processor's physical-address width — or any bit in 63:32 if IA32_VMX_BASIC bit 48 is 1.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
+- **Claim.** Software should allocate the VMXON region with the size reported in IA32_VMX_BASIC bits 44:32 and must write the VMCS revision identifier from IA32_VMX_BASIC bits 30:0 into bits 30:0 of the first four bytes of the region, with bit 31 cleared to 0, before executing VMXON; the region needs no other initialisation.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
 - **Claim.** VMXON fails if bits 30:0 of the first four bytes of the VMXON region do not match the VMCS revision identifier reported in IA32_VMX_BASIC, or if bit 31 of that doubleword is 1.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
-- **Claim.** The VMXON region should be held in memory of the type reported in IA32_VMX_BASIC bits 53:50 — write-back on processors that report 6 — because using an uncacheable type is architecturally permitted but significantly degrades the performance of VMX transitions.  `[SDM 3C Ch.26]` `[1]` `C:medium` `V:durable`
-- **Claim.** The VMXON region uses the same region format as a VMCS but is never accessed by VMREAD or VMWRITE; after VMXON the region belongs to the logical processor and software must not read or write its contents.  `[SDM 3C Ch.26]` `[1]` `C:medium` `V:durable`
-- **Claim.** Each logical processor requires its own VMXON region, which stays bound to that logical processor for as long as it remains in VMX operation.  `[SDM 3C Ch.26]` `[1]` `C:medium` `V:durable`
+- **Claim.** Software should maintain the VMCS region and the structures a VMCS references in writeback cacheable memory and should consult IA32_VMX_BASIC, because a future implementation may allow or require a different memory type; the SDM states this requirement for the VMCS region rather than for the VMXON region, and mapping such a structure uncacheable is permitted but makes software's own accesses to it slower.  `[SDM 3C §27.2]` `[1]` `C:high` `V:durable`
+- **Claim.** The VMXON region requires the same amount of memory as a VMCS region and carries the same VMCS revision identifier in its first four bytes, but it is never accessed by VMREAD or VMWRITE; software should not access or modify the VMXON region of a logical processor between that processor's VMXON and VMXOFF, and doing so may lead to unpredictable behaviour.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
+- **Claim.** Software should use a separate VMXON region for each logical processor, and that region stays bound to its logical processor for as long as that processor remains in VMX operation.  `[SDM 3C §27.11.5]` `[1]` `C:high` `V:durable`
 
 ---
 
@@ -214,11 +217,11 @@ IA32_VMX_BASIC is the head of a contiguous block of read-only MSRs. Knowing the 
 
 The complete per-instruction semantics — operand forms, the full exception list, the numeric error codes — belong to `08-vmx-instructions.md`. What matters here is the state change VMXON makes and the two failure channels a VMM must test after every VMX instruction.
 
-- **Claim.** VMXON causes an invalid-opcode exception if executed with a register operand, with CR0.PE = 0, with CR4.VMXE = 0, with RFLAGS.VM = 1, or in IA-32e mode with CS.L = 0.  `[SDM 3C Ch.33]` `[1]` `C:medium` `V:durable`
-- **Claim.** VMXON causes a general-protection exception if executed at CPL greater than 0, if the current values of CR0 or CR4 are unsupported in VMX operation per the fixed-bit MSRs, or if the IA32_FEATURE_CONTROL lock bit or the applicable VMXON-enable bit is clear.  `[SDM 3C Ch.33]` `[1]` `C:medium` `V:durable`
-- **Claim.** On successful VMXON the logical processor enters VMX operation, sets the current-VMCS pointer to FFFFFFFF_FFFFFFFFH, blocks INIT signals, and blocks and disables A20M.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
+- **Claim.** VMXON causes an invalid-opcode exception if executed with a register operand, with CR0.PE = 0, with CR4.VMXE = 0, with RFLAGS.VM = 1, or with IA32_EFER.LMA = 1 and CS.L = 0.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
+- **Claim.** VMXON causes a general-protection exception if executed at CPL greater than 0, if the current values of CR0 or CR4 are unsupported in VMX operation per the fixed-bit MSRs, if the IA32_FEATURE_CONTROL lock bit or the applicable VMXON-enable bit is clear, or if the logical processor is in A20M mode.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
+- **Claim.** On successful VMXON the logical processor enters VMX operation, sets the current-VMCS pointer to FFFFFFFF_FFFFFFFFH, blocks INIT signals, blocks and disables A20M, and clears any address-range monitoring established by MONITOR.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
 - **Claim.** VMX instructions report failure through two distinguishable channels: VMfailInvalid sets RFLAGS.CF and is used when there is no valid current VMCS, while VMfailValid sets RFLAGS.ZF and records a numeric error code in the VMCS — see `08-vmx-instructions.md` for the error-code list.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
-- **Claim.** VMXOFF takes the logical processor out of VMX operation, after which CR4.VMXE may be cleared and INIT signals and A20M behave as they do outside VMX operation.  `[SDM 3C Ch.33]` `[1]` `C:medium` `V:durable`
+- **Claim.** VMXOFF takes the logical processor out of VMX operation, unblocks INIT signals, re-enables A20M only if the logical processor is outside SMX operation, and clears any address-range monitoring; CR4.VMXE may be cleared afterwards.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
 
 Because VMXON blocks INIT, a logical processor in VMX operation cannot be restarted through the normal INIT–SIPI path. A VMM that must allow platform reset, kexec or a crash dump therefore has to execute VMXOFF on every online logical processor first; production hypervisors do exactly this in their reboot and panic paths [106].
 
@@ -241,8 +244,8 @@ The distinction between the two flags is worth internalising early: CF means "th
 
 ## 1.9 What else changes in VMX operation
 
-- **Claim.** In VMX operation the processor blocks INIT signals and disables A20M, and both effects persist until VMXOFF.  `[SDM 3C Ch.33]` `[1]` `C:high` `V:durable`
-- **Claim.** The VMX instruction set is usable only in VMX root operation; executing a VMX instruction in VMX non-root operation causes a VM-exit instead of executing the instruction, which is what prevents a guest from escaping by issuing VMXOFF.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** The INIT signal is blocked whenever a logical processor is in VMX root operation and is not blocked in VMX non-root operation, where INITs cause VM exits instead; A20M interrupts are blocked once the processor is in VMX operation, so it is impossible to be in A20M mode in VMX operation.  `[SDM 3C §26.8]` `[1]` `C:high` `V:durable`
+- **Claim.** The VMX instruction set is usable only in VMX root operation; executing VMXON, VMXOFF, VMCLEAR, VMPTRLD, VMPTRST, VMLAUNCH, VMRESUME, VMCALL, INVEPT or INVVPID in VMX non-root operation causes a VM-exit instead of executing the instruction, which is what prevents a guest from escaping by issuing VMXOFF; VMREAD and VMWRITE are the exception, see `03-nonroot-operation.md` §3.2.  `[SDM 3C §28.1.2]` `[1]` `C:high` `V:durable`
 - **Claim.** System-management interrupts and system-management mode interact with VMX operation through a separate architecture — the default treatment and the dual-monitor treatment — owned by `09-smm-seam.md`.  `[SDM 3C Ch.34]` `[1]` `C:medium` `V:durable`
 
 ### 1.9.1 Bringing up application processors under a VMM
@@ -268,16 +271,16 @@ This section is deliberately fenced off from the architectural claims above. **T
 
 ### 1.10.1 The problem VMX was built to solve
 
-- **Claim.** The formal criterion for classical trap-and-emulate virtualization was stated by Popek and Goldberg in Communications of the ACM 17(7), July 1974, pages 412–421: a VMM can be constructed if the set of sensitive instructions is a subset of the privileged instructions.  `[SDM 3C Ch.26]` `[103]` `C:high` `V:durable`
-- **Claim.** Robin and Irvine showed at the 9th USENIX Security Symposium in August 2000 that IA-32 violates that criterion, identifying a group of sensitive instructions — commonly counted as seventeen — that do not fault when executed outside CPL 0, which is why pre-VMX x86 monitors needed binary translation or paravirtualization.  `[SDM 3C Ch.26]` `[104]` `C:high` `V:durable`
-- **Claim.** VMX resolves the problem without changing those instructions: in VMX non-root operation the VMM configures which instructions and events cause a VM-exit, so instructions such as SGDT, SIDT, SLDT, SMSW, PUSHF and POPF can be intercepted without being privileged.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** The formal criterion for classical trap-and-emulate virtualization was stated by Popek and Goldberg in Communications of the ACM 17(7), July 1974, pages 412–421: a VMM can be constructed if the set of sensitive instructions is a subset of the privileged instructions.  `[no-spec]` `[103]` `C:high` `V:durable`
+- **Claim.** Robin and Irvine showed at the 9th USENIX Security Symposium in August 2000 that IA-32 violates that criterion, identifying a group of sensitive instructions — commonly counted as seventeen — that do not fault when executed outside CPL 0, which is why pre-VMX x86 monitors needed binary translation or paravirtualization.  `[no-spec]` `[104]` `C:high` `V:durable`
+- **Claim.** VMX resolves the problem without changing those instructions: in VMX non-root operation the VMM configures which instructions and events cause a VM-exit, so the unprivileged descriptor-table reads SGDT, SIDT, SLDT and STR are intercepted by the descriptor-table-exiting control; SMSW causes no VM-exit but returns host-owned CR0 bits from the CR0 read shadow instead of the register, and PUSHF and POPF have no interception control at all.  `[SDM 3C §28.1.3]` `[1]` `C:high` `V:durable`
 
 ### 1.10.2 From Vanderpool to VT-x
 
-- **Claim.** Intel announced the release of a preliminary external architecture specification for the virtualization extensions then codenamed Vanderpool on 2005-01-20, covering both IA-32 and Itanium platforms.  `[SDM 3C Ch.26]` `[100]` `C:high` `V:durable`
-- **Claim.** The first systematic public description of the architecture, "Intel Virtualization Technology" by Uhlig, Neiger, Rodgers and colleagues, appeared in IEEE Computer 38(5), May 2005, pages 48–56, and covered both VT-x for IA-32 and VT-i for Itanium.  `[SDM 3C Ch.26]` `[101]` `C:high` `V:durable`
-- **Claim.** Intel shipped the first VT-x-capable processors, the Pentium 4 models 662 and 672, on 2005-11-14; this date is attested only by a Tier-3 encyclopaedia source and should be re-verified against Intel product documentation before being published as fact.  `[SDM 3C Ch.26]` `[105]` `C:low` `V:durable`
-- **Claim.** A further Intel account of the VT-x design rationale, by Neiger and colleagues, appeared in the Intel Technology Journal volume 10 issue 3 in August 2006.  `[SDM 3C Ch.26]` `[102]` `C:medium` `V:durable`
+- **Claim.** Intel announced the release of a preliminary external architecture specification for the virtualization extensions then codenamed Vanderpool on 2005-01-20, covering both IA-32 and Itanium platforms.  `[no-spec]` `[100]` `C:high` `V:durable`
+- **Claim.** The first systematic public description of the architecture, "Intel Virtualization Technology" by Uhlig, Neiger, Rodgers and colleagues, appeared in IEEE Computer 38(5), May 2005, pages 48–56, and covered both VT-x for IA-32 and VT-i for Itanium.  `[no-spec]` `[101]` `C:high` `V:durable`
+- **Claim.** Intel shipped the first VT-x-capable processors, the Pentium 4 models 662 and 672, on 2005-11-14; this date is attested only by a Tier-3 encyclopaedia source and should be re-verified against Intel product documentation before being published as fact.  `[no-spec]` `[105]` `C:low` `V:durable`
+- **Claim.** A further Intel account of the VT-x design rationale, by Neiger and colleagues, appeared in the Intel Technology Journal volume 10 issue 3 in August 2006.  `[no-spec]` `[102]` `C:medium` `V:durable`
 
 ### 1.10.3 How the architecture grew
 
@@ -285,7 +288,7 @@ The shape of VMX growth is legible in the SDM itself, with no dating source requ
 
 - **Claim.** The original VM-execution controls comprised the pin-based and primary processor-based controls; a secondary 32-bit control field was added and gated behind bit 31 of the primary controls, and a tertiary 64-bit control field was added later and gated behind the "activate tertiary controls" bit of the primary controls — the bit lists are owned by `02-vmcs.md` §2.8.  `[SDM 3C §27.6.2]` `[1]` `C:high` `V:durable`
 - **Claim.** The same layered-extension pattern later reached the VM-exit controls, where a secondary VM-exit control field has its own capability MSR — see `02-vmcs.md` §2.9.  `[SDM 3D App.A]` `[2]` `C:medium` `V:durable`
-- **Claim.** The first-generation requirement that a guest run in paged protected mode was lifted by the unrestricted-guest control, and the cost of intercepting address translation was removed by EPT; both arrived as VM-execution controls rather than as new processor modes, preserving the "no new instruction semantics" design rule.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** The first-generation requirement that a guest run in paged protected mode was lifted by the unrestricted-guest control, and the cost of intercepting address translation was removed by EPT; both arrived as VM-execution controls rather than as new processor modes, preserving the "no new instruction semantics" design rule.  `[SDM 3C §28.6]` `[1]` `C:high` `V:durable`
 
 ### 1.10.4 What this chapter deliberately does not claim
 
@@ -332,10 +335,10 @@ Items 1 through 5 belong to this chapter; items 6 through 8 are the handover poi
 
 Claims in this chapter marked `C:high` were either read from the SDM text directly or are structurally forced by other claims that were. The items below are marked `C:medium` or `C:low` and are the ones worth a second pass against Volume 3C chapter 26, Volume 3C chapter 33 and Volume 3D appendix A:
 
-1. **IA32_VMX_BASIC bits 48, 49, 54 and 56** (§1.6). The bit positions are stated from the capability appendix but were not re-read from the PDF in this pass; bits 30:0, 44:32, 53:50 and 55 are the load-bearing ones and are `C:high`.
+1. **IA32_VMX_BASIC — done.** Every field was re-read from Volume 3D Appendix A.1 of rev 092 on 2026-09-20. Bit 56 was **wrong**: it reports that VM entry can deliver a hardware exception with or without an error code regardless of vector, not zero-length software-event injection, which is IA32_VMX_MISC bit 30. Bit 58 and the reserved-bit list have been added; bits 48, 49, 54 and 55 are confirmed as written.
 2. **The exact #UD and #GP condition lists for VMXON** (§1.8). The conditions listed are the ones a VMM must handle, but the SDM's list is longer and the ordering between conditions matters for which exception is reported.
 3. **The claim that the VMXON region must not be accessed by software after VMXON** (§1.7). This is architecturally required but the precise wording of the prohibition should be quoted before being relied on in a security argument.
-4. **The 2005-11-14 ship date** (§1.10.2) is `C:low` on a Tier-3 source and should either be re-anchored to Intel product documentation or dropped.
+4. **The 2005-11-14 ship date** (§1.10.2) is `C:low` on a Tier-3 source and should either be re-anchored to Intel product documentation or dropped. The same reservation applies to the SDM anchors on every other §1.10 dating claim: the SDM dates nothing, so those chapter-level anchors attest nothing and survive only because the repository contract requires a Tier-1 anchor on every claim in an architectural chapter. The Tier-2 citation is the real source in each case.
 5. **The dual-monitor treatment reference** (§1.6, §1.9) is a pointer into `09-smm-seam.md`; if that chapter contradicts the bit-49 claim here, that chapter wins.
 
-Nothing in this chapter depends on a section number finer than a chapter for Volume 3C, which is deliberate: chapter 26's internal section numbering was not verified in this pass, so every anchor here is either a chapter-level Volume 3C anchor or an appendix-level Volume 3D anchor.
+Chapter 26's internal section numbering **has** now been verified against the rev-092 PDF — §26.1 Overview, §26.2 Virtual Machine Architecture, §26.3 Introduction to VMX Operation, §26.4 Life Cycle of VMM Software, §26.5 Virtual-Machine Control Structure, §26.6 Discovering Support for VMX, §26.7 Enabling and Entering VMX Operation, §26.8 Restrictions on VMX Operation — so the anchors here are now section-level wherever a section states the fact. The VMXON-region claims resolve to §27.11.5 and §27.2 rather than to chapter 26, because that is where the SDM documents them: §26.7 only names the region and forwards to §27.11.5.

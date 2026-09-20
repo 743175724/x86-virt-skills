@@ -14,9 +14,9 @@ A VM exit is the transition from VMX non-root operation back to VMX root operati
 
 - **Claim.** A VM exit begins in VMX non-root operation and ends in VMX root operation, with the processor resuming at the RIP in the host-state area; VM exits are not delivered through the IDT and do not use the guest's descriptor tables.  `[SDM 3C Ch.30]` `[1]` `C:high` `V:durable`
 - **Claim.** The architectural order of a VM exit is: record VM-exit information, save guest state into the guest-state area, save MSRs listed in the VM-exit MSR-store area, load host state from the host-state area, load MSRs from the VM-exit MSR-load area, and then begin execution in VMX root operation.  `[SDM 3C Ch.30]` `[1]` `C:high` `V:durable`
-- **Claim.** State that is defined to be the same before and after a VM exit — general-purpose registers, and x87/SSE/AVX state — is neither saved nor restored by the VM exit; the VMM must save and restore it in software.  `[SDM 3C §30.1]` `[1]` `C:high` `V:durable`
+- **Claim.** State that is defined to be the same before and after a VM exit — general-purpose registers, and x87/SSE/AVX state — has no field in the VMCS guest-state area and is therefore neither saved nor restored by the VM exit; the VMM must save and restore it in software.  `[SDM 3C §27.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Before a VM exit, the architectural state is that of the guest at an instruction boundary (or at the point an event was recognized); §30.1 defines exactly which state that is for each class of exit.  `[SDM 3C §30.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Some events cause VM exits unconditionally in VMX non-root operation regardless of the VM-execution controls: among them CPUID, GETSEC, INVD, XSETBV, VMCALL, the other VMX instructions, triple fault, task switch, and INIT and SIPI signals.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** Some events cause VM exits unconditionally in VMX non-root operation regardless of the VM-execution controls: among them CPUID, GETSEC, INVD, XSETBV, VMCALL, the other VMX instructions, triple fault, task switch, and INIT and SIPI signals.  `[SDM 3C §28.1.2]` `[1]` `C:high` `V:durable`
 
 ---
 
@@ -25,9 +25,10 @@ A VM exit is the transition from VMX non-root operation back to VMX root operati
 - **Claim.** The exit-reason field is 32 bits wide; bits 15:0 contain the basic exit reason.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Bit 31 of the exit-reason field is the VM-entry-failure indicator: 0 for a VM exit from a running guest, 1 for a VM entry that failed after loading guest state.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Bit 27 of the exit-reason field is set when the VM exit occurred while the logical processor was in enclave mode.  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** Bit 28 of the exit-reason field indicates a pending MTF VM exit.  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** Bit 28 of the exit-reason field indicates a pending MTF VM exit; it is set only by an SMM VM exit that took priority over an MTF VM exit that would otherwise have occurred.  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** Bit 29 of the exit-reason field indicates a VM exit from VMX root operation, which occurs only under the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** Bits 26:16 and bit 30 of the exit-reason field are reserved and cleared to 0.  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** Bit 25 of the exit-reason field is set when the "prematurely busy shadow stack" VM-exit control is 1 and the VM exit caused a shadow stack to become prematurely busy; bit 26 is set when the VM exit occurred after assertion of a bus lock while the "VMM bus-lock detection" VM-execution control was 1 — so bits 25 and 26 are **not** reserved and a handler must mask them off.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Bit 16 of the exit-reason field is always cleared to 0; bits 24:17 and bit 30 are not currently defined; on a true VM exit the whole remainder outside bits 15:0 and bits 25, 26, 27, 28, 29 and 31 is cleared (certain SMM VM exits may set some of bits 24:16).  `[SDM 3C §27.9.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** The exit-reason field is filled in by the processor on every VM exit as part of "recording VM-exit information".  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 > Consequence for exit dispatch: a handler must mask the exit reason with 0xFFFF before indexing a dispatch table, and must test bit 31 *first*, because 8000_0021H and 8000_0022H are not guest exits at all (see `04-vm-entry.md` §4.9).
@@ -56,7 +57,7 @@ The authoritative list is Vol.3D Appendix C. The numbers below are also the valu
 - **Claim.** Basic exit reason 14 — *INVLPG*, conditional on the "INVLPG exiting" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 15 — *RDPMC*, conditional on the "RDPMC exiting" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 16 — *RDTSC*, conditional on the "RDTSC exiting" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 17 — *RSM*, taken when RSM executes in VMX non-root operation under the dual-monitor treatment.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 17 — *RSM*, taken when guest software attempts to execute RSM **in SMM** (RSM outside SMM raises #UD regardless of VMX operation, so this exit is reachable only for an SMM guest under the dual-monitor treatment).  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 18 — *VMCALL*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 19 — *VMCLEAR*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 20 — *VMLAUNCH*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
@@ -67,11 +68,11 @@ The authoritative list is Vol.3D Appendix C. The numbers below are also the valu
 - **Claim.** Basic exit reason 25 — *VMWRITE*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 26 — *VMXOFF*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 27 — *VMXON*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 28 — *Control-register accesses*, covering MOV to/from CR, CLTS and LMSW.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 28 — *Control-register accesses*, covering MOV to/from CR0/CR3/CR4/CR8, CLTS and LMSW; it is **not** used for the trap-like VM exits that follow a MOV to CR8 while "use TPR shadow" is 1 — those report basic exit reason 43 instead.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 29 — *MOV DR*, conditional on the "MOV-DR exiting" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 30 — *I/O instruction*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 31 — *RDMSR*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 32 — *WRMSR*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 31 — *RDMSR (implicit form)*, taken when "use MSR bitmaps" is 0, when ECX is outside both 00000000H–00001FFFH and C0000000H–C0001FFFH, or when the corresponding bit is 1 in the matching read bitmap.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 32 — *WRMSR (implicit form) or WRMSRNS*, under the mirror-image conditions on the write bitmaps; the two instructions are distinguished by the exit qualification (0 for WRMSR, 1 for WRMSRNS).  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 33 — *VM-entry failure due to invalid guest state*; always accompanied by bit 31 of the exit-reason field being set.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 34 — *VM-entry failure due to MSR loading*; always accompanied by bit 31 of the exit-reason field being set.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 35 is not used.  `[SDM 3D App.C]` `[2]` `[150]` `C:medium` `V:durable`
@@ -90,7 +91,7 @@ The authoritative list is Vol.3D Appendix C. The numbers below are also the valu
 - **Claim.** Basic exit reason 48 — *EPT violation*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 49 — *EPT misconfiguration*, caused by a malformed EPT paging-structure entry rather than by a permission failure.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 50 — *INVEPT*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 51 — *RDTSCP*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 51 — *RDTSCP*, taken only when the "enable RDTSCP" and "RDTSC exiting" VM-execution controls are **both** 1.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 52 — *VMX-preemption timer expired*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 53 — *INVVPID*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 54 — *WBINVD* (and WBNOINVD), conditional on the "WBINVD exiting" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
@@ -104,20 +105,27 @@ The authoritative list is Vol.3D Appendix C. The numbers below are also the valu
 - **Claim.** Basic exit reason 62 — *Page-modification log full*.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 63 — *XSAVES*, conditional on "enable XSAVES/XRSTORS" and the XSS-exiting bitmap.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 64 — *XRSTORS*, conditional on "enable XSAVES/XRSTORS" and the XSS-exiting bitmap.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 66 — *SPP-related event*, reported for sub-page write permissions for EPT.  `[SDM 3D App.C]` `[2]` `[150]` `C:medium` `V:durable`
-- **Claim.** Basic exit reason 67 — *UMWAIT*, conditional on the "enable user wait and pause" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 68 — *TPAUSE*, conditional on the "enable user wait and pause" control.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason 74 — *Bus lock*, reported when the "bus-lock detection" control is 1 and the guest asserts a bus lock.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 65 — *PCONFIG*, taken when the "enable PCONFIG" VM-execution control is 1 and either EAX < 63 with the corresponding bit set in the PCONFIG-exiting bitmap, or EAX ≥ 63 with bit 63 set in that bitmap.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 66 — *SPP-related event*, reported when the processor attempted to determine an access's sub-page write permission and encountered an SPP miss or an SPP misconfiguration.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 67 — *UMWAIT*, taken only when the "enable user wait and pause" and "RDTSC exiting" VM-execution controls are **both** 1.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 68 — *TPAUSE*, taken only when the "enable user wait and pause" and "RDTSC exiting" VM-execution controls are **both** 1.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 69 — *LOADIWKEY*, conditional on the "LOADIWKEY exiting" tertiary VM-execution control.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** Basic exit reasons 72 and 73 — *ENQCMD PASID translation failure* and *ENQCMDS PASID translation failure*, reported when PASID translation fails because the present bit was clear in a PASID-directory entry, the valid bit was clear in a PASID-table entry, or an entry set a reserved bit.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** Basic exit reason 74 — *Bus lock*, reported when the processor asserted a bus lock while the "bus-lock detection" control was 1; such VM exits also set bit 26 of the exit-reason field.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
 - **Claim.** Basic exit reason 75 — *Instruction timeout*, reported when the "instruction timeout" VM-execution control (secondary bit 31) is 1 and certain operations prevent the processor from reaching an instruction boundary within the time set by the instruction-timeout control field `0x4024`. Its exit qualification is defined: bit 0 set means the VM context is invalid and the VM must not be resumed; bit 12 means NMI unblocking due to IRET; other bits are undefined.  `[SDM 3D App.C]` `[2]` `[150]` `C:high` `V:durable`
-- **Claim.** Basic exit reason values between 68 and 74, and values above 75, are allocated for further features; this chapter deliberately does not enumerate them because the numbering could not be verified against Appendix C at the time of writing.  `[SDM 3D App.C]` `[2]` `C:low` `V:durable`
+- **Claim.** Basic exit reasons 76 and 77 are *SEAMCALL* and *TDCALL* (see `13-tdx.md`), reported when guest software attempts to execute either instruction.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** Basic exit reasons 78 and 79 are *RDMSRLIST* and *WRMSRLIST*, and 80 and 81 are *URDMSR* and *UWRMSR*; each is taken when "use MSR bitmaps" is 0 or when an accessed MSR address falls outside the bitmapped ranges or has its bitmap bit set.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** Basic exit reasons 84 and 85 are *RDMSR (immediate form)* and *WRMSRNS (immediate form)*, with the same MSR-bitmap conditions as their implicit-form counterparts 31 and 32.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** The unused basic exit reasons in rev 092 are 35, 38, 42, 70, 71, 82 and 83; 85 is the highest value Table C-1 defines, and a handler should treat any value above it as an unknown future exit rather than as an error.  `[SDM 3D App.C]` `[2]` `C:high` `V:durable`
+- **Claim.** A VM exit with a basic exit reason the VMM does not recognise can occur only with VM-execution control settings introduced by the same processor generation, or from executing an instruction that would have raised #UD on an earlier generation — so a forward-compatible handler may safely inject #UD for unknown reasons it did not enable.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ---
 
 ### 5.3.0 Unconditional versus controllable exit reasons
 
-- **Claim.** CPUID, GETSEC, INVD, XSETBV and VMCALL always cause VM exits in VMX non-root operation; no VM-execution control can disable them.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
-- **Claim.** VMCLEAR, VMLAUNCH, VMPTRLD, VMPTRST, VMRESUME, VMXOFF, VMXON, INVEPT and INVVPID always cause VM exits in VMX non-root operation; VMREAD and VMWRITE do so unless VMCS shadowing is in use (see `14-nested-virtualization.md`).  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
-- **Claim.** Triple fault, task switch, INIT signal and start-up IPI always cause VM exits in VMX non-root operation.  `[SDM 3C Ch.28]` `[1]` `C:high` `V:durable`
+- **Claim.** CPUID, GETSEC, INVD, XSETBV and VMCALL always cause VM exits in VMX non-root operation; no VM-execution control can disable them.  `[SDM 3C §28.1.2]` `[1]` `C:high` `V:durable`
+- **Claim.** VMCLEAR, VMLAUNCH, VMPTRLD, VMPTRST, VMRESUME, VMXOFF, VMXON, INVEPT, INVVPID, SEAMCALL and TDCALL always cause VM exits in VMX non-root operation; VMREAD and VMWRITE do so unless VMCS shadowing is in use (see `14-nested-virtualization.md`).  `[SDM 3C §28.1.2]` `[1]` `C:high` `V:durable`
+- **Claim.** Triple fault, task switch, INIT signal and start-up IPI always cause VM exits in VMX non-root operation.  `[SDM 3C §28.2]` `[1]` `C:high` `V:durable`
 - **Claim.** Exceptions cause VM exits only when the corresponding bit of the exception bitmap is 1, with the special case of the page-fault error-code mask and match fields for vector 14.  `[SDM 3C §27.6.3]` `[1]` `C:high` `V:durable`
 - **Claim.** RDMSR and WRMSR cause unconditional VM exits unless "use MSR bitmaps" is 1, in which case the bitmaps decide, and any MSR index outside the two ranges the bitmaps cover always exits.  `[SDM 3C §27.6.9]` `[1]` `C:high` `V:durable`
 - **Claim.** I/O instructions cause unconditional VM exits when "unconditional I/O exiting" is 1, and are decided by the I/O bitmaps when "use I/O bitmaps" is 1; when both are 0 they execute in the guest.  `[SDM 3C §27.6.4]` `[1]` `C:high` `V:durable`
@@ -132,29 +140,31 @@ The single most consequential property of an exit reason, for a VMM author, is w
 - **Claim.** For a VM exit caused by an EPT violation, an EPT misconfiguration or a page-fault exception, the saved guest RIP also points at the faulting instruction, but the instruction must be re-executed rather than skipped, so the VMM must not advance RIP.  `[SDM 3C §30.3]` `[1]` `C:high` `V:durable`
 - **Claim.** For an APIC-write VM exit (reason 56) the access has already completed; it is trap-like, and the saved RIP is past the instruction.  `[SDM 3C §30.3]` `[1]` `C:medium` `V:durable`
 - **Claim.** For a VM exit due to an external interrupt, an NMI, an INIT signal, a SIPI, the VMX-preemption timer, an interrupt window or an NMI window, no instruction is being emulated and the saved RIP is the point at which the guest will resume unchanged.  `[SDM 3C §30.3]` `[1]` `C:high` `V:durable`
-- **Claim.** A monitor-trap-flag VM exit (reason 37) is taken after an instruction retires or after an event is delivered, so it is trap-like and the saved RIP already reflects the completed operation.  `[SDM 3C §30.3]` `[1]` `C:medium` `V:durable`
+- **Claim.** A monitor-trap-flag VM exit (reason 37) is taken after an instruction retires or after an event is delivered, so it is trap-like and the saved RIP already reflects the completed operation.  `[SDM 3C §28.5.2]` `[1]` `C:medium` `V:durable`
+- **Claim.** The MOV to CR8 and WRMSR exits that lower VTPR below the TPR threshold are also trap-like: the saved RIP references the instruction **following** the MOV to CR8 or WRMSR, as it does for an APIC-write VM exit caused by APIC-write emulation.  `[SDM 3C §30.3]` `[1]` `C:high` `V:durable`
 
 ---
 
 ## 5.4 Exit qualification
 
 - **Claim.** The exit qualification is a 64-bit read-only VM-exit information field whose format depends on the basic exit reason; it is defined in §27.9.1 and populated according to §30.2.1.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
-- **Claim.** The exit qualification carries meaningful information for VM exits due to debug exceptions, page-fault exceptions, start-up IPIs, task switches, INVEPT, INVLPG, INVPCID, INVVPID, LGDT, LIDT, LLDT, LTR, SGDT, SIDT, SLDT, STR, VMCLEAR, VMPTRLD, VMPTRST, VMREAD, VMWRITE, VMXON, XRSTORS, XSAVES, control-register accesses, MOV DR, I/O instructions, MWAIT, APIC accesses, EPT violations, and SPP-related events.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** The exit qualification is saved for VM exits due to: debug exceptions; page-fault exceptions; NMIs; start-up IPIs; SMIs that arrive immediately after the execution of I/O instructions; task switches; INVEPT; INVLPG; INVPCID; INVVPID; LGDT; LIDT; LLDT; LTR; RDMSRLIST; SGDT; SIDT; SLDT; STR; VMCLEAR; VMPTRLD; VMPTRST; VMREAD; VMWRITE; VMXON; WBINVD; WBNOINVD; WRMSR; WRMSRLIST; WRMSRNS; XRSTORS; XSAVES; control-register accesses; MOV DR; I/O instructions; MWAIT; APIC-access-page accesses; EPT violations; EOI virtualization; APIC-write emulation; page-modification log full; SPP-related events; and instruction timeout.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** §27.9.1 defines the exit-qualification field and lists a shorter set of causes; it then forwards to §30.2.1 for the per-cause formats, so the list above and every bit layout in this section resolve to §30.2.1, not to §27.9.1.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
 - **Claim.** For VM exits whose reason has no defined exit qualification format, the field is **cleared to 0**. (The guest-linear-address and guest-physical-address fields genuinely are *undefined* for exits that do not define them — do not generalise the three together.)  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ### 5.4.1 Control-register access (reason 28)
 
 - **Claim.** For a control-register-access VM exit, exit-qualification bits 3:0 give the number of the control register; the field is 0 for CLTS and for LMSW.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bits 5:4 give the access type: 0 = MOV to CR, 1 = MOV from CR, 2 = CLTS, 3 = LMSW.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Exit-qualification bit 6 is the LMSW operand type: 0 = register, 1 = memory; it is undefined for access types other than LMSW.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Exit-qualification bits 11:8 identify the general-purpose register for a MOV to or from CR, encoded 0 = RAX, 1 = RCX, 2 = RDX, 3 = RBX, 4 = RSP, 5 = RBP, 6 = RSI, 7 = RDI, and 8–15 = R8–R15.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Exit-qualification bits 31:16 carry the LMSW source data; bit 7 and bits 15:12 are reserved and cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Exit-qualification bit 6 is the LMSW operand type: 0 = register, 1 = memory; for CLTS and MOV CR it is **cleared to 0**, not left undefined.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Exit-qualification bits 11:8 identify the general-purpose register for a MOV to or from CR, encoded 0 = RAX, 1 = RCX, 2 = RDX, 3 = RBX, 4 = RSP, 5 = RBP, 6 = RSI, 7 = RDI, and 8–15 = R8–R15; for CLTS and LMSW these bits are cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Exit-qualification bits 31:16 carry the LMSW source data and are cleared to 0 for CLTS and MOV CR; bit 7, bits 15:12 and bits 63:32 are "not currently defined" — Table 30-3 does not promise that they are cleared, so a decoder must mask them rather than test them.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Because the exit qualification fully decodes the access, a VMM never needs to disassemble the guest instruction stream to emulate a MOV CR, CLTS or LMSW.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ### 5.4.2 MOV DR (reason 29)
 
 - **Claim.** For a MOV-DR VM exit, exit-qualification bits 2:0 give the debug-register number, bit 4 gives the direction (0 = MOV to DR, 1 = MOV from DR), and bits 11:8 identify the general-purpose register using the same encoding as the control-register case.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Bit 3 and bits 7:5 of a MOV-DR exit qualification are reserved and cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Bit 3, bits 7:5 and bits 63:12 of a MOV-DR exit qualification are "not currently defined" in Table 30-4 and must be masked off rather than assumed zero.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ### 5.4.3 I/O instruction (reason 30)
 
@@ -162,15 +172,15 @@ The single most consequential property of an exit reason, for a VMM author, is w
 - **Claim.** Exit-qualification bit 3 gives the direction: 0 = OUT, 1 = IN.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bit 4 is set for a string instruction (INS or OUTS) and bit 5 is set if the instruction had a REP prefix.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bit 6 gives the operand encoding: 0 = the port number came from DX, 1 = the port number was an immediate operand.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Exit-qualification bits 31:16 contain the port number; bits 15:7 are reserved and cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** For INS and OUTS, the guest-linear address field of the VMCS holds the linear address of the source or destination, and the VM-exit instruction information field identifies the segment and address size.  `[SDM 3C §27.9.4]` `[1]` `C:high` `V:durable`
+- **Claim.** Exit-qualification bits 31:16 contain the port number; bits 15:7 and bits 63:32 are "not currently defined" in Table 30-5.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For INS and OUTS, the guest-linear address field of the VMCS holds the base address of the relevant segment plus (E)DI for INS or (E)SI for OUTS — ES is always the relevant segment for INS, DS for OUTS unless a prefix overrides it — and the value is undefined if that segment is unusable; the VM-exit instruction-information field identifies the segment and address size.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Whether the processor reports instruction information for INS and OUTS is itself a capability, reported by bit 54 of IA32_VMX_BASIC.  `[SDM 3D App.A]` `[2]` `C:high` `V:durable`
 
 ### 5.4.4 Task switch (reason 9)
 
 - **Claim.** For a task-switch VM exit, exit-qualification bits 15:0 contain the selector of the task-state segment the guest attempted to switch to.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bits 31:30 give the source of the task switch: 0 = CALL instruction, 1 = IRET instruction, 2 = JMP instruction, 3 = task gate in the IDT.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Bits 29:16 of a task-switch exit qualification are reserved and cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Bits 29:16 and bits 63:32 of a task-switch exit qualification are "not currently defined" in Table 30-2.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** A task switch initiated through an IDT task gate during event delivery leaves the IDT-vectoring information field valid, so the VMM can reconstruct the event that caused the switch.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
 
 ### 5.4.5 APIC access (reason 44)
@@ -178,6 +188,10 @@ The single most consequential property of an exit reason, for a VMM author, is w
 - **Claim.** For an APIC-access VM exit caused by a linear access, exit-qualification bits 11:0 contain the offset of the access within the APIC-access page.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bits 15:12 give the access type: 0 = linear access for a data read during instruction execution; 1 = linear access for a data write during instruction execution; 2 = linear access for an instruction fetch; 3 = linear access (read or write) during event delivery; 4 = linear access asynchronous to instruction execution; 11 = guest-physical access asynchronous to instruction execution; 10 = guest-physical access during event delivery; 15 = guest-physical access for an instruction fetch or during instruction execution.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** For **any guest-physical access** — types 10, 11 and 15 — the offset field (bits 11:0) is undefined, because the access was made with a guest-physical address rather than through the APIC-access page's linear mapping.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** Bit 16 of an APIC-access exit qualification is set for accesses asynchronous to instruction execution and not part of event delivery — guest-physical accesses for Intel PT trace output, legacy PEBS on "EPT-friendly" processors, architectural PEBS, and user-interrupt delivery; bits 63:17 are not currently defined.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** An APIC-access VM exit sets the valid bit of the IDT-vectoring (original-event identification) field if and only if it sets access type 3 (linear access during event delivery) or 10 (guest-physical access during event delivery).  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** For APIC-access VM exits resulting from **physical** accesses to the APIC-access page the exit qualification is undefined altogether, as it is when the access was part of logging a branch record or a legacy PEBS record to the DS save area.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** If the access to the APIC-access page occurred during execution of an instruction in enclave mode (and not during delivery of an event incident to enclave mode), bits 11:0 of the exit qualification are cleared.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 
 ### 5.4.6 EPT violation (reason 48) — including two corrections
 
@@ -191,39 +205,50 @@ This is the exit qualification most often reproduced incorrectly in secondary ma
 - **Claim.** Exit-qualification bit 5 is the logical-AND of bit 2 of the EPT paging-structure entries used for the translation; when mode-based execute control for EPT is 0 this is execute access, and when it is 1 it is supervisor-mode execute access.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** **Exit-qualification bit 6 is the logical-AND of bit 10 — user-mode execute access — of the EPT paging-structure entries used for the translation, and it is defined only when mode-based execute control for EPT is enabled; it is not a property of the execute-disable bit.**  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** **Exit-qualification bit 7 is set if the guest-linear-address field of the VMCS is valid for this VM exit.**  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** Exit-qualification bit 8 is defined only when bit 7 is set: it is clear when the access was to a guest paging-structure entry during a page walk, and set when the access was a translation of a guest-linear address.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Exit-qualification bit 8 is defined only when bit 7 is set: it is clear when the access was to a paging-structure entry as part of a page walk or the update of an accessed or dirty bit, and set when the access was to a guest-physical address that is the translation of a linear address; when bit 7 is 0 bit 8 is reserved and cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bit 9 is defined only when bits 7 and 8 are both set and the processor supports advanced VM-exit information for EPT violations: it is set if the linear address was a user-mode address and clear if it was a supervisor-mode address.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** Exit-qualification bit 10, under the same conditions as bit 9, is set if the guest paging-structure entries used for the translation allow write accesses.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** Exit-qualification bit 11, under the same conditions as bit 9, is set if the guest paging-structure entries used for the translation disallow instruction fetches (that is, the execute-disable bit applies).  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 - **Claim.** Exit-qualification bit 12 indicates NMI unblocking due to IRET, the same condition recorded for other exits in §30.2.3.  `[SDM 3C §30.2.3]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bit 13 is set if the access causing the EPT violation was a shadow-stack access.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** Bits of the EPT-violation exit qualification above bit 13 encode further features (including supervisor shadow-stack control and HLAT-related indications) that this chapter does not enumerate, because their bit positions could not be verified.  `[SDM 3C §30.2.1]` `[1]` `C:low` `V:durable`
-- **Claim.** On an EPT violation the guest-physical address field of the VMCS always holds the address whose translation failed; the guest-linear address field is meaningful only when exit-qualification bit 7 is set.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** An EPT misconfiguration (reason 49) reports the guest-physical address but has no defined exit qualification format, because the fault is in the structure of an EPT paging-structure entry rather than in the access.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** Exit-qualification bit 14 is defined only when supervisor shadow-stack control is enabled by setting bit 7 of the EPTP, in which case it equals bit 60 of the EPT paging-structure entry that maps the page of the faulting guest-physical address; otherwise, or if the walk terminates before reaching a page-mapping entry, it is undefined.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** Exit-qualification bit 15 is set if the EPT violation was caused as a result of guest-paging verification (HLAT; see chapter `06`), and bit 16 is set if the access was asynchronous to instruction execution and not the result of event delivery — Intel PT trace output, legacy PEBS on "EPT-friendly" processors, architectural PEBS, or user-interrupt delivery; bits 63:17 are not currently defined.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** On an EPT violation the guest-physical address field of the VMCS always holds the address whose translation failed; the guest-linear address field is meaningful only when exit-qualification bit 7 is set. If the violation occurred in enclave mode and not during delivery of an event incident to enclave mode, bits 11:0 of both address fields are cleared.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** An EPT misconfiguration (reason 49) reports the guest-physical address but is not among the causes for which an exit qualification is saved, so the field is **cleared**, not merely format-less.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 
 ### 5.4.7 Debug exception (#DB, reason 0)
 
 - **Claim.** For a VM exit due to a debug exception, exit-qualification bits 3:0 are B0 through B3, indicating which breakpoint conditions were met.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bit 13 is BD (debug-register access detected) and bit 14 is BS (single-step), matching the corresponding DR6 bit positions.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Exit-qualification bit 16 is the RTM bit, set when the debug exception was associated with a transactional region.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** In a debug-exception exit qualification, bits **10:4**, bit **12**, bit 15 and bits 63:17 are reserved and the reserved bits below bit 16 are cleared to 0; **bit 11 is BLD**, set when a bus lock was asserted with OS bus-lock detection enabled at CPL > 0 — note it is **set** here where DR6 clears it, a sign inversion that trips VMMs copying DR6 semantics.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** For a VM exit due to a page-fault exception, the exit qualification contains the linear address that caused the fault — the value that would have been loaded into CR2.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In a debug-exception exit qualification, bits **10:4**, bit **12**, bit 15 and bits 63:17 are "not currently defined" — Table 30-1 does not promise they are cleared, so mask them; **bit 11 is BLD**, set when a bus lock was asserted with OS bus-lock detection enabled at CPL > 0 — note it is **set** here where DR6 clears it, the same sign inversion the table records for bit 16 (RTM), and one that trips VMMs copying DR6 semantics.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** If a page-fault exception occurred during execution of an instruction in enclave mode (and not during delivery of an event incident to enclave mode), bits 11:0 of the exit qualification are cleared.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** For a VM exit due to a page-fault exception, the exit qualification contains the linear address that caused the fault — the value that would have been loaded into CR2; if linear-address masking was in effect the recorded address reflects that masking, and bits 63:32 are cleared if the processor was not in 64-bit mode before the VM exit.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ### 5.4.8 Descriptor-table and VMX-instruction exits
 
 - **Claim.** For VM exits due to LGDT, LIDT, LLDT, LTR, SGDT, SIDT, SLDT, STR, VMCLEAR, VMPTRLD, VMPTRST, VMREAD, VMWRITE, VMXON, XRSTORS and XSAVES, the exit qualification receives the value of the instruction's displacement field, sign-extended to 64 bits where necessary.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** If such an instruction has no displacement — for example because its operand is a register — the exit qualification is 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** For RIP-relative addressing in 64-bit mode, the exit qualification receives the sum of the displacement and the RIP of the following instruction, that is, the computed effective address.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** INVEPT, INVPCID and INVVPID follow the same displacement rule for their memory operand.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** These exits also fill in the VM-exit instruction information field, which supplies the scaling, index register, base register, segment register and address size needed to recompute the effective address.  `[SDM 3C §27.9.4]` `[1]` `C:high` `V:durable`
-- **Claim.** In the instruction information field for descriptor-table exits, the instruction identity is encoded as 0 = SGDT, 1 = SIDT, 2 = LGDT, 3 = LIDT for GDTR/IDTR accesses, and as 0 = SLDT, 1 = STR, 2 = LLDT, 3 = LTR for LDTR/TR accesses.  `[SDM 3C §27.9.4]` `[1]` `C:medium` `V:durable`
-- **Claim.** The segment register in the instruction information field is encoded 0 = ES, 1 = CS, 2 = SS, 3 = DS, 4 = FS, 5 = GS.  `[SDM 3C §27.9.4]` `[1]` `C:medium` `V:durable`
+- **Claim.** INVEPT, INVPCID and INVVPID follow the same displacement rule for their memory operand.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In all of these cases, bits of the exit qualification beyond the instruction's address size — bits 63:n where the instruction-information field reports an n-bit address size — are undefined.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** These exits also fill in the VM-exit instruction information field, which supplies the scaling, index register, base register, segment register and address size needed to recompute the effective address; bit 22 marks the index register invalid and bit 27 marks the base register invalid.  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
+- **Claim.** In the instruction information field for descriptor-table exits, the instruction identity in bits 29:28 is encoded as 0 = SGDT, 1 = SIDT, 2 = LGDT, 3 = LIDT for GDTR/IDTR accesses (Table 30-10), and as 0 = SLDT, 1 = STR, 2 = LLDT, 3 = LTR for LDTR/TR accesses (Table 30-11).  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
+- **Claim.** The segment register in bits 17:15 of the instruction information field is encoded 0 = ES, 1 = CS, 2 = SS, 3 = DS, 4 = FS, 5 = GS, and the address size in bits 9:7 as 0 = 16-bit, 1 = 32-bit, 2 = 64-bit.  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
 
 ### 5.4.9 Other qualification cases
 
-- **Claim.** For a VM exit due to a start-up IPI (reason 4), the exit qualification contains the SIPI vector in bits 7:0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
-- **Claim.** For a VM exit due to MWAIT (reason 36), the exit qualification indicates whether address-range monitoring hardware was armed at the time of the instruction.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
-- **Claim.** For a VM exit due to INVLPG (reason 14), the exit qualification contains the linear operand of the instruction.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For a VM exit due to a start-up IPI (reason 4), the exit qualification contains the SIPI vector in bits 7:0 and bits 63:8 are cleared to 0.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For a VM exit due to MWAIT (reason 36), the exit qualification is set to exactly 0 if address-range monitoring hardware was not armed and exactly 1 if it was.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For a VM exit due to INVLPG (reason 14), the exit qualification contains the linear-address operand of the instruction; bits 63:32 are cleared if the processor was not in 64-bit mode, and if the source operand specifies an unusable segment the recorded address is implementation-specific.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For a VM exit due to an NMI, the exit qualification carries NMI-source information if the processor enumerates CPUID.07H.01H:EAX.NMI_SRC[20] as 1, and is zero otherwise.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** WBINVD and WBNOINVD share basic exit reason 54 and are distinguished by the exit qualification: 0 for WBINVD, 1 for WBNOINVD. WRMSR and WRMSRNS share basic exit reason 32 and are distinguished the same way: 0 for WRMSR, 1 for WRMSRNS.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For RDMSRLIST and WRMSRLIST the exit qualification is zero when "use MSR bitmaps" is 0, and otherwise is the index of the MSR whose access caused the VM exit.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** For a VM exit caused by EOI virtualization (reason 45), bits 7:0 of the exit qualification hold the vector of the virtual interrupt that was dismissed and bits above bit 7 are cleared; for an APIC-write VM exit (reason 56), bits 11:0 hold the page offset of the write and bits above bit 11 are cleared.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For a page-modification log-full VM exit (reason 62), bit 12 of the exit qualification reports NMI unblocking due to IRET and bit 16 marks an asynchronous access (TAPT, EPT-friendly PEBS, architectural PEBS or user-interrupt delivery); all other bits are undefined.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** For an SPP-related event (reason 66), bit 11 of the exit qualification gives the event type — 0 an SPP misconfiguration, 1 an SPP miss — bit 12 reports NMI unblocking due to IRET, bit 16 marks an asynchronous access, and all other bits are undefined.  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
+- **Claim.** For an instruction-timeout VM exit (reason 75), bit 0 of the exit qualification indicates that the virtual machine's context is invalid and must not be resumed, bit 12 reports NMI unblocking due to IRET, and all other bits are undefined.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** For a PASID-translation failure, the exit qualification is IA32_PASID[19:0] for ENQCMD (reason 72) and the low 32 bits of the instruction's source operand for ENQCMDS (reason 73).  `[SDM 3C §30.2.1]` `[1]` `C:medium` `V:durable`
 
 ---
 
@@ -235,7 +260,8 @@ This is the exit qualification most often reproduced incorrectly in secondary ma
 | 1 (external interrupt) | VM-exit interruption information, but only if "acknowledge interrupt on exit" is 1 |
 | 9 (task switch) | Exit qualification, IDT-vectoring information |
 | 28, 29, 30 (CR, DR, I/O) | Exit qualification; for INS/OUTS also guest-linear address and instruction information |
-| 31, 32 (RDMSR, WRMSR) | Guest RCX for the MSR index; no exit qualification |
+| 31 (RDMSR) | Guest RCX for the MSR index; no exit qualification is saved for this reason |
+| 32 (WRMSR / WRMSRNS) | Guest RCX for the MSR index; the exit qualification **is** defined and distinguishes the two instructions (0 = WRMSR, 1 = WRMSRNS) |
 | 44 (APIC access) | Exit qualification only — offset in bits 11:0 for linear accesses. The guest-linear-address field is **not** valid for this exit. |
 | 46, 47 (descriptor table) | Exit qualification (displacement), instruction information |
 | 48 (EPT violation) | Exit qualification, guest-physical address, and guest-linear address when qualification bit 7 is set |
@@ -250,10 +276,13 @@ This is the exit qualification most often reproduced incorrectly in secondary ma
 
 ## 5.5 VM-exit information fields for vectored events
 
-- **Claim.** The VM-exit interruption-information field is 32 bits wide: bits 7:0 vector, bits 10:8 interruption type, bit 11 error-code valid, bit 12 NMI unblocking due to IRET, bits 30:13 reserved, bit 31 valid.  `[SDM 3C §27.9.2]` `[1]` `C:high` `V:durable`
-- **Claim.** The interruption types reported in bits 10:8 of the VM-exit interruption-information field are 0 external interrupt, 2 non-maskable interrupt (NMI), 3 hardware exception, 6 software exception, and 7 other event.  `[SDM 3C §27.9.2]` `[1]` `C:high` `V:durable`
+- **Claim.** The VM-exit interruption-information field — renamed the **exiting-event identification field** in rev 092 — is 32 bits wide: bits 7:0 vector, bits 10:8 event type, bit 11 error-code valid, bit 12 NMI unblocking due to IRET, bit **13 nested exception (during FRED event delivery)**, bits **30:14** not currently defined (always set to 0), bit 31 valid.  `[SDM 3C §27.9.2]` `[1]` `C:high` `V:durable`
+- **Claim.** The event types reported in bits 10:8 of the exiting-event identification field are 0 external interrupt, 2 non-maskable interrupt (NMI), 3 hardware exception, **5 privileged software exception** and 6 software exception; values 1, 4 and **7 are "not used"** on this field — unlike the VM-entry injection field, which does define type 7.  `[SDM 3C §27.9.2]` `[1]` `C:high` `V:durable`
+- **Claim.** A #DB generated by INT1 is reported as a privileged software exception and a #BP (INT3) or #OF (INTO) as a software exception, while #BR (BOUND), #UD from UD0/UD1/UD2/UDB, and any #DB or #BP taken in enclave mode are reported as hardware exceptions.  `[SDM 3C §30.2.2]` `[1]` `C:high` `V:durable`
+- **Claim.** Bit 13 is set only when the VM exit was caused by a hardware exception encountered during **FRED** event delivery of another event; it is 0 for #DF and for exceptions encountered during IDT event delivery.  `[SDM 3C §30.2.2]` `[1]` `C:medium` `V:durable`
 - **Claim.** When bit 11 (error-code valid) is 1, the VM-exit interruption error code field contains the error code that would have been pushed on the guest stack.  `[SDM 3C §27.9.2]` `[1]` `C:high` `V:durable`
-- **Claim.** Bit 12 of the VM-exit interruption-information field records NMI unblocking due to IRET: the guest was executing an IRET that removed NMI blocking before the fault that caused the VM exit, so the VMM must restore NMI blocking before resuming.  `[SDM 3C §30.2.3]` `[1]` `C:high` `V:durable`
+- **Claim.** Bit 12 of the VM-exit interruption-information field records NMI unblocking due to IRET: the guest was executing an IRET that removed NMI blocking before the fault that caused the VM exit, so the VMM must restore NMI blocking before resuming. Its value is **undefined** when the VM exit is due to a double fault.  `[SDM 3C §30.2.2]` `[1]` `C:high` `V:durable`
+- **Claim.** "NMI unblocking due to IRET" is defined only when (1) "NMI exiting" is 0 or "virtual NMIs" is 1, (2) the VM exit does not set the valid bit in the IDT-vectoring field, and (3) the VM exit is not due to a double fault; for faults it is reported in bit 12 of the exiting-event identification field, and for EPT violations, page-modification log-full events, SPP-related events and instruction timeouts in bit 12 of the exit qualification. VM exits due to APIC accesses and EPT misconfigurations do not report it at all.  `[SDM 3C §30.2.3]` `[1]` `C:high` `V:durable`
 - **Claim.** If the "acknowledge interrupt on exit" VM-exit control is 1, an external-interrupt VM exit acknowledges the interrupt controller, acquires the vector, and stores it in the VM-exit interruption-information field with the valid bit set.  `[SDM 3C §27.7]` `[1]` `C:high` `V:durable`
 - **Claim.** If "acknowledge interrupt on exit" is 0, the interrupt remains pending in the interrupt controller and the VM-exit interruption-information field is not valid for reason 1.  `[SDM 3C §27.7]` `[1]` `C:high` `V:durable`
 
@@ -267,9 +296,11 @@ This is the exit qualification most often reproduced incorrectly in secondary ma
 
 This is the mechanism that lets a VMM re-inject an event whose delivery itself faulted, and it is the difference between a hypervisor that survives a nested fault in the guest and one that loses the event.
 
-- **Claim.** The IDT-vectoring information field is laid out as: bits 7:0 vector, bits 10:8 interruption type, bit 11 error-code valid, bits 30:13 reserved, bit 31 valid.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
-- **Claim.** The interruption types in the IDT-vectoring information field are 0 external interrupt, 2 NMI, 3 hardware exception, 4 software interrupt, 5 privileged software interrupt, and 6 software exception.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
+- **Claim.** The IDT-vectoring information field — renamed the **original-event identification field** in rev 092 — is laid out as: bits 7:0 vector, bits 10:8 event type, bit 11 error-code valid, bit **12 not currently defined (undefined on VM exit)**, bit **13 exception nested on FRED event delivery**, bits **30:14** not currently defined (always set to 0), bit 31 valid.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
+- **Claim.** The event types in the original-event identification field are 0 external interrupt, 2 NMI, 3 hardware exception, 4 software interrupt, 5 **privileged software exception** (Table 27-21; §30.2.4's prose says "privileged software interrupt", which is a wording slip in the SDM itself), and 6 software exception; values 1 and 7 are not used.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
+- **Claim.** Rev 092 adds an **original-event data** field (64 bits) alongside the original-event error code; it receives the event data that FRED event delivery would have pushed, and is undefined for VM exits that do not occur during FRED event delivery.  `[SDM 3C §27.9.3]` `[1]` `C:medium` `V:durable`
 - **Claim.** Bit 31 of the IDT-vectoring information field is set only when the VM exit occurred while the processor was delivering an event through the guest IDT; it is the VMM's signal that an event was lost and must be re-delivered.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
+- **Claim.** A VM exit is **not** considered to occur during event delivery when the original event causes the exit directly, when it results in a double fault that causes the exit directly, when the exit comes from fetching the first instruction of the handler, when the exit is a triple fault, or in the virtual-8086 INT n / #GP redirection case — so a clear valid bit does not mean no event was in flight.  `[SDM 3C §30.2.4]` `[1]` `C:high` `V:durable`
 - **Claim.** When bit 11 is 1, the IDT-vectoring error code field holds the error code associated with the event whose delivery was interrupted.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`
 - **Claim.** The standard VMM response is to copy the IDT-vectoring information and error code into the VM-entry interruption-information and VM-entry exception error-code fields for the next VM entry, adjusting for the type of the original event (see `04-vm-entry.md` §4.8).  `[SDM 3C §30.2.4]` `[1]` `C:high` `V:durable`
 - **Claim.** For a software interrupt, privileged software exception or software exception recorded in the IDT-vectoring information field, the VM-exit instruction length field holds the length of the instruction that caused the event, which must be carried over to the VM-entry instruction length when re-injecting.  `[SDM 3C §30.2.4]` `[1]` `C:high` `V:durable`
@@ -278,12 +309,13 @@ This is the mechanism that lets a VMM re-inject an event whose delivery itself f
 
 ## 5.7 Information about the instruction that caused the VM exit
 
-- **Claim.** The VM-exit instruction length field reports the length in bytes of the instruction whose execution caused the VM exit, and is defined for VM exits caused by instruction execution as well as for software-interrupt and software-exception events.  `[SDM 3C §27.9.4]` `[1]` `C:high` `V:durable`
-- **Claim.** The conventional way for a VMM to complete an emulated instruction is to add the VM-exit instruction length to the guest RIP before VMRESUME; doing this for a fault-like exit that must be re-executed is a common hypervisor bug.  `[SDM 3C §27.9.4]` `[1]` `C:high` `V:durable`
-- **Claim.** The VM-exit instruction information field decodes the operands of the instruction that caused the exit, and is defined for I/O string instructions, descriptor-table instructions, the VMX instructions, INVEPT, INVPCID, INVVPID, RDRAND, RDSEED, XSAVES and XRSTORS.  `[SDM 3C §27.9.4]` `[1]` `C:medium` `V:durable`
-- **Claim.** The I/O RCX, I/O RSI, I/O RDI and I/O RIP fields are provided for VM exits due to INS and OUTS under the dual-monitor treatment of SMIs and SMM.  `[SDM 3C §27.9.4]` `[1]` `C:medium` `V:durable`
-- **Claim.** The guest-linear address field is set for VM exits due to instruction execution where a linear address is meaningful — including some EPT violations, APIC accesses and I/O string instructions — and is undefined otherwise.  `[SDM 3C §27.9.4]` `[1]` `C:high` `V:durable`
-- **Claim.** The guest-physical address field is set for EPT violations and EPT misconfigurations and reports the guest-physical address whose translation failed.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** The VM-exit instruction length field reports the length in bytes (1–15, including prefixes) of the instruction whose execution caused the VM exit; it is defined for fault-like instruction exits, for software exceptions and privileged software exceptions, for faults encountered while delivering a software interrupt or software/privileged-software exception, for task-switch exits caused by instruction execution, for certain VMFUNC failures, and — when such an event was injected by VM entry — it receives the VM-entry instruction length. It is undefined for every other VM exit and is cleared if the exit occurred in enclave mode.  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
+- **Claim.** The conventional way for a VMM to complete an emulated instruction is to add the VM-exit instruction length to the guest RIP before VMRESUME; doing this for a fault-like exit that must be re-executed is a common hypervisor bug.  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
+- **Claim.** The VM-exit instruction information field decodes the operands of the instruction that caused the exit, and rev 092 defines a format for exactly nine groups: INS/OUTS (Table 30-8), INVEPT/INVPCID/INVVPID (30-9), LIDT/LGDT/SIDT/SGDT (30-10), LLDT/LTR/SLDT/STR (30-11), RDRAND/RDSEED (30-12), TPAUSE/UMWAIT (30-13), VMCLEAR/VMPTRLD/VMPTRST/VMXON/XRSTORS/XSAVES (30-14), VMREAD/VMWRITE (30-15) and LOADIWKEY (30-16). For all other VM exits it is undefined, or cleared if the exit occurred in enclave mode.  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
+- **Claim.** The I/O RCX, I/O RSI, I/O RDI and I/O RIP fields are undefined except for **SMM VM exits due to SMIs that arrive immediately after retirement of an I/O instruction** — they are not filled in for ordinary INS/OUTS exits — and they are cleared if the VM exit occurred in enclave mode.  `[SDM 3C §30.2.5]` `[1]` `C:high` `V:durable`
+- **Claim.** Rev 092 adds a 64-bit **MSR data** field, supported only where the "enable MSR-list instructions" VM-execution control can be set, which holds the value a WRMSRLIST execution would have written to an MSR the bitmaps disallow.  `[SDM 3C §27.9.4]` `[1]` `C:medium` `V:durable`
+- **Claim.** The guest-linear address field is set for exactly these cases: LMSW with a memory operand, INS/OUTS with a usable relevant segment, SMIs arriving immediately after retirement of an I/O instruction, EPT violations that set exit-qualification bit 7, SPP-related events, and — when the "prematurely busy shadow stack" VM-exit control is 1 — EPT misconfigurations, page-modification log-full events and instruction timeouts that made a shadow stack prematurely busy. **APIC accesses are not on that list**; for all other VM exits the field is undefined.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
+- **Claim.** The guest-physical address field is set for EPT violations, EPT misconfigurations and SPP-related events, and reports the guest-physical address whose translation failed; for all other VM exits it is undefined.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ---
 
@@ -305,6 +337,9 @@ This is the mechanism that lets a VMM re-inject an event whose delivery itself f
 - **Claim.** The "host address-space size" VM-exit control determines whether the logical processor is in 64-bit mode after the VM exit; its value is loaded into CS.L, IA32_EFER.LME and IA32_EFER.LMA on every VM exit.  `[SDM 3C §27.7]` `[1]` `C:high` `V:durable`
 - **Claim.** A VM exit sets the host CS, SS, DS, ES, FS and GS segment attributes to architecturally fixed values rather than reading descriptors from the host GDT; the VMM's segment caches after a VM exit are therefore determined by the VM exit itself, not by memory.  `[SDM 3C §30.5]` `[1]` `C:high` `V:durable`
 - **Claim.** A VM exit leaves the host DR7 at 400H and sets IA32_DEBUGCTL to 0, so a VMM that uses hardware breakpoints must re-establish them after every exit.  `[SDM 3C §30.5]` `[1]` `C:medium` `V:durable`
+- **Claim.** A VM exit clears host RFLAGS except bit 1, which is always set, and sets the GDTR and IDTR limits to FFFFH, the CS limit to FFFFFFFFH and the TR limit to 00000067H — none of these come from the host-state area.  `[SDM 3C §30.5]` `[1]` `C:high` `V:durable`
+- **Claim.** A VM exit is never to compatibility mode: CS.L and IA32_EFER.LMA both take the value of the "host address-space size" VM-exit control, and CS.D/B takes its inverse.  `[SDM 3C §30.5]` `[1]` `C:high` `V:durable`
+- **Claim.** If the logical processor was in IA-32e mode before the VM exit and the "host address-space size" VM-exit control is 0, the VM exit takes a VMX abort rather than completing.  `[SDM 3C §30.5]` `[1]` `C:high` `V:durable`
 - **Claim.** Finally, the VM exit loads MSRs from the VM-exit MSR-load area; a failure in this step causes a VMX abort.  `[SDM 3C §30.6]` `[1]` `C:high` `V:durable`
 - **Claim.** A VM exit clears address-range monitoring, so a MONITOR armed in the guest does not survive into VMX root operation.  `[SDM 3C §30.5]` `[1]` `C:medium` `V:durable`
 
@@ -321,6 +356,9 @@ A VMX abort is the failure mode that has no handler. It is what happens when the
 - **Claim.** VMX-abort indicator 3 means the current VMCS has been corrupted, typically because software wrote directly to the VMCS region instead of using VMWRITE.  `[SDM 3C §30.7]` `[1]` `C:medium` `V:durable`
 - **Claim.** VMX-abort indicator 4 means there was a failure in loading host MSRs.  `[SDM 3C §30.7]` `[1]` `C:medium` `V:durable`
 - **Claim.** VMX-abort indicator 5 means a machine-check event occurred during VM exit.  `[SDM 3C §30.7]` `[1]` `C:medium` `V:durable`
+- **Claim.** VMX-abort indicator **6** means the logical processor was in IA-32e mode before the VM exit while the "host address-space size" VM-exit control was 0 — six indicators are defined in rev 092, not five.  `[SDM 3C §30.7]` `[1]` `C:high` `V:durable`
+- **Claim.** Because host state may be loaded in any order, a VM exit that qualifies for several abort causes may report any one of them; a VMX abort does not modify the VMCS data of any active VMCS, so that data is suspect afterwards.  `[SDM 3C §30.7]` `[1]` `C:medium` `V:durable`
+- **Claim.** Outside SMX operation a VMX abort issues a special bus cycle and enters the VMX-abort shutdown state, from which only RESET wakes the processor — machine-check events, INIT, external interrupts, NMIs, SIPIs and SMIs are all ignored; in SMX operation it raises an Intel TXT shutdown condition with error code 000DH.  `[SDM 3C §30.7]` `[1]` `C:medium` `V:durable`
 - **Claim.** Because the abort indicator is written into the VMCS region in memory rather than into a register, it survives the shutdown and can be recovered post-mortem by another processor or after reset.  `[SDM 3C §27.2]` `[1]` `C:medium` `V:durable`
 
 ---
@@ -328,7 +366,7 @@ A VMX abort is the failure mode that has no handler. It is what happens when the
 ## 5.11 Machine-check events and user-interrupt recognition
 
 - **Claim.** A machine-check event during VM exit is handled specially: depending on when it occurs, the processor either completes the VM exit and delivers the machine-check exception in VMX root operation, or takes a VMX abort.  `[SDM 3C §30.8]` `[1]` `C:medium` `V:durable`
-- **Claim.** The recognition of user interrupts after a VM exit is specified separately, because user-interrupt state is not part of the ordinary host-state load.  `[SDM 3C §30.9]` `[1]` `C:medium` `V:durable`
+- **Claim.** A VM exit results in recognition of a pending user interrupt if and only if it completes with CR4.UINTR = IA32_EFER.LMA = 1 and UIRR ≠ 0; otherwise no pending user interrupt is recognized.  `[SDM 3C §30.9]` `[1]` `C:medium` `V:durable`
 
 ---
 
@@ -337,13 +375,13 @@ A VMX abort is the failure mode that has no handler. It is what happens when the
 1. **VMREAD the exit reason.** Test bit 31 before anything else; if set, this is a VM-entry failure and belongs to `04-vm-entry.md` §4.9.
 2. **Mask to bits 15:0** and dispatch on the basic reason using §5.3.
 3. **VMREAD the IDT-vectoring information field on every exit, unconditionally.** If its valid bit is set, an event was lost during delivery and must be re-injected before or together with whatever else you do; forgetting this is the classic source of "the guest hangs after a nested fault".
-4. **Read the exit qualification only for reasons that define one** (§5.4.10). For other reasons its content is undefined and reading it will mislead you.
+4. **Read the exit qualification only for reasons that define one** (§5.4.10). For every other reason the processor *clears* the field, so a zero there means nothing — do not read significance into it.
 5. **Decide whether to advance RIP** using §5.3.1, not by habit. Instruction-execution exits advance; EPT violations, page faults and re-executed instructions do not.
 6. **For reason 0**, read the VM-exit interruption information to distinguish an exception from an NMI, and check bit 12 for NMI unblocking due to IRET.
 7. **For reason 48**, read the guest-physical address, then the exit qualification; use bits 0–2 to classify the access and bits 3–6 to distinguish "not mapped" from "mapped but not permitted".
 
 - **Claim.** Reading the IDT-vectoring information field on every VM exit is architecturally necessary because the field is valid for exits of many different basic reasons — a task switch, an EPT violation or an exception can all interrupt event delivery.  `[SDM 3C §30.2.4]` `[1]` `C:high` `V:durable`
-- **Claim.** An EPT violation whose qualification has bits 3, 4 and 5 all clear indicates that the guest-physical address is not mapped at all by EPT, whereas a violation with some of those bits set indicates a permission failure on a mapped page.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** An EPT violation whose qualification has bits 5:3 all clear indicates either that one of the EPT paging-structure entries used for the translation was not present, or that 4-level EPT is in use and the guest-physical address set a bit in the range 51:48; a violation with some of those bits set indicates a permission failure on a mapped page.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 - **Claim.** EPT misconfiguration (reason 49) and EPT violation (reason 48) must be handled by different code paths: a misconfiguration means the VMM's own EPT paging structures are malformed, which is a hypervisor bug rather than a guest event.  `[SDM 3C Ch.31]` `[1]` `C:high` `V:durable`
 
 ---
@@ -355,7 +393,7 @@ Two long-lived errors in secondary descriptions of the EPT-violation exit qualif
 1. **Bit 7.** Older material describes qualification bit 7 as flagging the guest-physical-address field. It does not — bit 7 reports validity of the guest-linear-address field. The guest-physical address is always reported for an EPT violation and needs no validity flag.
 2. **Bit 6.** Older material describes qualification bit 6 as the logical-AND of the execute-disable bit across the EPT paging structures. It is the logical-AND of the *user-mode execute* permission (bit 10 of an EPT paging-structure entry), and it is meaningful only when mode-based execute control for EPT is enabled.
 
-- **Claim.** Under mode-based execute control for EPT, an EPT paging-structure entry carries two execute permissions: bit 2 for supervisor-mode execute and bit 10 for user-mode execute; exit-qualification bits 5 and 6 report the logical-AND of those two permissions respectively.  `[SDM 3C §27.9.1]` `[1]` `C:high` `V:durable`
+- **Claim.** Under mode-based execute control for EPT, an EPT paging-structure entry carries two execute permissions: bit 2 for supervisor-mode execute and bit 10 for user-mode execute; exit-qualification bits 5 and 6 report the logical-AND of those two permissions respectively.  `[SDM 3C §30.2.1]` `[1]` `C:high` `V:durable`
 
 ---
 

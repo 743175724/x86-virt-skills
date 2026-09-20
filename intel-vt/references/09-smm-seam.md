@@ -19,8 +19,8 @@ familiar but are not identical to ordinary VMX transitions.
 The SDM treats them as neighbours: Ch.34 is System Management Mode and Ch.35 is Secure
 Arbitration Mode (SEAM). This chapter keeps them together for the same reason.
 
-- **Claim.** In SDM rev 092, Vol.3C Ch.34 is "System Management Mode" and Ch.35 is "Secure Arbitration Mode (SEAM)".  `[SDM 3C Ch.34]` `[1]` `C:high` `V:durable`
-- **Claim.** SEAM is specified by the SDM as an extension of VMX operation, and the SDM states that the SEAM architecture is used as the foundation for the Trust Domain Extensions (TDX) architecture.  `[SDM 3C §35.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In SDM rev 092, Vol.3C Ch.34 is "System Management Mode" and Ch.35 is "Secure Arbitration Mode (SEAM)".  `[SDM 3C Ch.34]` `[SDM 3C Ch.35]` `[1]` `C:high` `V:durable`
+- **Claim.** SEAM is specified by the SDM as an extension of VMX operation, and the Ch.35 preamble states that the SEAM architecture is used as a foundation for the Trust Domain Extensions (TDX) architecture (the preamble spells it "Trusted Domains Extensions").  `[SDM 3C Ch.35]` `[1]` `C:high` `V:durable`
 
 ## 9.2 SMM: the parts that matter to a VMM
 
@@ -155,7 +155,7 @@ MSEG header layout, byte offsets, each field 32 bits:
 - **Claim.** The MSEG header fields occupy byte offsets 0 (MSEG-header revision identifier), 4 (SMM-transfer monitor features), 8 (GDTR limit), 12 (GDTR base offset), 16 (CS selector), 20 (EIP offset), 24 (ESP offset) and 28 (CR3 offset).  `[SDM 3C §34.15.5]` `[1]` `C:high` `V:durable`
 - **Claim.** Bit 0 of the SMM-transfer monitor features field is the IA-32e mode SMM feature bit, indicating whether the logical processor will be in IA-32e mode after the STM is activated.  `[SDM 3C §34.15.5]` `[1]` `C:high` `V:durable`
 - **Claim.** Software discovers the MSEG revision identifier a processor uses by reading the VMX capability MSR IA32_VMX_MISC.  `[SDM 3C §34.15.5]` `[1]` `C:high` `V:durable`
-- **Claim.** Software should maintain the MSEG header in writeback cacheable memory to ensure proper behaviour in VMX operation.  `[SDM 3C §34.15.5]` `[1]` `C:high` `V:durable`
+- **Claim.** Software should maintain the MSEG header in writeback cacheable memory to ensure proper behaviour in VMX operation; this is an SDM recommendation rather than an architectural guarantee, because the SDM adds that future implementations may allow or require a different memory type and that software should consult IA32_VMX_BASIC.  `[SDM 3C §34.15.5]` `[1]` `C:medium` `V:durable`
 
 ### 9.4.7 Activating and deactivating
 
@@ -229,15 +229,18 @@ The four SEAM instructions, per Vol.3C §35.5:
 - **Claim.** The existence of the SEAMRR MSRs is enumerated by bit 15 of IA32_MTRRCAP (MSR address FEH); processors supporting the SEAM architecture return IA32_MTRRCAP bit 15 as 1.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** The SEAM range is divided into a module sub-range and a loader sub-range.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Bit 11 of IA32_SEAMRR_MASK indicates whether the SEAM range is valid and protected.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
+- **Claim.** In IA32_SEAMRR_BASE, bits 2:0 are reserved, bit 3 is CONFIGURED (set to 1 when the SEAM range is configured), bits 24:4 are reserved and bits M-1:25 hold the SEAM range base address, with M enumerated by CPUID.80000008H:EAX[7:0]; the base address must have bits M-1:M-k clear, where k is IA32_TME_ACTIVATE.MK_TME_KEYID_BITS.  `[SDM 4 §2.1]` `[5]` `C:high` `V:durable`
+- **Claim.** In IA32_SEAMRR_MASK, bits 9:0 are reserved, bit 10 is LOCK (when it is set, IA32_SEAMRR_BASE and IA32_SEAMRR_MASK become non-writable), bit 11 is VALID (returns 1 when SEAM range protections are active), bits 24:12 are reserved and bits M-1:25 hold the mask value used for SEAMRR matching, whose lowest granularity is 32 MBytes.  `[SDM 4 §2.1]` `[5]` `C:high` `V:durable`
 - **Claim.** Outside SEAM root operation, accesses to physical addresses in the SEAM range are aborted: writes are ignored and reads return values with all bits set to 1.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** In SEAM root operation, accesses to the module sub-range are allowed, while accesses to the loader sub-range are allowed only in loader-mode SEAM root operation and are otherwise aborted.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** In SEAM root operation, instruction fetches from physical addresses outside the SEAM range are prevented by the processor, with an implementation-specific response.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** The contents of the SEAM range are encrypted by the TME-MK engine with a machine-specific key, typically an ephemeral key generated each time the platform is restarted.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Accesses to the SEAM range use the writeback (WB) memory type regardless of MTRR and PAT when CR0.CD = 0, and the uncacheable (UC) memory type when CR0.CD = 1.  `[SDM 3C §35.4.1]` `[1]` `C:high` `V:durable`
 
-The DMA side of this protection matters for the VT-d chapters: the SEAM range is shielded from
-device accesses too, which is why remapping hardware must never be able to produce a translation
-landing inside it.
+Note the scope of what Ch.35 guarantees: every rule above is about *processor* accesses. Ch.35 says
+nothing about DMA. Keeping device accesses out of the SEAM range is a platform responsibility
+discharged outside this chapter — by chipset range protection, and by remapping hardware that must
+never produce a translation landing inside it (see `10-vtd-dma-remapping.md`).
 
 ## 9.8 SEAM and TME-MK key identifiers
 

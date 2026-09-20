@@ -41,8 +41,8 @@
         "1.12 Checklist before the first VM entry",
         "1.13 What a verifier should check against the PDF"
       ],
-      "bytes": 39428,
-      "sha256": "e5cb733677992557dc44e200b36cd1a6d6c5f9c8b6570abd5435b3ea9f51489a"
+      "bytes": 42987,
+      "sha256": "c2b59bad55e4487f55659070fbf9f2dcce45436eb2e95acef031821d16e3a442"
     },
     {
       "path": "references/02-vmcs.md",
@@ -64,8 +64,8 @@
         "2.12 Software use of the VMCS",
         "2.13 Reading this chapter against a real machine"
       ],
-      "bytes": 55590,
-      "sha256": "a51c295b2955db35cd0053a8351c474ff197dd2cd02f03075f82d4b225352f1e"
+      "bytes": 60138,
+      "sha256": "604879301a3fef18aef9521c93d2cfe3d5d8003f152c6ebe10e9b4ecfebcd41c"
     },
     {
       "path": "references/03-nonroot-operation.md",
@@ -91,8 +91,8 @@
         "3.15 Designing an interception policy",
         "3.16 What a verifier should check against the PDF"
       ],
-      "bytes": 39830,
-      "sha256": "870ab00230489361f2b8b76e3b6265692783a0ea0df166555bfab6626c8857d5"
+      "bytes": 44582,
+      "sha256": "9c24aa953c2a145434263a7a78f38df4a44f86fd19ac372eb6a577a74d990daf"
     },
     {
       "path": "references/04-vm-entry.md",
@@ -113,8 +113,8 @@
         "4.11 Failure signatures seen in practice",
         "4.12 Cross-references"
       ],
-      "bytes": 52096,
-      "sha256": "83e744e9d45833a910f67d51dbdc648cf29c7def1ce7139860ee447bba1fa242"
+      "bytes": 67378,
+      "sha256": "90e2cfa5a30511d9d3e263c68df725eef8ff83e0761fbcbd0b11d0fa1e6ceee9"
     },
     {
       "path": "references/05-vm-exit.md",
@@ -137,8 +137,8 @@
         "5.13 Two corrections carried by this chapter",
         "5.14 Cross-references"
       ],
-      "bytes": 49888,
-      "sha256": "eb4cd4d77dd4fbd5c463df4730bf789ebdba891c8832c6357a5ee202bd9228b4"
+      "bytes": 66561,
+      "sha256": "63138a97521c258105c82ea1eb03a9840b166a7829a76138803f410efe42302f"
     },
     {
       "path": "references/06-address-translation.md",
@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 53349,
-      "sha256": "083910d2a2cce4380351055447a0fdf34a3e8d751a36be9db2d120b943ce0bc8"
+      "bytes": 59294,
+      "sha256": "de5c2dc3621fa736e353e9ea3d52a294d55d184c3c5e3b5865537b81114c35dc"
     },
     {
       "path": "references/07-apic-virtualization.md",
@@ -182,8 +182,8 @@
         "7.11 Chapter artifact index",
         "7.12 Open items"
       ],
-      "bytes": 42905,
-      "sha256": "d4737c0a0dbf0c8552165da1994b1f1ab3f07d0558ae4bd00e8515612cfe9e75"
+      "bytes": 63687,
+      "sha256": "59546069eedd3309c738c1ab7b16c470b04aa0b950f2edcaeeafd6cb9d147e1f"
     },
     {
       "path": "references/08-vmx-instructions.md",
@@ -201,8 +201,8 @@
         "8.8 Common pitfalls",
         "8.9 Cross-references"
       ],
-      "bytes": 42512,
-      "sha256": "ac01dba922f0b7f00ee8d6dfef1384c1ba229b33c86344cc72135da98d2043ef"
+      "bytes": 57161,
+      "sha256": "a62572fbe28a5e4f6774f658530ca11217f071fca5cf1bf2a128915d38f1f168"
     },
     {
       "path": "references/09-smm-seam.md",
@@ -222,8 +222,8 @@
         "9.10 Boundary with chapter 13",
         "9.11 Pitfalls"
       ],
-      "bytes": 37964,
-      "sha256": "69145b115cba79231b7c5105872341160e7ac095635f74afe1d6a8984dcc4a15"
+      "bytes": 39189,
+      "sha256": "8377f7b621deb2a793a97c0a283821f3de4a10ef26f500065f6c0714346a70ac"
     },
     {
       "path": "references/10-vtd-dma-remapping.md",
@@ -241,8 +241,8 @@
         "10.8 Special request handling in Chapter 3",
         "10.9 Pitfalls"
       ],
-      "bytes": 48231,
-      "sha256": "247d127a07166c78904b5ac2cf0804968ac318eed0451e351b72f2b75510c742"
+      "bytes": 49635,
+      "sha256": "f85dc218ca629bfe25a35553a6e31dde61dbe54474bfdb2518460431e4f804da"
     },
     {
       "path": "references/11-vtd-interrupt-remapping.md",
@@ -263,13 +263,13 @@
         "11.11 Programming the interrupt sources",
         "11.12 Pitfalls"
       ],
-      "bytes": 36040,
-      "sha256": "cc3b14815dc75f96ef7e9d72b2aff0ed0c762279bc34469e2cc7e7d8d1734d68"
+      "bytes": 36169,
+      "sha256": "ca30b915b2e6ab6def418fe028fc54ddf7cf4168c848d6c1a2ab25a46c33a704"
     },
     {
       "path": "references/12-vtd-faults-bios-siov.md",
       "title": "12. VT-d Faults, BIOS Reporting, Performance Monitoring and SIOV",
-      "summary_zh": "本章补齐旧版技能完全缺失的三块内容。第一块是**故障处理**：不可恢复故障与可恢复故障的分野、primary fault logging、Fault Recording Register 的逐位格式，以及一张覆盖 legacy 与 scalable 两套编码的**故障原因码表**（LRT/LCT/LSS/LGN/RTA/SRT/SCT/SPD/SPT/SFS/SSS/SGN/HPT）。第二块是可恢复故障路径：page request queue、page request descriptor 与 page group response。第三块是 **ACPI DMAR 表**及其七种子结构（DRHD/RMRR/ATSR/RHSA/ANDD/SATC/SIDP），外加性能监控与 SIOV。最后是安全面：DMA 攻击、pre-boot DMA 保护缺口，以及 5520/5500 #53 这条**Intel 自家的**中断重映射勘误。",
+      "summary_zh": "本章补齐旧版技能完全缺失的三块内容。第一块是**故障处理**：不可恢复故障与可恢复故障的分野、primary fault logging、Fault Recording Register 的逐位格式，以及一张覆盖 legacy 与 scalable 两套编码的**故障原因码表**（LRT/LCT/LSS/LGN/RTA/SRT/SCT/SPD/SPT/SFS/SSS/SGN/HPT）。第二块是可恢复故障路径：page request queue、page request descriptor 与 page group response。第三块是 **ACPI DMAR 表**及其七种子结构（DRHD/RMRR/ATSR/RHSA/ANDD/SATC/SIDP），外加性能监控与 SIOV。最后是安全面：DMA 攻击、pre-boot DMA 保护缺口，以及 5520/5500 #47 与 #53 这两条**Intel 自家的**中断重映射勘误。",
       "maps_to": "Intel VT-d Architecture Specification Rev 5.20 Ch.7 \"Address Translation Faults\", Ch.8 \"BIOS Considerations\", Ch.10 \"Performance Monitoring\" ; Intel Scalable I/O Virtualization Technical Specification",
       "headings": [
         "12.1 The two fault classes",
@@ -282,8 +282,8 @@
         "12.8 Security considerations",
         "12.9 Pitfalls"
       ],
-      "bytes": 54804,
-      "sha256": "087704a24115bd6d84e29a4dc43ac097e07c8689cb1d2a344e5dafc29f338e1c"
+      "bytes": 58075,
+      "sha256": "766db50beadbdeefe641143dd6724ec6c3eee50cfb26d4003569bc5c4e293471"
     },
     {
       "path": "references/13-tdx.md",
@@ -314,8 +314,8 @@
         "13.21 Known vulnerabilities and public security research",
         "13.22 What this chapter deliberately does not state"
       ],
-      "bytes": 100438,
-      "sha256": "4e2a04b943b678ae475c46a2f39b27da64d92e2f36b71ba052d61bb5356050ad"
+      "bytes": 105573,
+      "sha256": "4fc950ac8ad145ed636a37fd44c6a6cffed0a88b34a746ef54ab3648211bb83f"
     },
     {
       "path": "references/14-nested-virtualization.md",
@@ -338,8 +338,8 @@
         "14.13 Academic lineage",
         "14.14 Out of scope for this chapter"
       ],
-      "bytes": 49368,
-      "sha256": "d604660251fa63808acf9ab6641f16698536cf5cabbba07f2e62aaf4c0b8f9e6"
+      "bytes": 51575,
+      "sha256": "0667b6dcd85fe70af257b0b36895473e2d56b004ec133ef9cc73296dd8aac3f6"
     },
     {
       "path": "references/15-security.md",
@@ -362,8 +362,8 @@
         "15.13 Reading the chapter as one picture",
         "15.14 Out of scope for this chapter"
       ],
-      "bytes": 51362,
-      "sha256": "94a69ff7ed8f163c2d49af9924f7384f89ce4be6cc9ed5db84df263da33af097"
+      "bytes": 57583,
+      "sha256": "b4f227e3785767bcb8640debe279c8a3cd437e49bfb88549121383fc1365cfc3"
     },
     {
       "path": "references/16-performance.md",
@@ -385,8 +385,8 @@
         "16.12 Procedure for answering a performance question",
         "16.13 Out of scope for this chapter"
       ],
-      "bytes": 39797,
-      "sha256": "04364f69849c57885b824377fcbdc43370716394f74d883fb696253bd0c619f6"
+      "bytes": 44011,
+      "sha256": "1734379990b4a944482b05fa8e00010e3da87694445c668862a951282f9a97d9"
     },
     {
       "path": "references/17-windows-platform.md",
@@ -406,8 +406,8 @@
         "17.10 Procedure for answering a Windows VT question",
         "17.11 Out of scope for this chapter"
       ],
-      "bytes": 41919,
-      "sha256": "f2882538991d2505089a0903b0dd3b7ba667f14c37ae39cafe02e3243d7e0714"
+      "bytes": 52593,
+      "sha256": "68d5ec39cffa902512c9638147897b177e92e2a0d260dc461e8cc7921268a9ef"
     },
     {
       "path": "references/18-comparison-amd-arm-riscv.md",
@@ -429,8 +429,8 @@
         "18.12 Procedure for answering a cross-vendor question",
         "18.13 Out of scope for this chapter"
       ],
-      "bytes": 49093,
-      "sha256": "e3eb12fc124449f797dd136d692de22d1a0745e0e9e6b91a6063a4ec1be6ab83"
+      "bytes": 52795,
+      "sha256": "721a2afb4b3d0d4de7edc7466bd127113071f2cf6b34d108dd26ad09f2630b2f"
     },
     {
       "path": "references/90-dated-landscape.md",
@@ -443,8 +443,8 @@
         "90.2 Dated security events on a Windows PC",
         "90.3 Server and cloud (out of scope for a client PC)"
       ],
-      "bytes": 39048,
-      "sha256": "808b1f86b7fdd1b4c036a7ae5a8a2c4c86e7dba3b61b1a37ae00dd3e8a320d70"
+      "bytes": 40281,
+      "sha256": "248a17121580df51dcf9c2606dc71ada6e4fdb984b192e247d0b96860c8c549f"
     },
     {
       "path": "references/bibliography.md",
@@ -495,8 +495,8 @@
         "18 · Cross-vendor comparison → `18-comparison-amd-arm-riscv.md`",
         "90 · Dated landscape → `90-dated-landscape.md`"
       ],
-      "bytes": 16235,
-      "sha256": "a46d3a5f8b4192b0b7f5db0096636dc15dd3ba2c896b18105d5f9c455e66b639"
+      "bytes": 16887,
+      "sha256": "3981d05735725fecc7204ffa2459637545658c0f711089c41b68c48f0c6755f2"
     },
     {
       "path": "references/errata.md",
@@ -507,8 +507,8 @@
         "Settled corrections",
         "Open conflicts — do not pick a side"
       ],
-      "bytes": 23471,
-      "sha256": "96c2841b74959a41255d593bd785e1e2d0b465756e5c65317c6bacc77a0aac40"
+      "bytes": 24693,
+      "sha256": "412fe9237657c91822d7e33f94480b9417da0e3840196214c75f5ffe8ee224b1"
     }
   ]
 }

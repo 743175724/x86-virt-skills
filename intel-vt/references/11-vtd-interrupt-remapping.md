@@ -139,10 +139,10 @@ This is the canonical layout. Anything that contradicts this table is wrong.
 - **Claim.** RH indicates whether the remapped interrupt request should be directed to one among N processors specified in the Destination ID field, under hardware control.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
 - **Claim.** DM indicates whether the Destination ID field should be interpreted as a logical or a physical APIC ID.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
 - **Claim.** The 3-bit DLM field specifies how the remapped interrupt is handled, operates only in conjunction with specific Trigger Modes, and correct Trigger Modes must be guaranteed by software.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
-- **Claim.** For delivery modes that ignore the vector — including the SMI delivery mode — the vector field must be programmed to all zeros for future compatibility.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
+- **Claim.** The all-zeros rule applies to SMI alone: for SMI (DLM = 010b) the vector field is ignored "but must be programmed to all zeros for future compatibility", whereas for NMI (100b) and INIT (101b) the specification says only that the vector information is ignored, with no zeroing requirement.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
 - **Claim.** NMI, INIT and ExtINT are edge triggered regardless of the setting of the Trigger Mode field, and platforms supporting interrupt remapping are expected or recommended to generate SMI, NMI and INIT through a dedicated pin or platform-specific special messages.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
 - **Claim.** The FPD field is evaluated by hardware irrespective of the setting of the Present field, while all other IRTE fields are evaluated only when P is Set.  `[VT-d 5.20 §9.9]` `[8]` `C:high` `V:durable`
-- **Claim.** When forwarding a remapped interrupt request to the system bus, the "Trigger Mode Level" field in the request on the system bus is always set to asserted (1b).  `[VT-d 5.20 §5.1.4.1]` `[8]` `C:high` `V:durable`
+- **Claim.** When forwarding a remapped interrupt request to the system bus, the "Trigger Mode Level" field in the request on the system bus is always set to asserted (1b).  `[VT-d 5.20 §5.1.4]` `[8]` `C:high` `V:durable`
 
 ### 11.4.1 Source-id validation: SVT, SID and SQ
 
@@ -271,8 +271,8 @@ treated as an Unsupported Request.
 | 27h | Hardware access to the posted descriptor via the PDAH/PDAL fields resulted in error | Yes |
 | 28h | Reserved fields not zero in the posted descriptor | Yes |
 | 29h | An untranslated request-without-PASID to FEEx_xxxxh that does not meet the requirements of a valid interrupt | No |
-| 2Ah | EIME is 0 in IRTA_REG on an implementation reporting EIMER Set in ECAP_REG | — |
-| 2Bh | An MSI request arrived while Interrupt Remapping is disabled on hardware reporting IRREQ Set in ECAP_REG | — |
+| 2Ah | EIME is 0 in IRTA_REG on an implementation reporting EIMER Set in ECAP_REG | No |
+| 2Bh | An MSI request arrived while Interrupt Remapping is disabled on hardware reporting IRREQ Set in ECAP_REG | No |
 
 - **Claim.** Interrupt-remapping fault reason 20h is detection of one or more reserved fields Set when decoding the request per the remappable format, and is not a qualified fault.  `[VT-d 5.20 §5.1.4.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Fault reason 21h covers an interrupt_index greater than the configured interrupt-remapping table size, or a hardware attempt to access the corresponding IRTE at an address above the Host Address Width.  `[VT-d 5.20 §5.1.4.1]` `[8]` `C:high` `V:durable`
