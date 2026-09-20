@@ -236,6 +236,7 @@ The architecture gives one explicit recycling rule, and it is the basis of every
 - **Claim.** A `MOV CR3`, a task switch that changes CR3, or clearing or setting `CR0.PG` or the PGE, PAE or PSE bits of CR4 affects only the TLB entries belonging to the current ASID, whether the operation happened in host or guest mode.  `[APM2 §15.16.1]` `[1]` `C:high` `V:durable`
 - **Claim.** All TLB entries of all ASIDs are flushed by SMI, RSM, MTRR modifications, IORR modifications and accesses to other system MSRs that affect address translation.  `[APM2 §15.16.1]` `[1]` `C:high` `V:durable`
 - **Claim.** If the VMM intercepts a guest action that would have flushed the TLB, the `#VMEXIT` occurs and **the TLB is not flushed**; the flush becomes the VMM's responsibility.  `[APM2 §15.16.1]` `[1]` `C:high` `V:durable`
+- **Claim.** The same holds for the world switch itself: **VMRUN and `#VMEXIT` write CR0, CR3, CR4 and EFER but do not flush the TLB**, so the VMM must explicitly invalidate any guest translations its own actions invalidated. This applies whether or not nested paging is enabled — it is a property of the world switch, not of shadow paging.  `[APM2 §15.16]` `[1]` `C:high` `V:durable`
 - **Claim.** AMD states a software rule for mode changes: when the VMM changes a guest's paging mode by editing the guest VMCB, it must flush the guest's TLB entries, and the state that counts is CR0 (PG, WP, CD, NW), CR3 (any bit), CR4 (PGE, PAE, PSE) and EFER (NXE, LMA, LME).  `[APM2 §15.16]` `[1]` `C:high` `V:durable`
 
 Putting those rules together, the decision a hypervisor actually has to make on each VMRUN reduces to:
@@ -304,7 +305,6 @@ Nested paging is optional, and a minimal hypervisor or a guest running a paging 
 
 - **Claim.** With shadow paging the VMM is responsible for building a shadow page table for each guest linear address space that maps it to system physical addresses; these replace the guest OS's tables as the active tables, and the VMM sets the CR3 field in the guest VMCB to the system physical address of the desired shadow table.  `[APM2 §15.16]` `[1]` `C:high` `V:durable`
 - **Claim.** The VMM is also responsible for updating the shadow table whenever the guest changes its page tables or paging control state, and for updating the Accessed and Dirty bits of the *guest's* page tables, which hardware no longer touches on its behalf.  `[APM2 §15.16]` `[1]` `C:high` `V:durable`
-- **Claim.** VMRUN and `#VMEXIT` write CR0, CR3, CR4 and EFER but **do not flush the TLB**, so the VMM must explicitly invalidate any guest translations its own actions invalidated.  `[APM2 §15.16]` `[1]` `C:high` `V:durable`
 
 The intercepts that make the shadow path work are the CR3 read and write intercepts in vector 0, the `#PF` exception intercept in vector 2, the CR0-write intercept that fires on changes to bits other than TS and MP, and the INVLPG and INVLPGA intercepts in vector 3. Their bit positions belong to `03-intercepts.md` and the byte offsets to `02-vmcb.md`.
 

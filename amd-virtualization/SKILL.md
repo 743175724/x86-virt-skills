@@ -29,7 +29,11 @@ scope; the platform, security and performance chapters are written for Windows.
 ## How to use this skill
 
 **Read the one chapter your question maps to. Do not load the directory.**
-Chapters run 300–500 lines each; the routing table below resolves to a section.
+Chapters run 300–500 lines each. The routing table resolves to the section that
+**owns** the fact; where a row lists more than one, each is named with what it
+holds. If a value is still not where you landed, `00-quickref.md` §0.3 maps every
+table in the skill to its owning section — that is faster than opening a second
+chapter.
 
 1. **Look up the route** in §Routing. If the question is a symptom rather than a
    topic, use `00-quickref.md` §0.2 instead — it maps failures to chapters.
@@ -56,20 +60,20 @@ authoritative values of its own.
 
 | Question is about | Read |
 |---|---|
-| Enabling SVM, `EFER.SVME`, `VM_CR`, BIOS lock, CPUID feature bits, "SVM is unavailable" | `01-svm-intro.md` §1.5 |
-| **VMCB field offsets**, control area, state save area, segment attributes, clean bits | `02-vmcb.md` §2.2 |
-| Intercept vectors and bit numbers, IOPM, MSRPM, PAUSE filter, TSC ratio, LBR/IBS/PMC virtualization | `03-intercepts.md` §3.1 |
+| Enabling SVM, `EFER.SVME`, `VM_CR`, BIOS lock, CPUID feature bits, "SVM is unavailable" | `01-svm-intro.md` §1.4 (MSRs) · §1.5 (the enable chain) |
+| **VMCB field offsets** — where a field *is*, including that the 60h word exists — control area, state save area, segment attributes, clean bits | `02-vmcb.md` §2.2 (control area) · §2.3 (save area) · §2.5 (clean bits) |
+| Intercept vectors and bit numbers, IOPM, MSRPM, PAUSE filter, TSC ratio, LBR/IBS/PMC virtualization | `03-intercepts.md` §3.1 (vectors) · §3.3–§3.4 (IOPM, MSRPM) |
 | VMRUN, `#VMEXIT`, consistency checks, VMLOAD/VMSAVE, VLS, GIF, STGI/CLGI, `#SX` | `04-world-switch.md` §4.2 |
-| **Decoding an exit**: the EXITCODE table (§5.1), EXITINFO1/2 layouts (§5.2), NRIP, Decode Assist, EVENTINJ | `05-exit-decoding.md` §5.2 |
-| Nested page tables, the two-dimensional walk, `#NPF` semantics, memory-type combining, ASID, `TLB_CONTROL`, INVLPGA, GMET | `06-nested-paging.md` §6.5 |
-| Virtual interrupts, the offset-60h control word, vGIF, AVIC, x2AVIC, the doorbell | `07-virtual-interrupts-avic.md` §7.2 |
-| IOMMU MMIO registers, the Device Table Entry, event/PPR/GA **log entry formats** | `08-iommu-architecture.md` §8.6 |
+| **Decoding an exit**: the EXITCODE table (§5.1), EXITINFO1/2 layouts (§5.2), NRIP, Decode Assist, EVENTINJ | `05-exit-decoding.md` §5.1 (codes) · §5.2 (EXITINFO) |
+| Nested page tables, the two-dimensional walk, `#NPF` semantics, memory-type combining, ASID, `TLB_CONTROL`, INVLPGA, GMET | `06-nested-paging.md` §6.5 (`#NPF`) · §6.7–§6.8 (ASID, TLB, INVLPGA) |
+| Virtual interrupts, **what the bits of the offset-60h word mean**, vGIF, AVIC, x2AVIC, the doorbell | `07-virtual-interrupts-avic.md` §7.1 (the 60h word) · §7.8 (AVIC exits) |
+| IOMMU MMIO registers, the Device Table Entry, event/PPR/GA **log entry formats** | `08-iommu-architecture.md` §8.3 (registers) · §8.6 (DTE) · §8.8 (log formats) |
 | I/O page tables, GCR3, commands, ACPI IVRS, **decoding an `IO_PAGE_FAULT`** | `09-iommu-page-tables.md` §9.6 |
-| **IRTE formats**, the DTE interrupt cluster, MSI remapping, GA log semantics, GAPPI, ATS/PRI/PASID | `10-iommu-interrupt-remapping.md` §10.4 |
+| **IRTE formats**, the DTE interrupt cluster, MSI remapping, GA log semantics, GAPPI, ATS/PRI/PASID | `10-iommu-interrupt-remapping.md` §10.1–§10.3 (IRTEs, DTE cluster) · §10.4 (end to end) |
 | **SME, TSME, the C-bit**, `Fn8000_001F`, SYSCFG, AMD-SP — what a client PC actually has | `11-memory-encryption.md` §11.2 |
-| SEV key hierarchy, ASIDs, firmware commands, guest policy, `SEV_STATUS`, the threat model | `12-sev.md` §12.6 |
-| SEV-ES: the VMSA, `#VC`, **the GHCB layout**, the MSR protocol, NAE events, VMGEXIT | `13-sev-es-ghcb.md` §13.4 |
-| SEV-SNP: **the RMP**, page states, VMPL, the SNP instructions, attestation, vTOM, Secure TSC, SVSM | `14-sev-snp.md` §14.1 |
+| SEV key hierarchy, ASIDs, firmware commands, guest policy, `SEV_STATUS`, the threat model | `12-sev.md` §12.6 (`SEV_STATUS`) · §12.8 (firmware commands and status codes) |
+| SEV-ES: the VMSA, `#VC`, **the GHCB layout**, the MSR protocol, NAE events, VMGEXIT | `13-sev-es-ghcb.md` §13.3 (establishing it) · §13.4 (layout) · §13.5 (MSR protocol) |
+| SEV-SNP: **the RMP**, page states, VMPL, the SNP instructions, attestation, vTOM, Secure TSC, SVSM | `14-sev-snp.md` §14.1 (RMP) · §14.4 (instructions) · §14.11 (attestation) |
 | Nested SVM, vmcb02, intercept merging, **what AMD has instead of VMCS shadowing** | `15-nested-virtualization.md` §15.5 |
 | **Hyper-V on AMD, VBS, HVCI, WSL2, WHP, Kernel DMA Protection, "why can't my VMM use AMD-V"** | `16-windows-platform.md` §16.1 |
 | CVEs and their mitigations, transient execution, SKINIT/DRTM, SMM containerization, erratum-driven masking | `17-security.md` §17.1 |

@@ -53,10 +53,12 @@ Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 
 | Check | Result |
 |---|---|
-| Claims checked against downloaded AMD PDFs by agents that did not write them | **1920**, of which 12 were wrong and are fixed |
-| Error rate found by that pass | **0.6%** |
-| Bibliography merged from per-chapter staging | **145** entries, **0** orphans, **0** range violations |
-| Eval set | 80 questions, **not yet run** |
+| Claims checked against downloaded AMD PDFs by agents that did not write them | **2100**, of which 13 were wrong and are fixed |
+| Error rate found by that pass | **0.62%** |
+| Behavioural eval, answered blind and scored by separate agents | **497/508 (97.8%)** facts recalled |
+| Misconceptions asserted across 80 questions | **0** |
+| Citation validity | **80/80 (100%)** |
+| Routing correct on first try | **79/80 (98.75%)** |
 
 Confidence is stated, not assumed. `intel-vt`: 2014 claims `C:high`, 494
 `C:medium`, 48 `C:low`. `amd-virtualization`: 1911 `C:high`, 159 `C:medium`,
@@ -68,6 +70,13 @@ Each skill has an `errata.md`: 28 corrections on the Intel side, 26 on the AMD
 side, several of them to claims the earlier version of that skill made itself.
 Five AMD entries are marked `[reversed]` because the *proposed correction* was
 itself refuted by a primary source.
+
+The AMD eval is written up in
+[`eval/amd-virtualization/results/SUMMARY-2026-09-21.md`](eval/amd-virtualization/results/SUMMARY-2026-09-21.md),
+including the four wrong keys it found and the four skill defects it exposed.
+Every genuine miss was "the fact is present but was not found" rather than a
+content gap — routing and placement, not coverage. There was exactly one real
+content gap in 80 questions.
 
 ### What the AMD rebuild found
 
@@ -165,8 +174,12 @@ must be done by different agents.
 - Eval scoring is done by agents from the same model family as the answerers.
   They are separate agents, which removes self-grading, but not family-level
   correlation.
-- The AMD eval set exists but **has not been run**. The Intel numbers above come
-  from a completed run; the AMD ones do not.
+- Both eval runs found the *answer key* wrong more often than the skill: five
+  keys on the Intel side, four on the AMD side. Scorers are given explicit
+  authority to mark an item `key-disputed` and check the specification instead,
+  because a key that is wrong will otherwise train the corpus toward the error —
+  on the Intel side one key rewarded an answer that would have shipped a
+  lost-interrupt bug.
 - `learn.microsoft.com` was unreachable directly from the build environment, so
   Windows claims were verified through a text proxy. That proxy drops HTML
   headings, which caused one of the errors above — re-fetch with HTML preserved

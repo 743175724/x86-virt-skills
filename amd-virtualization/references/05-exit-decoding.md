@@ -112,6 +112,10 @@ at which point it becomes completely mechanical.
 - **Claim.** Rev 3.45 prints rows `8Eh` (RDPRU) and `8Dh` (XSETBV) in that order, out of numeric sequence; the code-to-name pairing is nevertheless the one the intercept vector implies, since vector 4 bit 13 is XSETBV and bit 14 is RDPRU.  `[APM2 App.C]` `[APM2 App.B]` `[1]` `C:high` `V:durable`
 - **Claim.** `VMEXIT_ICEBP` (`88h`) exists as a separate intercept because a vector-1 exception raised by the single-byte INT1/ICEBP instruction does **not** trigger the `#DB` exception intercept; ICEBP can only be caught through its own instruction intercept.  `[APM2 §15.12.2]` `[1]` `C:high` `V:durable`
 
+**The interrupt exits in this band do not consume the interrupt.**
+
+- **Claim.** When an external or virtual interrupt is intercepted — the `60h`, `61h` and `64h` exits above — **the interrupt is left pending rather than consumed**, so it is still asserted when the guest is re-entered. A handler that treats `VMEXIT_INTR` as delivery, rather than as notification that an interrupt is waiting, will re-exit immediately and livelock. The intercept mechanics are owned by `03-intercepts.md` §3.2.  `[APM2 §15.7]` `[1]` `C:high` `V:durable`
+
 ## 5.2 Exit information by event class
 
 - **Claim.** The governing rule is stated once, in the `#VMEXIT` description: the contents of `EXITINFO1` and `EXITINFO2` are **undefined** for intercepts where their use is not indicated, so a VMM may not read them speculatively.  `[APM2 §15.6]` `[1]` `C:high` `V:durable`

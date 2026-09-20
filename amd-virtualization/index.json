@@ -18,8 +18,8 @@
         "0.5 Windows PC: the questions that come up most",
         "0.6 Reading order for someone new to SVM"
       ],
-      "bytes": 10347,
-      "sha256": "38fd53bb41c31a2b844fc3d2317d2707696a54c171767b50e2d600fe40922da4"
+      "bytes": 11476,
+      "sha256": "ab1ea652a21374ef91c617905ef734240d3a61fe6d0d90ca5b39145cf02e8715"
     },
     {
       "path": "references/01-svm-intro.md",
@@ -52,8 +52,8 @@
         "2.6 Clean bits versus nested paging and ASID",
         "2.7 Open items"
       ],
-      "bytes": 47625,
-      "sha256": "a56ffd7f02a8e0cc86b67aec956cb67659f5cb2cd6583b1afee62bc2b1fb5dca"
+      "bytes": 47170,
+      "sha256": "26eab07e2fc7bda526797d50403cfdc47c658893e8ac3d3ac1ff455b1bff218e"
     },
     {
       "path": "references/03-intercepts.md",
@@ -74,8 +74,8 @@
         "3.11 SMI interception",
         "3.12 Open items"
       ],
-      "bytes": 55106,
-      "sha256": "23649b6af6308f792ab2167d5314489009fc75667e1ed8c5750da62f7096e37f"
+      "bytes": 54787,
+      "sha256": "b16a6edb7147cf20b205895c09e20cffce79f10f07468d970e0703fc968756c0"
     },
     {
       "path": "references/04-world-switch.md",
@@ -93,8 +93,8 @@
         "4.8 Instruction reference: encodings, operands and exceptions",
         "4.9 Open items"
       ],
-      "bytes": 37970,
-      "sha256": "bdb73afbe4d451f9ede709fd66eb148d50d773aa6645bef0f7c5bdfc46a277e0"
+      "bytes": 37648,
+      "sha256": "651760375ac5fc4c23d315dada385093aa365f9371e9ada25ccd3300bca82e6a"
     },
     {
       "path": "references/05-exit-decoding.md",
@@ -109,8 +109,8 @@
         "5.5 Event injection and re-injection",
         "5.6 Open items"
       ],
-      "bytes": 38287,
-      "sha256": "42cd1d7a6aa4a3374ca1ff786efa829e784e5e4f02595629f00117549aa59b1f"
+      "bytes": 38465,
+      "sha256": "d20414e76855ece646e597115518f627e666df84e42df433f12b7c88bacd0e5e"
     },
     {
       "path": "references/06-nested-paging.md",
@@ -130,8 +130,8 @@
         "6.10 Shadow paging without nested paging",
         "6.11 Open items"
       ],
-      "bytes": 50309,
-      "sha256": "212a7d73f094926b91c13f8ddd21b1f488fbce80f43fd841088b8829a157ce90"
+      "bytes": 50470,
+      "sha256": "fed35ef3d61db6e008849e6d7d06d1a93957a289c0c11eb81c62418d8d31ff23"
     },
     {
       "path": "references/07-virtual-interrupts-avic.md",
@@ -149,8 +149,8 @@
         "7.8 AVIC exits and their payloads",
         "7.9 Open items"
       ],
-      "bytes": 49425,
-      "sha256": "7ad45e6c9289afc65122b5055eb7c74395b76ec95666dc55ad1fe9507fbecff3"
+      "bytes": 49082,
+      "sha256": "44ee2bb3fea76f5835dbcfe366aa1d514945e765aaa5501e4242c45ef7746d28"
     },
     {
       "path": "references/08-iommu-architecture.md",
@@ -168,8 +168,8 @@
         "8.8 Log entry formats: event, PPR and GA",
         "8.9 Open items"
       ],
-      "bytes": 51400,
-      "sha256": "0766e98a87e5d2ca7b54efeb1de566391dd01b5b6e2c4bac0c650a0da64a4950"
+      "bytes": 50989,
+      "sha256": "d904d35fa8a0fc8b69ce0466116558370daa41630336fd81741b7f6bfa29833e"
     },
     {
       "path": "references/09-iommu-page-tables.md",
@@ -185,8 +185,8 @@
         "9.6 Decoding an IO_PAGE_FAULT end to end",
         "9.7 Open items"
       ],
-      "bytes": 49418,
-      "sha256": "26d0bc2b474c1cec03be9a3d102c01ca3f80d2eda62842e21863df7c54964161"
+      "bytes": 49015,
+      "sha256": "6f374de2fa54eaaf22ed34ba6781edb2287794227e75971a7adb88cf3be5259f"
     },
     {
       "path": "references/10-iommu-interrupt-remapping.md",
@@ -203,8 +203,8 @@
         "10.7 Hardware-accelerated vIOMMU",
         "10.8 Open items"
       ],
-      "bytes": 40846,
-      "sha256": "c804de9927f704500d79d4f11b6ac1e79afb896aa796356fcde3a39175250aa8"
+      "bytes": 40495,
+      "sha256": "ffa2851967e97a0107b8e5b4cdefe991cd3527312ce4169fea38c732faf34958"
     },
     {
       "path": "references/11-memory-encryption.md",
@@ -222,8 +222,8 @@
         "11.8 What a client part does not have",
         "11.9 Open items"
       ],
-      "bytes": 34187,
-      "sha256": "30eb5bef9deab7d96cd85f54e711a3bd70f1224974f3951b839a5fe770d9b391"
+      "bytes": 33855,
+      "sha256": "c47891ee23f3b71db9f3d77d462cca04e0056aa5c6a24a97ae920b20ece1ce2d"
     },
     {
       "path": "references/12-sev.md",
@@ -243,8 +243,8 @@
         "12.10 Launch measurement",
         "12.11 Open items"
       ],
-      "bytes": 46968,
-      "sha256": "d9511a20d474d1d516817314e2c8a9b3fb769b02f161e2ba479398c14f4093dd"
+      "bytes": 46586,
+      "sha256": "74033af59c5c48395f23d1653c1cb1cf127b1545dcbdf336c3e80a42349d02a5"
     },
     {
       "path": "references/13-sev-es-ghcb.md",
@@ -262,8 +262,8 @@
         "13.8 Booting application processors",
         "13.9 Open items"
       ],
-      "bytes": 56688,
-      "sha256": "47ebd4294a28345ba779550b87f04b29c8330c30234ea8eab65f0cca7ba3ae31"
+      "bytes": 56286,
+      "sha256": "f3b387845ce5795cbfb92de05f5a38bfda4648db42913711f7914a239e580ecb"
     },
     {
       "path": "references/14-sev-snp.md",
@@ -303,8 +303,8 @@
         "15.6 Nesting on Windows",
         "15.7 Open items"
       ],
-      "bytes": 44846,
-      "sha256": "97a1fa176c850e6648b17bc6b1aca63684c86694f6312d63fe656abe863cf9e7"
+      "bytes": 44529,
+      "sha256": "dc9ca4a11283274885636a4f4061f19218fb6c95d87341ba0dbf300a4fc31c7e"
     },
     {
       "path": "references/16-windows-platform.md",
@@ -325,8 +325,8 @@
         "16.11 Linux-only: the VFIO path",
         "16.12 Open items"
       ],
-      "bytes": 49715,
-      "sha256": "43f2958395320bb5640f2f26f96fbb20b04339718d45284d567b538304c76c52"
+      "bytes": 49402,
+      "sha256": "be1ae71b1d87279e6ac42f8cd1626ab1b28674735889ceaa2ce055f435e62322"
     },
     {
       "path": "references/17-security.md",
@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 60175,
-      "sha256": "e3be544c6122d045abedd182befa75b1966a5a20cbabb05da120e6fb27bb441d"
+      "bytes": 59863,
+      "sha256": "383a46711874e9d0428813f9563875a89100f4b7fd1a3881f637fd92e70cbd25"
     },
     {
       "path": "references/18-performance.md",
@@ -385,8 +385,8 @@
         "19.12 What a client PC actually has",
         "19.13 Open items"
       ],
-      "bytes": 47212,
-      "sha256": "d6b685dbe625ed01c7885cd8dda35b6a38c80da106fac3360563f35b2e81b4cf"
+      "bytes": 46907,
+      "sha256": "8a11cc7a57391e1c98aa525b6e56d77fae6ad5f6ea0cd961ff9a5d54b588de6a"
     },
     {
       "path": "references/90-dated-landscape.md",
@@ -433,8 +433,8 @@
         "580-609 · 章节引用",
         "610-659 · 章节引用"
       ],
-      "bytes": 45972,
-      "sha256": "cdc64b5b64ffaa21aa9f010bc6fa8145fbc977d82a8745b5c1ec2049daec1366"
+      "bytes": 45888,
+      "sha256": "ebb46239c2736c57b67630de423efd1dcb8144cbdff7d47f4364ead121cb4679"
     },
     {
       "path": "references/errata.md",
@@ -445,8 +445,8 @@
         "Settled corrections",
         "Open conflicts"
       ],
-      "bytes": 23959,
-      "sha256": "dccfb4f1e6d2561dd49aed7d00a04bbc374a64b6b37696f965722dc2c608d2d8"
+      "bytes": 23676,
+      "sha256": "85ffbf838727e7a87a962084970872718204239056ae8e3cc31ffda694220c97"
     }
   ]
 }

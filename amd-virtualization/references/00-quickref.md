@@ -52,6 +52,7 @@ Three traps worth knowing before you go looking:
 | Guest TLB entries are stale after I changed a page table | `06-nested-paging.md` §6.8 |
 | I ran out of ASIDs | `06-nested-paging.md` §6.7 |
 | Interrupts stop being delivered to a guest vCPU | `07-virtual-interrupts-avic.md` §7.2 |
+| `AVIC_INCOMPLETE_IPI` (401h) or `AVIC_NOACCEL` (402h) in the exit log | `07-virtual-interrupts-avic.md` §7.8 |
 | A passthrough device's interrupts never arrive | `10-iommu-interrupt-remapping.md` §10.4 |
 | `IO_PAGE_FAULT` in the event log | `09-iommu-page-tables.md` §9.6 |
 | The IOMMU is not processing my commands | `08-iommu-architecture.md` §8.3 — and see `errata.md` E01 |
@@ -61,8 +62,24 @@ Three traps worth knowing before you go looking:
 | `PVALIDATE` or `RMPUPDATE` returns an unexpected code | `14-sev-snp.md` §14.4 |
 | Attestation report fails to verify | `14-sev-snp.md` §14.11 |
 | Nested guest is extremely slow | `15-nested-virtualization.md` §15.5, then `18-performance.md` §18.5 |
+| A firmware or microcode update **disabled a feature** that used to work | `17-security.md` §17.1 — mitigations disable features; check `errata.md` first |
 | "Is this CVE relevant to me?" | `17-security.md` §17.1 |
 | "How much does VBS cost me?" | `18-performance.md` §18.2 |
+
+### Windows symptoms
+
+These fall through to `16-windows-platform.md` more often than anything else,
+and its §16.1.3 has a symptom table of its own that resolves to a section.
+
+| Symptom | Start at |
+|---|---|
+| A driver is rejected, or fails to load, once memory integrity is on | `16-windows-platform.md` §16.3 |
+| Is VBS / memory integrity actually running on this machine? | `16-windows-platform.md` §16.10 |
+| A Thunderbolt or PCIe device is blocked before login | `16-windows-platform.md` §16.4 — Kernel DMA Protection |
+| Nested virtualization inside a Hyper-V VM will not enable | `16-windows-platform.md` §16.5 |
+| GPU passthrough to a VM is unavailable on a desktop Windows host | `16-windows-platform.md` §16.8 — DDA is server scope |
+| Is AVIC on by default on my kernel? | `90-dated-landscape.md` §90.6 — `V:dated`, re-verify |
+
 
 ## 0.3 Where the tables live
 

@@ -455,7 +455,7 @@
     - "failure is reported as `#VMEXIT(VMEXIT_INVALID)`, exit code -1"
     - "the CR4 and EFER conditions are stated as 'any MBZ bit of CR4 is set' and 'any MBZ bit of EFER is set'"
     - "the fixed-mask forms `CR4[63:11]` and `EFER[63:15]` come from the 2005-era SVM manual, are superseded, and appear nowhere in Rev 3.45"
-    - "CR4 bits 11, 12, 16-18 and 20-24 and EFER bits 15, 17, 18 and 21 are architecturally defined today, so the old masks would reject a legal guest state"
+    - "CR4 bits 11, 12, 16-18 and 20-23 and EFER bits 15, 17, 18 and 21 are architecturally defined today, so the old masks would reject a legal guest state - CR4 bits 63:24 are Reserved, MBZ in Figure 3-7, so 23 (CET) is the highest defined bit"
     - "other conditions include `EFER.SVME` zero, `CR0.CD` zero with `CR0.NW` set, `CR0[63:32]` non-zero, any MBZ bit of CR3, `DR6[63:32]` or `DR7[63:32]` non-zero, the long-mode combinations, the VMRUN intercept bit being clear, an IOPM or MSRPM reaching the maximum supported physical address, illegal event injection and an ASID of zero"
     - "things that look illegal but are not: an out-of-limit or non-canonical guest rIP is a `#GP` inside the guest rather than a consistency failure, and paged real mode with `CR0.PE = 0` and `CR0.PG = 1` is explicitly legal"
   must_not_include:
@@ -593,7 +593,7 @@
     - "it is enabled by `V_NMI_ENABLE`, bit 26 of the word at offset `60h`"
     - "it requires the NMI intercept bit to be set - running a guest with `V_NMI_ENABLE` and no NMI intercept produces `#VMEXIT(INVALID)`"
     - "with it enabled the NMI intercept applies to physical NMIs only"
-    - "a virtual NMI is taken when `V_NMI` is set, virtual NMIs are unmasked, and there is no interrupt shadow"
+    - "AMD lists three delivery conditions verbatim: virtual NMIs are not masked, **virtual interrupts are enabled with VGIF**, and the processor is not in an interrupt shadow"
     - "on recognition the processor clears `V_NMI` and sets `V_NMI_MASK` before accessing the IDT"
     - "`V_NMI_MASK` is cleared on a guest `IRET`, and is saved as 0 if a `#VMEXIT` occurs during delivery"
     - "a physical NMI has priority over a virtual NMI"
