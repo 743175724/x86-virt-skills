@@ -62,9 +62,9 @@ find the owning chapter fast, then read that chapter.
 | VT-d DMA remapping, DMAR registers, translation structures, invalidation | `10-vtd-dma-remapping.md` |
 | Interrupt remapping, **IRTE**, interrupt posting on the VT-d side | `11-vtd-interrupt-remapping.md` |
 | **VT-d faults and fault reason codes**, ACPI DMAR, SIOV, DMA-attack surface | `12-vtd-faults-bios-siov.md` |
-| TDX: SEAMCALL/TDCALL leaves, TD lifecycle, Secure EPT, attestation | `13-tdx.md` |
+| TDX: SEAMCALL/TDCALL leaves, TD lifecycle, Secure EPT, attestation, **TDX CVEs and Intel advisories, TDXRay** | `13-tdx.md` |
 | Nested VMX, **VMCS shadowing**, vmcs02, nested EPT, nesting on a PC | `14-nested-virtualization.md` |
-| Transient-execution CVEs and **mitigation MSRs**, VBS, HVCI, Credential Guard, TXT | `15-security.md` §15.5 |
+| Transient-execution CVEs (L1TF/MDS/TAA/Spectre) and **mitigation MSRs**, VBS, HVCI, Credential Guard, TXT — not TDX advisories, those are `13` | `15-security.md` §15.5 |
 | Overhead numbers — VBS, utility VMs, WHP vs bare VMX, nesting, EPT | `16-performance.md` |
 | **Hyper-V, WHP/WHPX, WSL2, Sandbox, Kernel DMA Protection, "why no VT-x"** | `17-windows-platform.md` §17.1 |
 | Intel vs AMD SVM/SEV, vs ARM, vs RISC-V; what a client PC actually has | `18-comparison-amd-arm-riscv.md` |

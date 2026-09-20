@@ -53,6 +53,16 @@ interest. Two rules keep it usable:
   that is a hit. If the answer said "bit 7 indicates the physical address is
   valid", that is a miss *and* a trap violation. Do not argue the answer into
   a hit.
+- **A refutation is not a violation.** `must_not_include` catches an answer that
+  *asserts* a misconception, not one that names it in order to correct it.
+  "The claim that Intel has no ASID mechanism is wrong — it has PCID and VPID"
+  contains the banned words but takes the opposite position, and scores as a
+  pass. Record it as *refuted, not asserted*, and quote it. The banned strings
+  are written in assertion form to make this distinction mostly mechanical; when
+  one still fires inside a correction, the correction wins. (The corpus itself
+  quotes these misconceptions — `18-comparison-amd-arm-riscv.md` has a section
+  literally titled after the ASID error — so a pure substring rule would fail
+  the skill for doing exactly what it is supposed to do.)
 - Record the **verbatim answer** for every failed item. A failure you cannot
   quote is a failure you did not really have.
 

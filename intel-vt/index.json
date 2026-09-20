@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 51896,
-      "sha256": "067e31d93d9b5ed222a6bcf10d2190b116c94c350bdb877319b0f453374706a9"
+      "bytes": 51986,
+      "sha256": "44038bcfc345a28117256e711d876a284822245a503b8bfa322b2bd7b5c158f4"
     },
     {
       "path": "references/07-apic-virtualization.md",

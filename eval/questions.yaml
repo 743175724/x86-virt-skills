@@ -1046,7 +1046,10 @@
     - "VPID is a 16-bit VMCS field that tags translations by virtual-processor / VM context, with INVVPID to invalidate"
     - "what is true is narrower: Intel does not use the name ASID and does not use a single identifier for both roles, whereas AMD's 32-bit ASID covers the VM-tagging role alone"
   must_not_include:
-    - "Intel has no ASID mechanism"
+    # Assertion-shaped: these must not appear as the answer's own position.
+    # A refutation that quotes the misconception is NOT a violation - see RUNNER.md.
+    - "Intel does not have an ASID-like mechanism"
+    - "Intel lacks any ASID equivalent"
     - "Intel flushes the TLB on every VMX transition"
   required_citation: "SDM 3C §27.6.12"
   notes: "errata E19. Chapter 06 section 6.6; the cross-vendor framing is chapter 18 section 18.3.2. ARM's VMID plus ASID mirrors Intel's two-namespace arrangement rather than AMD's single one."
@@ -1100,8 +1103,10 @@
     - "arXiv:2202.13483 (February 2022) is the preprint"
     - "the frequent attribution to SOSP in 2022 is wrong"
   must_not_include:
-    - "SOSP'22"
-    - "SOSP 2022"
+    # Assertion-shaped: a refutation naming SOSP is NOT a violation - see RUNNER.md.
+    - "was published at SOSP"
+    - "appeared at SOSP'22"
+    - "presented at SOSP 2022"
   required_citation: "errata.md E04"
   notes: "Chapter 14 section 14.13 carries the publication-venue correction explicitly. Note the separate unresolved conflict about OoH's own reported numbers (errata O6)."
 
