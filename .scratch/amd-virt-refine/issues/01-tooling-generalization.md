@@ -49,3 +49,51 @@ Spec: `.scratch/amd-virt-refine/spec.md` §D15, §T2, §T3
 - `node tools/build.mjs --check` 通过；`AGENTS.md` 同时出现两个技能名与消歧规则。
 - `node tools/lint.mjs amd-virtualization` 能跑起来并报告当前（未重构）状态的错误——**此时报错是预期的**，说明规则生效。
 - 三个脚本保持零依赖、无 `package.json`。
+
+---
+
+## 复检补充（必读——本票有一条前提是错的）
+
+**§5 的前提作废。** 本票原文写"目前 `eval/` 下只有 `RUNNER.md`"——**错**。本会话期间另一个会话并发提交了 4 个 commit（`52a4343`/`21ac437`/`e130c44`/`efc64b2`），现在 `eval/` 下有：`questions.yaml`（**Intel 的完整 80 题**）、`README.md`、`RUNNER.md`、`results/`（6 份 2026-09-20 实跑报告）、`answers/`、`verify/`，仓库里还多了 `tools/install.mjs`。
+
+因此 `eval/` 的重组是**迁移不是新建**：`eval/questions.yaml` → `eval/intel-vt/questions.yaml`、`README.md` → `eval/intel-vt/README.md`、`results/*` → `eval/intel-vt/results/`，并决定两个空目录（`answers/`、`verify/`）的去留。
+
+### 常量清单漏了四项
+
+本票 §1 列的外提常量不全，补：
+
+- **`tools/lint.mjs:322` 硬编码 `join(ROOT,'eval','questions.yaml')`** —— **这是整个重构里最危险的一行**。题库迁移时不同步改它，`existsSync` 返回 false，题库校验（重复 id、`chapter` 存在性、`required_citation` 锚点校验、题量 <80 警告）**整段跳过，而 lint 依然打印 `lint clean`**。向"更干净"的方向静默失败。
+- **`lint.mjs:283` 的 `id > 25` bibliography 预置阈值** —— AMD 的预置区是 1–40，配置项 `orphanExemptBelow`。
+- **`isCorrection`（`lint.mjs:90`）** —— 它是个闭包，且是 `DEAD_SDM_TITLES` 与 `MISCONCEPTIONS` **两条规则共用的豁免开关**，关键词表还是 Intel 味的（`not Skylake`、`with an INTEL-SA`）。拆成共享基线 + 每技能 `correctionHints`。
+- **`tools/install.mjs`** —— 硬编码 `const SRC = join(ROOT,'intel-vt')` / `const NAME = 'intel-vt'`，而 D11 要求 `.agents/skills/amd-virtualization` + `.claude/skills/amd-virtualization`。本票一并泛化。
+
+### 必须修的四条规则（spec §T2 已改写，这里是实现要点）
+
+- **规则 6 黑名单域名现在是空转**：只在章节正文做 `line.includes(host)`，而 `bibliography.md` 不在被扫描的文件集内（`lint.mjs:180`）。证据：`intel-vt/references/bibliography.md` 此刻就含 `juejin.cn`、`xem.github.io`、`blog.csdn.net`、`ask.csdn.net`，lint 仍报 clean。**改为**：解析 bibliography 成 `id → {url, host, tier}`，对每条架构 claim 解析它的 `[N]` 并检查 host；另对全部文件（含 bibliography）做字面兜底。**同一套 `[N]` 解析也是 `legacyDocs` 规则的前提**——否则一条只写 `[412]`、正文不出现 "33047" 的 claim 会直接逃逸。
+- **规则 8 归属实测输出为零**：73 条 claim 命中非 owner 主题，73 条全被豁免子句吞掉。豁免收窄到只认显式的 `` `NN-file.md` `` token；并新增 **`claimFreeFiles` 硬 error**（AMD 只列 `00-quickref.md`——本次已取消 `core-facts.md`）。**该项必须按技能开关**：对 Intel 开启会让它从 clean 变成 54 个 error（其 `core-facts.md` 有 54 条 claim 行），而重写 Intel 的 core-facts 在 Out of Scope 内。
+- **规则 11 漂移校验**：真正的校验在 `build.mjs --check`；lint 只做弱校验且**从不检查 `agents/openai.yaml` 与 `AGENTS.md` 的内容**。CI 必须两个都跑。
+- **规则 12 术语**：全新，必须带 `exceptFiles`，否则 `19-comparison-intel-arm-riscv.md` 里正当引用 Intel 术语会误报。
+
+### JSON 化的两个坑
+
+- 所有正则以 `{ "re": "...", "flags": "..." }` 存，**flags 必须显式**——漏掉 `i` 会让 8 条讹传规则近乎失效，且是静默的。
+- `lint.mjs:70` 里的 `Scalable I\/O` 是正则字面量语法的转义；写进 JSON 字符串会变成**非法转义**，必须写成 `Scalable I/O`。
+
+### build.mjs 的两处硬编码
+
+`display_name: Intel VT`（`build.mjs:80`）在 SKILL.md 里没有来源，必须进配置（`interface.displayName`）。`shortDesc`（`build.mjs:77`）用 `split(/(?<=[.?!])\s/)` 取首句——AMD 的 description 是没有终止标点的折叠块，会把 474 字符整段塞进 `short_description`。**build 应当在 `shortDesc.length > 60` 时直接失败**，而不是生成一个 lint 随后会拒绝的产物。`AGENTS.md` 是**共享产物**：`--check` 无论是否按技能过滤都要对全量技能集求值，并加一道 `Buffer.byteLength > 8192 → throw` 的硬上限（当前 846 字节，两个技能约 1.6 KiB，离 Codex 的 ~32 KiB 合并上限很远，但要防止有人把路由表或触发词表内联进去）。
+
+### 回归判据改写：diff 干净**不足以**证明没坏
+
+最危险的两种破坏（题库路径失效、正则 flags 丢失）都**向"更安静"的方向失败**，diff 对比看不出来。除了前后 diff，必须加两个阳性对照：
+
+1. 临时把 `eval/intel-vt/questions.yaml` 改名，重跑 lint，**确认它现在会报"题库缺失"**（即：把缺题库从静默改成 warning）。
+2. 往一份草稿章节里注入一条已知讹传（例如 `- **Claim.** MBEC shipped with Skylake.  ` + 合法锚点 + `C:high` + `V:durable`），确认 **JSON 来源的正则仍然命中**。
+
+### 依赖关系
+
+本票**阻塞 03–16**：票 03 要求 `build.mjs` 能处理 `amd-virtualization`，票 04–14、16 的完成判据全部是 `node tools/lint.mjs amd-virtualization` 零 error。
+
+### `lint.config.json` 的后续写入者
+
+本票只建 schema 与骨架。**各章票在自己的小节内追加 `misconceptions` 与 `ownership` 条目**，纪律同 bibliography 的 ID 区段：只改自己的块，不动别人的。

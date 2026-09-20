@@ -41,3 +41,31 @@ spec §D2 已写入本次核验得到的文档基线（文档号 / 修订 / 日�
 - `bibliography.md` 的 1–40 段就位，每条带 T1 标记与可访问 URL。
 - 旧文件已归档到 `_source/`，`amd-virtualization/references/` 只剩新骨架（见票 03）。
 - CONVENTIONS 中不存在任何未标注核验状态的章节号。
+
+---
+
+## 复检补充
+
+### 1. errata 的 20 条已裁定条目改由本票播种（依赖倒置修正）
+
+初稿把 `errata.md` 放在票 15，而票 15 阻塞于全部 11 张章节票——但**章节票自己的完成判据又依赖 errata 已存在**（票 05、11、13 都要求"lint 的 MISCONCEPTIONS 规则对旧表述报错"）。而 spec §D7 的 20 条已裁定条目**不需要任何章节产出**就能写。
+
+**改为**：本票直接播种 `errata.md` 的 20 条已裁定条目（正文来自 spec §D7，逐条补 T1 锚点），并同步把对应正则写进 `amd-virtualization/lint.config.json` 的 `misconceptions`。票 15 只负责回填 Open conflicts 与章节暴露出的新条目。
+
+**errata 条目 ID 方案**（照搬 `intel-vt/references/errata.md` 的成例）：已裁定 `E01…`，未决 `O1…`；文件头保留 How-to-use / Citations / Time-sensitivity 三段前言。评测集的 `must_not_include` 与 lint 的 `misconceptions` **都从这些条目派生**，所以 ID 稳定很重要。
+
+### 2. bibliography 的 41–99 区段也由本票预置
+
+D13 把 41–99 划给"其他官方规范 T2"（Microsoft Learn、PCI-SIG、Intel SDM、ARM、RISC-V），但没有指定谁来分配。票 12（460–499）与票 14（580–609）都会需要这个区段里的条目——两张票在同一个无主区段里各自分配，正是 D13 要防的冲突。**本票预置 41–99，之后只读。**
+
+### 3. 锚点语法要当场拍板的四个边界（否则作者各写各的）
+
+- **尾随注解**：`[APM2 §15.25.6 (VMCB)]` 这种写法作者一定会写，而 `$` 锚定的语法会拒掉它。**决定**：禁止尾随注解，注解写在 claim 正文里。
+- **Figure 形式**：AMD 的 VMCB 布局同时以图给出（`Figure`）。**决定**：允许 `[APM2 Figure B-1]`，与 `Table X-N` 同级。
+- **APM 是否内嵌修订号**：IOMMU/SNP-ABI/GHCB/SEV-API/SVSM 的锚点带修订号，APM 不带（因为 §15.x 八年未变，见 D2）。**这条不对称必须写进 CONVENTIONS**，否则作者会自行"统一"。
+- **Vol.3 助记符白名单**：`[APM3 §4 "MNEMONIC"]` 的语法拦不住编造的助记符。**把 APM Vol.3 Ch.4 的 SVM/SNP 相关助记符列成白名单写进 lint 配置**（约 20 条），这是让"不许给指令安小节号"这条规则在另一个方向也可判定的唯一办法。助记符可能含 `#` 与空格（如 `VMLOAD/VMSAVE`），正则要放宽到 `"[#A-Z][A-Z0-9 /]*"`。
+
+### 4. 两个从 intel-vt 成例继承但初稿漏写的约定
+
+- **`Excerpt` 的用法**：只在断言有争议或表述微妙时加，作为 claim 行下方的缩进引用块。
+- **多引用写法**：`` `[42]` `[43]` ``（各自反引号）与 `` `[42][43]` ``（同一对反引号）两种 lint 都接受——不写进 CONVENTIONS 的话，作者会发明第三种。

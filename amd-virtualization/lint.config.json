@@ -1,0 +1,360 @@
+{
+  "$comment": "Lint rules for amd-virtualization. Anchor grammar comes from the verified document baseline in .scratch/amd-virt-refine/spec.md §D2; every misconception below came back CONFIRMED from a primary-source check (see recheck-findings.md appendix A). Claims that were REFUTED during that check are deliberately absent — encoding them would bake in a new error.",
+  "displayName": "AMD Virtualization",
+  "$comment_archChapter": "01-14. Chapter 15 (nested virtualization) is deliberately outside the band: its only normative content is APM Vol.2 §15.33 and the rest is kernel and Windows Tier-2 material, so a blanket 'every claim needs a Tier-1 anchor' rule could never pass there.",
+  "archChapter": {
+    "re": "^(0[1-9]|1[0-4])-"
+  },
+  "datedFile": "90-dated-landscape.md",
+  "navigational": [
+    "errata.md",
+    "00-quickref.md"
+  ],
+  "$comment_claimFreeFiles": "This skill has no core-facts.md: two navigation files with the same job is the seam that let the old quick-reference drift into a second fact store. 00-quickref.md navigates and holds no authoritative values.",
+  "claimFreeFiles": [
+    "00-quickref.md"
+  ],
+  "anchors": {
+    "prefix": {
+      "re": "^(APM[123] |IOMMU |SEV-API |GHCB |SNP-ABI |SVSM |SEV-TIO |SNP-WP |MEM-WP |NP-WP |PPR |RevGuide |AMD-SB-)"
+    },
+    "unverified": {
+      "re": "(Ch|§)\\.?\\?$"
+    },
+    "$comment_grammar": "APM section numbers carry no revision because §15.1-§15.35 have been stable since at least Rev 3.30 (2018). The revision-bearing documents embed it because their numbering moves. APM Vol.3 Ch.4 is alphabetical with page numbers only, so an instruction is cited by mnemonic — [APM3 §4.7.2 VMRUN] is a fabrication.",
+    "grammar": [
+      {
+        "re": "^APM[123] (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-E]|Table [A-E0-9]+-[0-9]+|Figure [A-E0-9]+-[0-9]+)$"
+      },
+      {
+        "re": "^APM3 §4 \"[#A-Z][A-Z0-9 /]*\"$"
+      },
+      {
+        "re": "^IOMMU 3\\.11 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|Table [0-9]+|Figure [0-9]+)$"
+      },
+      {
+        "re": "^SEV-API 3\\.24 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-Z]|Table [0-9]+)$"
+      },
+      {
+        "re": "^GHCB 2\\.04 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|Table [0-9]+)$"
+      },
+      {
+        "re": "^SNP-ABI 1\\.59 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-D]|Table [0-9]+)$"
+      },
+      {
+        "re": "^SVSM 1\\.01 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$"
+      },
+      {
+        "re": "^SEV-TIO 0\\.92 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$"
+      },
+      {
+        "re": "^SNP-WP 70366 p\\.[0-9]+$"
+      },
+      {
+        "re": "^MEM-WP 70363 p\\.[0-9]+$"
+      },
+      {
+        "re": "^NP-WP (§[0-9]+(\\.[0-9]+)*|p\\.[0-9]+)$"
+      },
+      {
+        "re": "^RevGuide [0-9]{5} (erratum [0-9]{3,4}|§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$"
+      },
+      {
+        "re": "^PPR [0-9]{5}-[A-Z0-9]+ (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$"
+      },
+      {
+        "re": "^AMD-SB-[0-9]{4}$"
+      }
+    ],
+    "$comment_revguide": "AMD Revision Guides are the ONLY public AMD errata documents and are Tier-1, but §2 originally defined no anchor shape for them. A ch07 author found two real AVIC errata (1458, 1579) and correctly refused to cite them rather than invent a shape. A Tier-1 source with no citable form is a rule that cannot be satisfied honestly. Client Ryzen still has no public revision guide - do not fabricate one.",
+    "$comment_memwp": "AMD memory-encryption white paper, pub 70363 (Kaplan/Powell/Woller). Added 2026-09-21: the APM does not contain the string TSME anywhere, so this paper is the only substantive source for it, and 8 of chapter 11's [no-spec] claims existed purely because no anchor shape could cite it. Second time the grammar table was found incomplete (RevGuide was the first) - a Tier-1/2 source with no citable form is a rule that cannot be satisfied honestly. Non-normative: cite by page, and never let it outrank the APM."
+  },
+  "$comment_offSpec": "Subjects the AMD manuals do not document. A Windows or CVE claim anchored only to the APM is citation filler — the section resolves, but to an unrelated subject.",
+  "offSpec": {
+    "subjects": {
+      "re": "\\b(HVCI|VBS|VTL[0-9]?|Credential Guard|securekernel|BitLocker|Hyper-V|hvax64|hvix64|WSL2?|WHPX?|Windows Sandbox|Defender|Kernel DMA Protection|DDA|GPU-P|CVE-\\d{4}-\\d+)\\b",
+      "flags": "i"
+    },
+    "primaryAnchor": {
+      "re": "^APM[123] "
+    },
+    "sourceHints": {
+      "re": "microsoft|learn\\.microsoft|kernel\\.org|lore\\.kernel|AMD-SB|product-security|nvd\\.nist|cve\\.org|arxiv|usenix|acm\\.org|ieee",
+      "flags": "i"
+    },
+    "message": "the APM does not document it"
+  },
+  "$comment_deadTitles": "Empty, and that is a verified finding rather than an oversight: a bookmark-tree diff of APM Vol.2 Rev 3.30 (2018) against Rev 3.45 (2026) shows §15.1-§15.35 unchanged in number and title, and appendix letters A-E stable. AMD appends; it does not renumber. The AMD-side risk is inventing recent subsections, not citing stale ones.",
+  "deadTitles": [],
+  "bannedHosts": {
+    "mode": "resolve",
+    "inBibliography": "error",
+    "hosts": [
+      "vlsiworlds.com",
+      "icode.best",
+      "deepwiki.com",
+      "termbasehub.com",
+      "strix.ai",
+      "baike.baidu.com",
+      "csdn.net",
+      "cnblogs.com",
+      "juejin.cn",
+      "zhihu.com",
+      "unknowncheats.me",
+      "wiki.osdev.org",
+      "historytools.org",
+      "dinajpuritpark.com",
+      "voltagegpu.com",
+      "ts2.tech",
+      "paragmali.com",
+      "oneuptime.com",
+      "govindhtech.com",
+      "westloop.io",
+      "pronteff.com",
+      "sunnycloud.jp",
+      "ortechy.com",
+      "realtyme.com",
+      "thetechylife.com",
+      "dellenny.com",
+      "advancedhosting.com",
+      "0x04.net",
+      "globalmusicreport.ifpi.org",
+      "kanxue.com",
+      "51cto.com"
+    ]
+  },
+  "$comment_legacyDocs": "Pub 33047 (2005 SVM manual) and the 2007 IOMMU edition (PID 34434 Rev 1.20) may be cited for history only. In the pre-rebuild skill, 33047 alone carried 62 citations — 48 of them in the VMCB chapter, which claimed to follow the APM appendices.",
+  "legacyDocs": [
+    {
+      "match": {
+        "re": "\\b33047\\b|\\b34434\\b|PID 34434|Rev(ision)? 3\\.02",
+        "flags": "i"
+      },
+      "requireHistorical": {
+        "re": "\\b(historical|historically|superseded|obsolete|withdrawn|2005|2007|first published|original(ly)?|predates|no longer|at the time)\\b",
+        "flags": "i"
+      },
+      "maxConfidence": "medium",
+      "message": "rests on a superseded AMD manual (33047 / IOMMU 34434 Rev 1.20)"
+    }
+  ],
+  "$comment_misconceptions": "Each entry was verified against the primary source. Deliberately NOT here: CVE-2024-25744 attribution, client-Ryzen SEV availability, CVE-2021-29657's CVSS, VMGEXIT prefix form, and the IVRS 16-byte entry class — a primary-source check refuted the 'correction' in all five cases.",
+  "misconceptions": [
+    {
+      "wrong": {
+        "re": "CmdBufRun[^.]{0,80}(Control Register|0018h|0x0018)",
+        "flags": "i"
+      },
+      "right": "CmdBufRun is a read-only bit in the IOMMU Status Register at MMIO 2020h (bit 4); the enable is CmdBufEn, Control Register 0018h bit 12"
+    },
+    {
+      "wrong": {
+        "re": "RemapEm"
+      },
+      "right": "the IRTE field at bit 0 is RemapEn"
+    },
+    {
+      "wrong": {
+        "re": "(IOMMU|MMIO)[^.]{0,60}\\b14\\s?(KiB|KB|Kbytes)",
+        "flags": "i"
+      },
+      "right": "the IOMMU MMIO region is 16 KiB when MMIO 0030h[PCSup]=0 and 512 KiB when PCSup=1; '14' is a misread of BaseAddress[31:14]"
+    },
+    {
+      "wrong": {
+        "re": "VM(LOAD|SAVE)[^.]{0,90}\\bSS\\b",
+        "flags": "i"
+      },
+      "right": "VMLOAD/VMSAVE transfer FS, GS, TR, LDTR, KernelGsBase, STAR/LSTAR/CSTAR/SFMASK and SYSENTER_CS/ESP/EIP — SS is not among them"
+    },
+    {
+      "wrong": {
+        "re": "CR4\\[63:11\\]|EFER\\[63:15\\]"
+      },
+      "right": "the current APM states these as 'any MBZ bit of CR4/EFER is set'; the fixed masks come from the 2005 manual and would reject a legal guest state"
+    },
+    {
+      "wrong": {
+        "re": "x2AVIC[^.]{0,60}EDX\\[14\\]|EDX\\[14\\][^.]{0,60}x2AVIC",
+        "flags": "i"
+      },
+      "right": "x2AVIC is Fn8000_000A EDX[18]; EDX[14] is reserved and EDX[15] is VMSAVEvirt"
+    },
+    {
+      "wrong": {
+        "re": "hvix64[^.]{0,60}AMD|AMD[^.]{0,60}hvix64",
+        "flags": "i"
+      },
+      "right": "the Hyper-V image on an AMD host is hvax64.exe; hvix64.exe is the Intel build"
+    },
+    {
+      "wrong": {
+        "re": "\\b16\\s*(memory references|次内存访问|次访存|次查表)",
+        "flags": "i"
+      },
+      "right": "the worst-case two-dimensional walk is 24 references (nm+n+m) — and it must be cited to the AMD-V Nested Paging white paper §4.2.2 or ASPLOS'08, never to the APM, which states no such figure"
+    },
+    {
+      "wrong": {
+        "re": "EXITCODE[^.]{0,80}(位序|bit (index|position|order) in the intercept)",
+        "flags": "i"
+      },
+      "right": "exit codes are segmented (CR reads 00h-0Fh, exceptions 40h-5Fh, intercept vector 3 at 0x60+bit, vector 4 at 0x80+bit), so VMRUN is 80h — not the bit's position in the vector"
+    },
+    {
+      "wrong": {
+        "re": "CVE-2022-23816",
+        "flags": "i"
+      },
+      "right": "CVE-2022-23816 is REJECTED at NVD (vulnStatus Rejected, 'unused by its CNA'); the citable Branch Type Confusion / RETbleed identifier is CVE-2022-29900"
+    }
+  ],
+  "$comment_correctionHints": "Chinese negations are included because every chapter opens with a 中文速览 that frequently states the correction — e.g. 「不含 SS」 — and would otherwise trip the very rule it is obeying.",
+  "correctionHints": {
+    "re": "\\bnever\\b|\\bdoes not\\b|\\bnot among\\b|\\bnot include\\b|refuted|\\bnot\\b.{0,20}(CVE-|AMD-SB-|Rev)|已作废|口径已更正|不含|不包括|并非|而不是|不在其中|rejected (at|by) nvd|\\bhas since rejected\\b|unused by its cna|the citable (identifier|id)|\\bsuperseded\\b|\\bwithdrawn\\b",
+    "flags": "i",
+    "$note": "Phrases are deliberately narrow, not single broad words. A line that NAMES a misconception in order to correct it must not be flagged - the corpus has to be able to quote a wrong claim to refute it, the same principle eval/RUNNER.md states as 'a refutation is not a violation'. But a hint like a bare 'rejected' would exempt any line containing it, including one that genuinely asserts the misconception, so each addition is a phrase specific to the correction it unblocks."
+  },
+  "ownership": {
+    "$comment": "The escape clause accepts only an explicit `NN-file.md` cross-reference. A bare 'see' silenced 71 of 73 hits in the sibling skill, which made the whole rule a no-op.",
+    "crossRefEscape": {
+      "re": "`\\d\\d-[a-z0-9-]+\\.md`"
+    },
+    "rules": [
+      {
+        "topic": {
+          "re": "\\bVMCB (control area|state save|offset)|\\bclean bits?\\b",
+          "flags": "i"
+        },
+        "owner": "02-vmcb.md"
+      },
+      {
+        "topic": {
+          "re": "\\bEXITINFO[12]\\b|\\bexit code table\\b|\\bEXITINTINFO\\b",
+          "flags": "i"
+        },
+        "owner": "05-exit-decoding.md"
+      },
+      {
+        "topic": {
+          "re": "\\bINVLPGA\\b|\\bTLB_CONTROL\\b|\\bnested page table entry\\b",
+          "flags": "i"
+        },
+        "owner": "06-nested-paging.md"
+      },
+      {
+        "topic": {
+          "re": "\\bINT_CTL\\b|\\bAVIC (backing page|physical|logical)|\\bdoorbell\\b",
+          "flags": "i"
+        },
+        "owner": "07-virtual-interrupts-avic.md"
+      },
+      {
+        "topic": {
+          "re": "\\bDevice Table Entry\\b|\\bGALog(Head|Tail|En|Run|Len|Base)\\b|\\bGA_GUEST_NR\\b|\\bGAInformation\\b",
+          "flags": "i"
+        },
+        "owner": "08-iommu-architecture.md",
+        "$note": "Boundary: 08 owns the GA log as a DATA STRUCTURE (entry format, the registers that size and point at it, full/empty arithmetic, overflow, restart); 10 owns it as a SIGNAL (why an entry is written, what GATag means, GAPPI as the alternative). The token list is register and entry-type names only. It deliberately excludes GALogIntr, which is an IRTE field and belongs to 10 - an earlier broader \bGALog[A-Za-z]+\b caught it and was a false positive."
+      },
+      {
+        "topic": {
+          "re": "\\bIRTE\\b|\\bGAPPI\\b",
+          "flags": "i"
+        },
+        "owner": "10-iommu-interrupt-remapping.md",
+        "$note": "GA log moved to 08: it owns the event and PPR log entry formats, and one of three log formats living elsewhere is a hairline split that drifts. 10 keeps GA log semantics and cross-references 08."
+      },
+      {
+        "topic": {
+          "re": "\\bFn8000_001F\\b|\\bC-bit\\b|\\bTSME\\b",
+          "flags": "i"
+        },
+        "owner": "11-memory-encryption.md"
+      },
+      {
+        "topic": {
+          "re": "\\bSEV_STATUS\\b|\\bguest policy\\b",
+          "flags": "i"
+        },
+        "owner": "12-sev.md"
+      },
+      {
+        "topic": {
+          "re": "\\bGHCB\\b|\\bVMGEXIT\\b|\\bNAE\\b",
+          "flags": "i"
+        },
+        "owner": "13-sev-es-ghcb.md"
+      },
+      {
+        "topic": {
+          "re": "\\bRMP entry\\b|\\bPVALIDATE\\b|\\bRMPADJUST\\b|\\bVMPL\\b",
+          "flags": "i"
+        },
+        "owner": "14-sev-snp.md"
+      }
+    ]
+  },
+  "terminology": [
+    {
+      "wrong": {
+        "re": "RemapEm"
+      },
+      "right": "the IRTE bit-0 field is RemapEn",
+      "exceptFiles": [
+        "errata.md",
+        "00-quickref.md"
+      ]
+    },
+    {
+      "wrong": {
+        "re": "\\bVIRT_EXT\\b"
+      },
+      "right": "VIRT_EXT is the Linux/KVM name; AMD calls it VMCB offset 0B8h",
+      "exceptFiles": [
+        "errata.md",
+        "00-quickref.md"
+      ]
+    },
+    {
+      "wrong": {
+        "re": "\\bVM Exit\\b"
+      },
+      "right": "AMD spells it #VMEXIT",
+      "exceptFiles": [
+        "errata.md",
+        "19-comparison-intel-arm-riscv.md",
+        "00-quickref.md"
+      ]
+    },
+    {
+      "wrong": {
+        "re": "\\bHPA\\b"
+      },
+      "right": "AMD's term is system physical address (sPA)",
+      "exceptFiles": [
+        "errata.md",
+        "19-comparison-intel-arm-riscv.md",
+        "00-quickref.md"
+      ]
+    },
+    {
+      "wrong": {
+        "re": "\\bDebug Swap\\b",
+        "flags": "i"
+      },
+      "right": "SEV_STATUS bit 7 is DebugVirtualization in AMD's table; 'Debug Swap' is the Linux name",
+      "exceptFiles": [
+        "errata.md",
+        "00-quickref.md"
+      ]
+    }
+  ],
+  "$comment_orphanExemptBelow": "IDs 1-40 are the preloaded AMD specification set and 41-99 the other official specifications; both may sit uncited.",
+  "orphanExemptBelow": 100,
+  "eval": {
+    "questions": "eval/amd-virtualization/questions.yaml",
+    "expected": 80
+  },
+  "$comment_terminology_quickref": "00-quickref.md is exempt from the terminology rules because its section 0.4 is a wrong-name to AMD-name mapping table - naming the wrong term is the whole function of that section, exactly as errata.md must quote a misconception to correct it. The exemption is scoped to terminology ONLY: quickref is still subject to the misconception rules, still forbidden from carrying claim lines (claimFreeFiles), and still holds no authoritative values, so it cannot become a second fact store the way the old appendix did."
+}

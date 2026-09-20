@@ -6,9 +6,17 @@ Blocked by: 02, 03
 Bibliography ID 区段: **100–149**
 Spec: `.scratch/amd-virt-refine/spec.md` §D1, §D5, §D8
 
+> **动笔前必读（所有章节票通用）**
+>
+> 1. 先读 `.scratch/amd-virt-refine/CONVENTIONS.md`（票 02 产出）——claim 行 schema、锚点语法、来源分级、归属表、"核不到就降级"的三级规则都在那里。
+> 2. 旧版 15 章与旧 bibliography 在 `.scratch/amd-virt-refine/_source/`，**当线索用，不当事实用**。
+> 3. **本票正文里出现的一切位号、偏移、编码、命令码都是候选值**——它们来自对旧版的审计，尚未逐个对官方 PDF 核过。写进 claim 行之前必须自己核一遍；核不到就按 CONVENTIONS 的降级规则处理，**不要照抄本票**。
+> 4. 复检记录 `.scratch/amd-virt-refine/recheck-findings.md` 与本票冲突时，以复检记录为准。
+
+
 ## `01-svm-intro.md`
 
-**Maps to:** APM Vol.2 的 SVM 启用/模式小节 + SVM 相关 MSR 小节；CPUID 见 APM Vol.3 的 CPUID 附录。
+**Maps to:** APM Vol.2 **§15.4 Enabling SVM** + **§15.30 SVM Related MSRs** + **App A MSR Cross-Reference**；CPUID 见 APM Vol.3 **App E**。（24593 Rev 3.45 / 24594 Rev 3.38，编号已核验）
 **Owns:** EFER.SVME · VM_CR · VM_HSAVE_PA · SVM_KEY · `Fn8000_0001` 与 `Fn8000_000A` 全位表 · 启用失败判定链。
 
 必须交付：
@@ -22,7 +30,7 @@ Spec: `.scratch/amd-virt-refine/spec.md` §D1, §D5, §D8
 
 ## `02-vmcb.md`
 
-**Maps to:** APM Vol.2 的 VMCB 布局附录（含控制区表与保存区表）。
+**Maps to:** APM Vol.2 **App B "VMCB Layout"**（含 B.1 Guest MSR Intercepts）+ **§15.15 VMCB State Caching**。（Rev 3.45，已核验；该附录在 Rev 3.30 时标题为 "Layout of VMCB"，字母 B 未变）
 **Owns:** VMCB 控制区与保存区的全部字段偏移 · clean bits 分组 · VMCB 状态缓存语义。
 
 必须交付：
@@ -48,3 +56,15 @@ Spec: `.scratch/amd-virt-refine/spec.md` §D1, §D5, §D8
 - `node tools/lint.mjs amd-virtualization` 对这两个文件零 error。
 - 抽查 10 个字段偏移，能在 AMD 官方 PDF 对应表中逐一核到。
 - `01` 的 CPUID 表覆盖 EDX 全部已定义位；`02` 的控制区表无地址空洞（空洞必须显式标注 reserved 并给出范围）。
+
+---
+
+## 复检补充
+
+- **不要写 APM 的表号。** 本票正文出现过 `[APM2 Table B-1]` 这类示例——**D2 的核验只到附录级，从未读取 App B / App C 的表号**。写一个没核过的表号，正是本项目定义的最大风险（"看起来像官方来源的错误引用"）。锚点写 `[APM2 App.B]`；除非你自己在 PDF 里核到了表号，才可以升级。
+- **`02` 必须给段属性编码，不只是偏移。** 打包的 12 位 `attrib`（TYPE/S/DPL/P/AVL/L/D/B/G）、**CPL 取自 VMCB 的 CPL 字段而非 SS.DPL**、空段以 P 位判定（CS/TR 永不为空）、base 在 VMRUN/#VMEXIT 上的规范化。只给偏移的话，本票自己的验收标准"读者不查 PDF 就能构造一个 VMCB"不成立。
+- **`02` 补 `INT_STATE`（0x068）中断影子** —— 初稿的必备字段表和票 07 的 INT_CTL 位表都没点名它，会整条漏掉。
+- **`02` 补 clean bits 与嵌套分页/ASID 的交互**：哪个 clean bit 覆盖 `nCR3`/`G_PAT`；**修改嵌套页表的内容对 clean bits 不可见**，必须走 `TLB_CONTROL`/`INVLPGA`；clean bits 是每逻辑 CPU 的，迁移后必须全脏 + 新 ASID。这是"硬件用了陈旧状态"类 bug 的头号来源，新旧计划都没写。
+- **`01` 补 `VM_HSAVE_PA` 的契约**：host save area 的格式**被有意不规定**，实现可以把 host 状态留在片上，**软件不得读取它**。
+- **`01` 补一条标准纪律**：固件可以单独屏蔽 `Fn8000_000A` 的某一位，**必须逐位探测、不得按代际推断**；客户端 Ryzen 没有公开修订指南（见 spec §D2 结论 3），所以"这代应该有"是不可用的推理。
+- `#NPF` 的 EXITINFO1 位表归 `05`（复检裁决），本票不复述。

@@ -5,6 +5,7 @@ Created: 2026-09-20
 Feature: amd-virt-refine
 Owner: unassigned
 Sibling: `.scratch/intel-vt-refine/spec.md`（同一套方法已在 `intel-vt` 上执行完毕，本 spec 复用其结论与工具）
+Recheck: `.scratch/amd-virt-refine/recheck-findings.md`（5 路深度复检的裁决记录——**与本文件冲突时以复检记录为准**）
 
 ---
 
@@ -248,9 +249,9 @@ SKILL.md frontmatter 写着"全部事实带引用编号，可回溯至 **503 条
 | `05-exit-decoding.md` | APM Vol.2 **退出码附录** | EXITCODE 全表、EXITINFO1/2 逐事件布局、NRIP、Decode Assist、EVENTINJ/EXITINTINFO |
 | `06-nested-paging.md` | APM Vol.2 嵌套分页节 + Vol.2 分页章 | nCR3/NP_ENABLE、表项位布局、二维遍历与 24 次推导、NPF、内存类型合并、ASID/TLB_CONTROL/INVLPGA 与其勘误 |
 | `07-virtual-interrupts-avic.md` | APM Vol.2 虚拟中断节 + GIF 节 + AVIC 节 | INT_CTL 全位、虚拟中断评估与投递、vGIF、AVIC/x2AVIC 全机制、doorbell MSR、AVIC 退出 |
-| `08-iommu-architecture.md` | IOMMU 规范 #48882 架构与寄存器章 | Zen 平台数据通路、MMIO 寄存器逐位、PCI 能力块、DTE 逐位 |
-| `09-iommu-page-tables.md` | #48882 页表 / 命令 / 日志 / IVRS | v1 与 v2 页表、GCR3、命令 opcode 与格式、事件/PPR/GA 日志条目格式、IVRS 解析 |
-| `10-iommu-interrupt-remapping.md` | #48882 中断重映射章 | legacy 与 128-bit GA IRTE、`RemapEn`、GA log、GAPPI、ATS/PRI/PASID |
+| `08-iommu-architecture.md` | #48882 Ch.1–2 + §3.4 | **"硬件此刻在做什么"**：Zen 平台数据通路、MMIO 寄存器逐位、Status Register、PCI 能力块、DTE 的**转换侧**字段、**事件/PPR/GA 日志的条目格式** |
+| `09-iommu-page-tables.md` | #48882 §2.2.3/.6/.7 + §2.4 + §5 | **"我要建的表"**：v1 与 v2 页表、GCR3、命令 opcode 与格式、IVRS 解析，外加一节**端到端解一个 `IO_PAGE_FAULT`** |
+| `10-iommu-interrupt-remapping.md` | #48882 §2.2.5（+ DTE 中断簇） | **自足的中断重映射章**：legacy 与 128-bit GA IRTE、`RemapEn`、**DTE 的中断簇**（`IV`/`IntTabLen`/`IntCtl`/Interrupt Table Root Pointer/各 Pass 位）、`INVALIDATE_INTERRUPT_TABLE`、GA log 语义、GAPPI、ATS/PRI/PASID |
 | `11-memory-encryption.md` | APM Vol.2 内存加密节 + AMD Memory Encryption 白皮书 | **客户端范围**：SME/TSME（AMD Memory Guard）、C-bit、`Fn8000_001F` 全字段、SYSCFG、物理地址位缩减、AMD-SP |
 | `12-sev.md` | **#55766** | **服务器范围**：SEV 启用、ASID↔密钥绑定与复用协议、平台/guest 状态机、固件命令全表、guest policy、启动度量 |
 | `13-sev-es-ghcb.md` | **#56421** + APM Vol.2 SEV-ES 节 | **服务器范围**：VMSA、`#VC`、GHCB 字段偏移全表、MSR 协议、NAE 全表、AP 启动 |
@@ -262,14 +263,126 @@ SKILL.md frontmatter 写着"全部事实带引用编号，可回溯至 **503 条
 | `19-comparison-intel-arm-riscv.md` | Intel SDM / ARM ARM / RISC-V H-ext | 架构对照；与 `intel-vt/18` 互为镜像，标注哪些是服务器专属 |
 | `90-dated-landscape.md` | — | **时效隔离区**，as-of 标注 |
 | `errata.md` | — | 讹传勘误，每条自带出处 |
-| `core-facts.md` | — | 带引用的索引（不是事实副本） |
 | `bibliography.md` | — | 全局 `[N]` 引用 ID 空间 |
 
-架构章 = `01`–`15`（每条断言必须有 T1 锚点）；`16`–`19` 允许以 T2 为主；`90` 是唯一允许 `V:dated` 的文件。
+架构章 = **`01`–`14`**（每条断言必须有 T1 锚点）；`15`–`19` 允许以 T2 为主；`90` 是唯一允许 `V:dated` 的文件。
+
+> **`15-nested-virtualization.md` 为什么不在架构带内**（复检裁决）：它的规范性内容只有 APM §15.33 一节，其余是内核与 Windows 的 T2 事实；留在"每条断言必须有 T1"的带内会让该章的 lint 永远无法通过。它进 T2 允许带，但附加一条 review 要求：**凡 APM §15.33 覆盖的机制仍必须带 `[APM2 §15.33]` 锚点**。
+
+> **不设 `core-facts.md`**（复检裁决）：它与 `00-quickref.md` 干同一件事，而"两个导航文件"正是旧版 `15-appendix-quickref.md` 漂移成第二事实库的那个缝。导航职责全部归 `00-quickref.md`。这与 `intel-vt`（两个都有，且其 `core-facts.md` 含 54 条 claim 行）**有意不对称**。
 
 ### D2. 已核验的 AMD 官方文档基线
 
-<!--BASELINE-->
+**核验方法（2026-09-20）**：逐份从 `docs.amd.com` 下载 PDF 本体，读封面版本行 + **PDF 书签树**。标 **VERIFIED** 的条目为实际读取所得；标 UNVERIFIED 的必须由首次引用者自行核对。
+
+**先记住这条基础设施事实**：AMD 已把处理器文档迁出 `www.amd.com/content/dam/...`。旧技能与全网（含 LKML、OSDev）引用的 `.../processor-tech-docs/programmer-references/24593.pdf` 现在返回 **404**；`.../epyc-technical-docs/.../55766_*.pdf` **302 跳到只有 JS 的门户壳**——naive 下载器会把一个 2,575 字节的 HTML 存成 `.pdf` 并报告成功。canonical URL 现在是 `https://docs.amd.com/go/en-US/<slug>`；`www.amd.com` 还要求浏览器 User-Agent，默认 curl UA 会连接超时（不是 403）。
+
+#### 文档基线表
+
+| 文档 | Pub | 修订 | 日期 | 状态 |
+|---|---|---|---|---|
+| APM **Vol.2** System Programming | **24593** | **3.45** | **2026-07** | VERIFIED |
+| APM **Vol.3** General-Purpose and System Instructions | **24594** | **3.38** | **2026-07** | VERIFIED |
+| APM Vol.1 Application Programming | 24592 | 3.25 | 2026-05 | VERIFIED |
+| APM Vol.4 / Vol.5 | 26568 / 26569 | 3.27 / 3.16 | 2026-07 / **2021-11** | VERIFIED（Vol.5 已五年未修订） |
+| APM Vols 1–5 合订 | 40332 | 4.10 | 2026-07 | VERIFIED |
+| **IOMMU Specification** | **48882-PUB** | **3.11** | **2026-04** | VERIFIED |
+| **SEV-SNP Firmware ABI Specification** | **56860** | **1.59** | **2026-08** | VERIFIED |
+| **SEV-ES GHCB Standardization** | **56421** | **2.04** | **2025-01** | VERIFIED |
+| Secure Encrypted Virtualization API | **55766** | **3.24** | **2020-04** | VERIFIED（封面另写 "API Version 0.24 / Technical Preview"——引用时用**出版修订 3.24**） |
+| SVSM Guest Communication Interface | **58019** | **1.01** | **2026-03** | VERIFIED |
+| SEV-TIO Firmware Interface | 58271 | 0.92 | 2026-08 | VERIFIED（索引） |
+| SEV-SNP 白皮书 | **70366** | 无修订号 | **2020-01** | VERIFIED —— **非规范性**，封面自带"目标而非承诺"免责声明 |
+| 安全公告索引 | — | — | — | VERIFIED |
+
+URL：`https://docs.amd.com/go/en-US/` + `24593_3.45_APM_Vol2_PUB` · `24594_3.38_APM_Vol3_PUB` · `24592_3.25_APM_Vol1_PUB` · `48882_3.11_IOMMU_PUB` · `56860_PUB_SEV_SNP` · `56421` · `55766_PUB_3.24_SEV_API` · `58019.pdf` · `58271_PUB_SEV-TIO`。安全公告索引：`https://www.amd.com/en/resources/product-security.html`，单条为 `https://www.amd.com/en/resources/product-security/bulletin/amd-sb-NNNN.html`。
+
+#### APM Vol.2（24593 Rev 3.45）结构（书签树核验）
+
+19 章 + 附录 A–E。Ch.15 = **Secure Virtual Machine**；**App A MSR Cross-Reference · App B VMCB Layout（含 B.1 Guest MSR Intercepts）· App C SVM Intercept Exit Codes · App D SMM Containerization · App E OS-Visible Workarounds**。
+
+Ch.15 已核验的小节号，**可直接引用**：
+
+| 小节 | 标题 | 归属章节 |
+|---|---|---|
+| §15.4 | Enabling SVM（EFER.SVME） | `01` |
+| §15.5 / §15.6 | VMRUN（15.5.1 Basic Operation、15.5.2 VMSAVE and VMLOAD）/ #VMEXIT | `04` |
+| §15.7–§15.14 | Intercept Operation · Decode Assists · Instruction · IOIO · MSR · Exception · Interrupt · Miscellaneous（**15.14.4 Pause Intercept Filtering**、15.14.5 Bus Lock Threshold） | `03` |
+| §15.15 | VMCB State Caching | `02` |
+| §15.16 | TLB Control（15.16.1 TLB Flush、15.16.2 Invalidate Page, Alternate ASID） | `06` |
+| §15.17 | Global Interrupt Flag, STGI and CLGI Instructions | `04` / `07` |
+| §15.25 | Nested Paging（15.25.1–15.25.9） | `06` |
+| §15.27 | Secure Startup with SKINIT（15.27.1–15.27.8） | `17` |
+| §15.29 | Advanced Virtual Interrupt Controller（15.29.1–15.29.10，**15.29.10 x2AVIC**） | `07` |
+| §15.30 | SVM Related MSRs | `01` |
+| §15.33 | Nested Virtualization | `15` |
+| §15.34 | SEV（…15.34.9 Page Flush MSR、**15.34.10 SEV_STATUS MSR**、15.34.11 Virtual Transparent Encryption） | `11` / `12` |
+| §15.35 | SEV-ES（15.35.5 #VC Exception、15.35.6 VMGEXIT、15.35.7 GHCB、15.35.9 Automatic Exits） | `13` |
+| §15.36 | SEV-SNP，23 个子节（15.36.3 Reverse Map Table · .4 Initializing the RMP · .5 Hypervisor RMP Management · .6 页验证 · **.7 Virtual Machine Privilege Levels** · .8 vTOM · .10 RMP+VMPL 访问检查 · .18 Secure TSC · .21 Secure AVIC · .22 Segmented RMP · .23 Guest Intercept Control） | `14` |
+| §15.37 / §15.38 / §15.39 | Speculation Control Virtualization / IBS Virtualization / PMC Virtualization | `17` / `03` |
+
+#### APM Vol.3（24594 Rev 3.38）
+
+Ch.1 Instruction Encoding · Ch.2 Instruction Overview · Ch.3 General-Purpose Instruction Reference · **Ch.4 System Instruction Reference** · App A–F（**App E = CPUID**）。
+
+- **Ch.4 的指令条目按字母排序，只有页码、没有小节号。** 锚点写 `[APM3 §4 "VMRUN"]`；**`[APM3 §4.7.2 VMRUN]` 是编造。**
+- 已核验页码（Rev 3.38）：CLGI 382 · INVLPGA 396 · PSMASH 432 · PVALIDATE 435 · RMPADJUST 447 · RMPQUERY 451 · RMPREAD 454 · RMPUPDATE 457 · SKINIT 472 · STGI 480 · VMLOAD 500 · VMMCALL 502 · VMGEXIT 502 · VMRUN 503 · VMSAVE 508。
+- **纠正一个常见预设**：六条 SNP 指令（PVALIDATE / RMPADJUST / RMPUPDATE / PSMASH / RMPQUERY / RMPREAD）**全部在 Vol.3 Ch.4**，不在 Vol.2、不在附录。Vol.2 §15.36 讲架构，Vol.3 Ch.4 才是规范性指令参考。
+
+#### IOMMU（48882-PUB Rev 3.11）
+
+**只有 5 章，没有任何附录**：Preface · 1 IOMMU Overview · 2 Architecture · 3 Registers · 4 Implementation Considerations · 5 I/O Virtualization ACPI Table · Index to Registers。
+
+已核验位置：**DTE → §2.2.2**（Figure 7 "Device Table Entry (DTE) Fields"）· host I/O 页表 → **§2.2.3** · guest → **§2.2.6** · guest/nested → **§2.2.7** · **IRTE → §2.2.5 Interrupt Remapping Tables** · **命令 → §2.4**（2.4.1 COMPLETION_WAIT … 2.4.8 INVALIDATE_IOMMU_ALL、2.4.9 INSERT_GUEST_EVENT、2.4.10 RESET_VMMIO、2.4.11 Ordering Rules）· **事件日志码 → §2.5**（2.5.2 ILLEGAL_DEV_TABLE_ENTRY … 2.5.14 RMP_PAGE_FAULT、2.5.15 RMP_HARDWARE_ERROR）· **MMIO 寄存器 → §3.4**（能力块 §3.2/§3.3、VF 控制 §3.5/§3.6）· **ACPI IVRS → §5.2**，IVHD/设备树 → **§5.3**。另有 §2.10 vIOMMU · §2.12 IOMMU SEV-SNP Support · §2.14 SEV-TIO。
+
+**`[IOMMU … App.x]` 是编造——该规范没有附录。**
+
+#### 56860 / 56421 / 55766 / 58019 结构
+
+- **56860 Rev 1.59**：Ch1 Introduction · **Ch2 Data Structures and Encodings**（2.1 MDATA、2.2 VCEK、**2.3 TCB_VERSION**、2.4 ETCB_VERSION、2.5 PADDR_INVALID、2.6 TPM_INFO）· Ch3 Platform Management（3.4 Reported TCB、3.9 Extended TCB）· Ch4 Guest Management · Ch5 Page Management · Ch6 Mailbox Protocol（6.1 Command Identifier、6.2 Status Codes）· **Ch7 Guest Messages**（7.1 CPUID Reporting、7.2 Key Derivation、**7.3 Attestation**、7.4 VM Export…7.11 Get TPM Info）· **Ch8 Command Reference**（8.1 DOWNLOAD_FIRMWARE、8.2 …_EX、8.3 SNP_COMMIT、8.4 GET_ID、8.5 SNP_PLATFORM_STATUS、8.6 …_EX、8.7 SNP_CONFIG…）· **App A 常用算法 · App B 数字签名 · App C CSVCEK 证书链 · App D CSR**。
+  **ATTESTATION_REPORT 的布局是 §7.3 中的 Table 27**，不是小节号。TCB_VERSION 按产品分表：Table 3 (Venice)、Table 4 (Turin)、Table 5 (Genoa/Milan)；ETCB_VERSION Table 6 (Venice)。
+- **56421 Rev 2.04**：1 Introduction · **2 GHCB**（2.1 Version 2 变更、2.2 Hypervisor Feature Support、2.3 Establishing the GHCB（**2.3.1 GHCB MSR Protocol**、2.3.2 GHCB GPA Registration）、2.4 协商示例、2.5 GHCB/VMGEXIT 示例、**2.6 GHCB Layout**、2.7 SNP Secrets Page、2.8 CC Blob EFI Protocol）· **3 Guest Exits**（3.1 Automatic Exits、**3.2 Non-Automatic Exits**）· **4 GHCB Protocol**（4.1 Invoking VMGEXIT、4.2 Guest Identification、4.3 SMP Booting、4.4 NMIs、4.5 Debug Register、4.6 SMM、4.7 Nested Virtualization）· **5 SNP Restricted Injection**（5.1–5.5）。无附录。
+- **55766 Rev 3.24**：Ch1 Overview · Ch2 Key Management · Ch3 Guest Policy · Ch4 Mailbox Register Protocol（4.4 Command Identifiers、4.5 Status Codes）· **Ch5 Platform Management API**（5.2 INIT…5.15 RING_BUFFER）· **Ch6 Guest Management API**（6.2 LAUNCH_START…6.8 ATTESTATON〔AMD 原文拼写如此〕…6.11 SEND_UPDATE_VMSA）。**只覆盖 SEV/SEV-ES；SNP 在 56860。**
+- **58019 Rev 1.01**：1 Abstract · 2 Scope · 3 Environment · **4 Discovery**（4.1 Boot、4.2 Post-Boot）· **5 Calling Convention** · **6 Core Protocol**（6.2 SVSM_CORE_REMAP_CA…6.9 SVSM_CORE_CONFIGURE_VTOM）· **7 Attestation Protocol** · **8 vTPM Protocol** · **9 APIC Emulation Protocol** · **10 UEFI Management Mode Protocol**。COCONUT-SVSM 是**实现**不是规范，不得作为架构出处。
+
+#### 锚点语法（按核验结果定稿）
+
+| 文档 | 锚点写法 | 示例 |
+|---|---|---|
+| APM Vol.2 | `[APM2 §<sec>]` / `[APM2 Ch.15]` / `[APM2 App.B]` / `[APM2 App.C]` | `[APM2 §15.14.4]` |
+| APM Vol.3 | `[APM3 §4 "<MNEMONIC>"]`（**指令名，不是小节号**） | `[APM3 §4 "PVALIDATE"]` |
+| APM Vol.1/4/5 | `[APM1 §x.y]` / `[APM4 …]` / `[APM5 …]` | — |
+| IOMMU | `[IOMMU 3.11 §<sec>]`（**修订号必须写进锚点；永远没有 `App.`**） | `[IOMMU 3.11 §2.2.2]` |
+| SNP ABI | `[SNP-ABI 1.59 §<sec>]` / `[SNP-ABI 1.59 Table <n>]` / `[SNP-ABI 1.59 App.C]` | `[SNP-ABI 1.59 Table 27]` |
+| GHCB | `[GHCB 2.04 §<sec>]` | `[GHCB 2.04 §2.6]` |
+| SEV API | `[SEV-API 3.24 §<sec>]` | `[SEV-API 3.24 §6.1]` |
+| SVSM | `[SVSM 1.01 §<sec>]` | `[SVSM 1.01 §5]` |
+| 白皮书 | `[SNP-WP 70366 p.<n>]`（**非规范，不得作为位级事实的唯一出处**） | — |
+| PPR | `[PPR <pub>-<rev> §x]` | UNVERIFIED |
+| 安全公告 | `[AMD-SB-<nnnn>]` | `[AMD-SB-3028]` |
+
+规则：**带修订号的文档（IOMMU / SNP-ABI / GHCB / SEV-API / SVSM）把修订号写进锚点**，因为它们的编号会动；APM Vol.2 的章节号稳定，可以省略修订号，但附录必须写**字母**。
+
+#### 三条与 Intel 侧相反的结论（直接改变风险判断）
+
+1. **APM 的 SVM 章节号是稳定的，不是被重编过的。** 比对 Rev 3.30（2018-09）与 Rev 3.45（2026-07）的书签树：**§15.1–§15.35 的编号与标题八年未变**；新内容一律追加（§15.36 SEV-SNP、§15.37–§15.39，以及 15.29.10、15.34.10/.11、15.36.10–.23 这些子节）。附录字母 A–E 未变，App B 只改了标题（"Layout of VMCB" → "VMCB Layout"）。章级新增了 18 Shadow Stacks 与 19 PQOS。**这与 Intel SDM 把 VMX 章重编到"旧章节已不存在"的情况相反。** 因此 AMD 侧的真实风险不是编号过时，而是**编造新近子节**与**给 Vol.3 指令安上小节号**。
+2. **AMD 没有 Intel "SDM Documentation Changes" 那样的文档勘误通道。** APM 的更正静默并入下一修订，唯一记录是卷内 Revision History 表（Vol.2 页 xxxvi–xlviii；已核验历史：3.45 2026-07 · 3.44 2026-03 · 3.43 2025-06 · 3.42 2024-03 · … · 3.38 2022-11）。最接近的是按家族的 **Revision Guide**（**硅**错误，不是文档错误）：58251（Fam 1Ah 00h–0Fh，Rev 1.30，2025-07）、58730（1Ah 10h–1Fh）、57095（19h 10h–1Fh，Rev 1.05，2025-11）、57926（19h A0h）、55449、56323。**全部是 EPYC/服务器件；客户端 Ryzen（Vermeer/Raphael/Phoenix/Strix）没有公开修订指南。** 因此 CVE 与勘误锚定必须走 **AMD-SB 公告索引**，而不是某个"文档变更"文件。
+3. **客户端 Ryzen 没有公开 PPR。** 公开 PPR 仅 56569（Cezanne）、57019（Phoenix）、57930（1Ah 70h）、57883（1Ah 11h）与若干 EPYC；**Family 19h Model 21h（Vermeer）与 61h（Raphael / Ryzen 7000 桌面）无公开 PPR**。第三方站点流传的 **56713 不在 AMD 公开索引内，不得引用**。PPR 以 `.zip` 分发。SVM 相关 MSR 的更好锚点是 **APM Vol.2 §15.30 + App A**。
+
+#### 元数据陷阱（写进 CONVENTIONS 与 lint）
+
+1. **56860 同时在线于两个修订**：`www.amd.com/content/dam/.../56860.pdf` 返回 **Rev 1.58（2025-05）**，`docs.amd.com` 返回 **Rev 1.59（2026-08）**，两者都是 HTTP 200。抓错源就静默拿到落后 15 个月的 ABI。
+2. **IOMMU 到处都写 Rev 3.10（2025-02）**——AMD 门户列表、搜索结果、2026-01 的 LKML 补丁——**而 PDF 封面是 Rev 3.11（2026-04）**。以封面为准（与 Intel 侧 VT-d 落地页陈旧是同一类陷阱）。
+3. **dam 链接大批失效**：24592/24593/24594/26568/26569/40332 的 `processor-tech-docs` 路径全部 404；55766 与白皮书路径 302 到 JS 壳并返回 `text/html`。每次抓取必须同时验证 `Content-Type: application/pdf` **与** 文件头 `%PDF`。
+4. **带修订号的 pretty-URL 会在下次发布时失效**（`24593_3.45_APM_Vol2_PUB`、`48882_3.11_IOMMU_PUB`）；`56860_PUB_SEV_SNP`、`56421`、`58019.pdf`、`58271_PUB_SEV-TIO` 是修订无关的稳定 slug，优先用后者。已有一批被搜索引擎索引的旧 slug（`24594_3.37`、`48882_IOMMU`、`40332_4.09_APM_PUB`）已经死链。
+5. **不要用 `pdftotext -layout` 解析 AMD 的 TOC**——双栏排版会把小节号与相邻条目错配，产出"看着很像真的"的假配对（核验过程中它一度把 Vol.3 的附录列成 "App A SYSEXIT / App B VMLOAD / B.3 VMRUN"）。**只信 PDF 书签树**，正文标题次之。
+
+#### 仍未核验（首次引用者负责回填）
+
+- APM Vol.2 中**虚拟中断小节**（INT_CTL / V_TPR / V_IRQ / V_INTR_MASKING 所属节）的编号——票 07 必须自行核对，或降级到 `[APM2 Ch.15]`。
+- APM Vol.2 中 **SME/TSME 所属子节**的编号（§15.34 的前几个子节或 Ch.7 Memory System）——票 09 负责。
+- PPR 内部小节结构（`.zip` 未解压）。
+- AMD-SB 编号分段（1xxx 客户端 / 3xxx 服务器与 SEV / 6xxx 显卡 / 7xxx CPU 架构 / 9xxx 管理工具）为观察所得，AMD 未公开说明，**不得作为规则写进文档**。
 
 ### D3. Claim 记录 schema 与锚点语法
 
@@ -288,7 +401,7 @@ SKILL.md frontmatter 写着"全部事实带引用编号，可回溯至 **503 条
 
 叙述性散文不需要 claim 行，但**任何具体的数值、位号、偏移、编码、日期、CVE 编号、产品名都必须落在某条 claim 行里**。
 
-**绝对禁止编造章节号。** 这是本次重构最大的风险，且 AMD 侧比 Intel 侧更危险：APM 的 SVM 章与附录在历次修订中被重编过，而旧资料（2005 年的 33047、2007 年的 IOMMU 34434、各类镜像与译文）里的编号在今天全部作废。规则：
+**绝对禁止编造章节号。** 这是本次重构最大的风险，但 **AMD 侧的风险形态与 Intel 侧相反**（见 D2 的"三条相反结论"第 1 条）：APM 的 §15.1–§15.35 八年未重编，**编号过时不是主要威胁**。真正的威胁是三种编造：(a) 凭印象写**新近子节**——§15.36 SEV-SNP、§15.37–§15.39 以及各 `.10+` 子节都是近年追加的，最容易被写成"一直存在"；(b) **给 APM Vol.3 的指令安上小节号**——Ch.4 按字母排序，只有页码，`[APM3 §4.7.2 VMRUN]` 是纯虚构；(c) **给 IOMMU 规范安上附录**——它只有 5 章、零附录，IVRS 在 §5.2。此外，旧资料（2005 年的 33047、2007 年的 IOMMU 34434 Rev 1.20、各类 PDF 镜像与中文译文）的编号体系与现行文档不对应，一律作废。规则：
 1. 只写实际核对过的编号（WebFetch 真实 PDF，或引用 D2 已核验清单）。
 2. 核对不了就降级到章/附录级（写 `[APM2 App.B]` 而不是猜一个表号）。
 3. 连这一级都不确定：写 `[APM2 Ch.?]` 并置 `C:low`，由 lint 标出待人工处理，**不要删掉锚点假装它是二级事实**。
@@ -313,64 +426,70 @@ SKILL.md frontmatter 写着"全部事实带引用编号，可回溯至 **503 条
 | 主题 | owner |
 |---|---|
 | EFER.SVME / VM_CR / VM_HSAVE_PA / SVM_KEY / CPUID `Fn8000_0001`·`Fn8000_000A` 全位表 | `01` |
-| VMCB 字段偏移（控制区 + 保存区）/ clean bits | `02` |
-| 拦截向量位号 / IOPM / MSRPM / PAUSE filter / TSC ratio / LBR virt | `03` |
-| VMRUN·#VMEXIT 流程 / 一致性检查 / SVM 指令语义与异常 | `04` |
-| EXITCODE 表 / EXITINFO / NRIP / Decode Assist / EVENTINJ | `05` |
-| NPT 表项 / 二维遍历 / NPF 位定义 / ASID / TLB_CONTROL / INVLPGA | `06` |
-| INT_CTL 位 / 虚拟中断投递 / vGIF / AVIC / x2AVIC / doorbell | `07` |
-| IOMMU 寄存器 / DTE | `08` |
-| I/O 页表 / GCR3 / 命令 / 日志 / IVRS | `09` |
-| IRTE / GA log / GAPPI / ATS·PRI·PASID | `10` |
-| SME / TSME / C-bit / `Fn8000_001F` / SYSCFG | `11` |
-| SEV 密钥层次 / ASID 绑定 / 固件命令 / guest policy | `12` |
+| VMCB 字段偏移（控制区 + 保存区）/ **段属性 12 位打包编码与 CPL 来源** / clean bits **及其与嵌套分页·ASID 的交互** / CET 字段 | `02` |
+| 拦截向量位号与**拦截优先级/顺序** / IOPM / MSRPM / PAUSE filter / Bus Lock Threshold / IdleHlt / TSC ratio 与合成规则 / LBR virt / **PMU·IBS 虚拟化** / 调试寄存器虚拟化 / CET·影子栈机制 / SMI 拦截 | `03` |
+| VMRUN·#VMEXIT 流程 / 一致性检查（含**否定清单**）/ SVM 指令语义与异常 / **GIF·STGI·CLGI 指令侧** / **VLS 语义** / INIT·SIPI 与 `#SX` / MCOMMIT / `VM_HSAVE_PA` 的"不得读取"契约 | `04` |
+| EXITCODE 表 / **EXITINFO1·2 全部位表（含 `#NPF` 的 31/34/35/36）** / NRIP / Decode Assist / EVENTINJ / EXITINTINFO / `INT_STATE` 中断影子 | `05` |
+| NPT 表项 / 二维遍历 / **NPF 的语义与处理流程**（位表在 `05`）/ 内存类型合并 / ASID 与耗尽回收 / TLB_CONTROL / INVLPGA / GMET / NPT 关闭时的影子分页 | `06` |
+| INT_CTL 位 / 虚拟中断投递（消费 `05` 的 `INT_STATE`）/ **vGIF 机制侧** / AVIC / x2AVIC / doorbell | `07` |
+| IOMMU 寄存器 / DTE 转换侧字段 / 事件·PPR·GA 日志**条目格式** / 分段 Device Table / 请求类型路由 | `08` |
+| I/O 页表 / GCR3 / 命令 / IVRS / `IO_PAGE_FAULT` 端到端解码（**日志条目格式在 `08`**） | `09` |
+| IRTE 两种格式 / **DTE 中断簇** / GA log **格式与语义** / GAPPI / ATS·PRI·PASID | `10` |
+| SME / TSME / C-bit 与其缓存一致性冲刷规则 / **`Fn8000_001F` 全部字段（含 EAX[4]）** / SYSCFG | `11` |
+| SEV 密钥层次 / ASID 绑定 / 固件命令 / guest policy / **`SEV_STATUS` (C001_0131h) 全部位** / **SEV·SNP 威胁模型陈述** | `12` |
 | VMSA / `#VC` / GHCB / NAE / VMGEXIT | `13` |
-| RMP / VMPL / SNP 指令 / SNP 固件命令 / 证明报告 / SVSM / VCEK·VLEK | `14` |
+| RMP（含粒度约束与 TLB 影响）/ VMPL / SNP 指令 / SNP 固件命令 / 证明报告 / SNP CPUID page / vTOM / Secure TSC / Secure AVIC / SVSM（含 APIC 仿真协议）/ VCEK·VLEK | `14` |
 | 嵌套 SVM 机制 | `15` |
 | Hyper-V / VBS / HVCI / WSL2 / WHP / DDA / Kernel DMA Protection | `16` |
-| CVE→缓解矩阵 / SKINIT·DRTM | `17` |
+| CVE→缓解矩阵（§17.1）/ SKINIT·DRTM（§17.2，两个独立 `Owns:` 条目）/ APM 附录 D SMM Containerization / **勘误驱动的特性屏蔽纪律** | `17` |
 | 性能数字 | `18` |
 | Intel/ARM/RISC-V 对照 | `19` |
 | 云实例、GA 日期、市场份额、路线图、内核/固件版本 | `90` |
 
 `00-quickref.md` 与 `core-facts.md` 是**导航层，不存任何权威数值**——只给"这个表在哪一章"。这直接修掉现状里"速查表成为第二事实库且与 owner 章漂移"的问题。
 
+> **与 `intel-vt` 的一处有意分歧（复检发现）**：Intel 技能的 `core-facts.md` 现有 **54 条 claim 行**——它把 core-facts 当作带引用的事实层，而不是纯索引。AMD 侧采用更严的口径。因此"导航文件不得含 claim 行"这条 lint 规则**必须做成每技能可开关的配置项**（`claimFreeFiles`）；一旦对 Intel 生效，`intel-vt` 会从 lint clean 变成 54 个 error，而重写 Intel 的 core-facts 明确在 Out of Scope 内。
+
 ### D6. 时效隔离
 
 `90-dated-landscape.md` 文件头强制包含：as-of 日期、"使用前必须以官方来源复核"声明、按类别分节（EPYC/Ryzen 代际与产品状态 / 固件与 ABI 修订 / 内核·QEMU·libvirt 合入版本 / 云厂商与 CoCo 生态 / 路线图）。
 
-迁入范围（审计已逐条枚举）：ch12 约 40%、ch13 约 80%、ch14 约 90% 的内容，加上 ch01 的整条 mermaid 时间线与云 GA 段、ch05 的 AVIC 默认值演进史与 OCI 实测、ch06 的内核符号与 2024–2026 主线动向、ch07 的 vendor-reset/X870E/AGESA 事件、ch10 的 ABI 修订史与代际表、ch11 的固件修复版本、ch15 的文档修订表。
+迁入范围（审计已逐条枚举）。**下列全部是旧版章节号，不是 D1 的新章节号**——D1 刚刚把同一批数字重新定义过，照字面执行会把新 `14-sev-snp.md` 的 90% 搬进 `90`：旧 ch12 约 40%、旧 ch13 约 80%、旧 ch14 约 90%（按行统计分别是 21%/65%/74%，按字符是 40%/85%/95%），加上旧 ch01 的整条 mermaid 时间线与云 GA 段、旧 ch05 的 AVIC 默认值演进史与 OCI 实测、旧 ch06 的内核符号与 2024–2026 主线动向、旧 ch07 的 vendor-reset/X870E/AGESA 事件、旧 ch10 的 ABI 修订史与代际表、旧 ch11 的固件修复版本、旧 ch15 的文档修订表。
+
+**一个反例**：硬件加速 vIOMMU（#48882 §2.10）在旧 ch06 里和"2024–2026 主线动向"写在一起，但它是**耐久的架构机制**，归 `08`/`10`，不进 `90`。迁移时按"这条明年还成立吗"判断，不按它在旧文件里的邻居判断。
 
 厂商营销数字（"零虚拟化损耗"、"+23%"、"really close to zero"）改为归属语气或删除；研究流程叙述（"交叉验证已裁定"、"跨维度洞察 N"、"dimNN 报告"、"受页面限制未能全部抓取"、"笔者"、"本书"）一律删除，压缩为每文件一行 provenance 头。
 
 ### D7. 必须修正的错误（迁移时逐条处理，并在 `errata.md` 留痕）
 
-Problem Statement 第三节的 20 条全部进入 `errata.md`，每条给出：中文讹传表述、英文表述、带 T1 锚点的正确 claim、owner 文件。其中下列几条**必须同时进入 lint 的 MISCONCEPTIONS 规则**，因为它们会被旧资料反复带回来：
+> **⚠️ 本表已被 `recheck-findings.md` 附录 A 的逐条核验覆盖。两者冲突时以附录 A 为准。** 核验结果：**5 条我提出的"更正"本身是错的**（22 VMGEXIT、5 IVRS 条目长度、27 CVSS、25 CVE-2024-25744、31 客户端 SEV），照本表实施会引入新错误；另有 9 条需要附加限定才能写。下表已就地更正。
+
+Problem Statement 第三节的条目全部进入 `errata.md`，每条给出：中文讹传表述、英文表述、带 T1 锚点的正确 claim、owner 文件。其中下列几条**必须同时进入 lint 的 MISCONCEPTIONS 规则**，因为它们会被旧资料反复带回来：
 
 | 讹传 | 正确 |
 |---|---|
 | `CmdBufRun` 在 Control Register (0x0018) | **Status Register (0x2020) bit 4**；启动命令处理的是 Control Register bit 12 `CmdBufEn` |
-| IOMMU MMIO 窗口 14 KiB | **16 KiB (0x4000)** |
+| IOMMU MMIO 窗口 14 KiB | **16 KiB 仅在 `MMIO 0030h[PCSup] = 0` 时成立；`PCSup = 1` 时是 512 KiB**（48882 §2.3）。"14" 是把 `BaseAddress[31:14]` 读错了 |
 | IRTE 的 `RemapEm` | **`RemapEn`** |
 | NPF EXITINFO1 bit 33 ENC / 34 SIZEM / 35 VMPL | **34 ENC / 35 SIZEM / 36 VMPL**（31 = RMP） |
 | VMRUN 检查 "CR4[63:11] 非零 / EFER[63:15] 非零" | 按**现行 APM 的 MBZ 规则**判定 |
 | EXITCODE = 拦截位在向量中的位序 | 分段编码：CR 读 00h–0Fh、异常 40h–5Fh、向量 3 → 0x60+bit、向量 4 → 0x80+bit |
-| `#VMEXIT` 只恢复 RIP/RSP/RAX | GPR 中只恢复 RAX/RSP/RIP，另装载 GDTR/IDTR/EFER/CR0(PE=1)/CR3/CR4/RFLAGS |
+| `#VMEXIT` 只恢复 RIP/RSP/RAX | 24593 §15.6 列出 RAX、RSP、**NEXT_RIP**、CR0/CR3/CR4/EFER、IDTR/GDTR，并 "Forces CR0.PE = 1"。**两个限定**：AMD 的措辞是 "**at least** the following"（不是封闭列表）；**host LDTR 明确不恢复** |
 | VMLOAD/VMSAVE 涉及 SS | 不涉及 SS（FS/GS/TR/LDTR/KernelGsBase/STAR/LSTAR/CSTAR/SFMASK/SYSENTER_*） |
-| CVE-2024-25744 是 SEV-SNP 漏洞 | 它是 Linux 内核的 **Intel TDX** guest 问题；SNP 上的 Heckler 是 **CVE-2024-25743** |
+| ~~CVE-2024-25744 是 SEV-SNP 漏洞~~ **此条作废（核验 #25 REFUTED）** | **AMD-SB-3008 把 CVE-2024-25742/25743/25744 全部归给 Heckler**；修复提交 `b82a8dbd3d2f` 标题为 "Disable 32-bit emulation by default on TDX **and SEV**"，改的是 `mem_encrypt_amd.c`。25744 覆盖 TDX **与** SEV，不是 Intel 独有；25743 是 AMD 专属的 interrupt-0/14 那一半。论文发表于 **USENIX Security 2024**。旧版真正的缺陷是**受影响代际列填了特性名**与**披露日期表里 2024-08 / 正文 2024-03 自相矛盾**，不是归属错 |
 | Hyper-V 在 AMD 上不支持嵌套 | Windows Server 2022 / Windows 11 起支持（`Set-VMProcessor -ExposeVirtualizationExtensions`） |
 | Hyper-V 不支持 AMD SEV（无条件表述） | 客户端/Server Hyper-V 不向 guest 暴露 SEV；Azure 的 Hyper-V 主机承载 SEV-SNP CVM（OpenHCL 在 VMPL0） |
-| SEV 可在 Ryzen 桌面上使用 | SEV/SEV-ES/SEV-SNP 仅 EPYC（及 EPYC Embedded）；客户端只有 SME/TSME |
-| 必须关掉 Hyper-V 才能跑 VMware/VirtualBox | 自 Workstation 15.5.5 / VirtualBox 6.1 起可经 WHP 与 VBS 共存（有性能代价） |
+| SEV 可在 Ryzen 桌面上使用 | **口径已按核验 #31 更正**：不是"客户端没有"，而是 **SEV 在 EPYC 上被产品化**。实测 CPUID 转储显示 **Ryzen 9 3900X、5800X3D 等非 PRO 消费级部件 `Fn8000_001F EAX[1]=1`（509 个 ASID）**；**Zen 4 客户端起才只剩 SME**；**SEV-SNP 从未在客户端置位**。客户端可用的内存加密是 **TSME / AMD Memory Guard**。**不要写"`EAX[1]` 在 Ryzen 上读 0"**——在 Zen+/2/3 上会被当场证伪 |
+| 必须关掉 Hyper-V 才能跑 VMware/VirtualBox | 自 **Workstation 15.5.5**（Broadcom 称 "**Host VBS Mode**"）与 **VirtualBox 6.0**（核验更正，不是 6.1）起可经 WHP 与 VBS 共存。**但限制是有文档的**：VM 更慢、**不支持嵌套**、无 PMC、无 RTM/HLE、无 PKU；VirtualBox 7.2 手册仍标实验性并附"性能很差"警告 |
 | x2AVIC = `Fn8000_000A EDX[14]` | **EDX[18]**（保留现有裁定） |
 | Intel 平台的 `hvix64.exe` 用于 AMD | **`hvax64.exe`** |
 | 嵌套遍历 16 次访存 | **24 次**（(4+1)(4+1)−1） |
-| "SEV-ES 在支持 SNP 的 CPU 上被禁用"是 Zen 5 代际特性 | 是 **CVE-2025-48514/48517 固件修复的副作用**（FW 1.37.23/31/41），覆盖 Milan/Genoa/Turin |
-| SEVurity ↔ AMD-SB-1004 | AMD-SB-1004 对应 **SEVerity (CVE-2020-12967)**；SEVurity 是另一篇，无 CVE |
+| "SEV-ES 在支持 SNP 的 CPU 上被禁用"是 Zen 5 代际特性 | 是 **CVE-2025-48514 缓解的副作用**（AMD-SB-3023 原文："will result in disabling **SEV-ES** when SEV-SNP is **enabled**"）。三处精确化：**只禁用 SEV-ES（不是 SEV）**；触发条件是 SNP **已启用**（不是"支持 SNP"）；影响跨 **Zen 3/4/5**。固件 1.37.23/1.37.31/1.37.41 |
+| SEVurity ↔ AMD-SB-1004 | AMD-SB-1004 对应 **SEVerity (CVE-2020-12967)**，**且该公告同时覆盖 CVE-2021-26311**；SEVurity 是另一篇、无 CVE，**第一作者 Luca Wilke，IEEE S&P 2020** |
 | SEV-SNP 上限 255 vCPU 是架构限制 | 是 KVM/QEMU 的 xAPIC 期限制 |
 | AES-XEX 覆盖 SEV 全代 | 按代际区分（Genoa 起 AES-256-XTS），且不得写成 "AES-XE" |
 
-**待裁决（需查证后写入 errata 的 Open conflicts 节）**：SEV 密钥槽数与代际的对应（15/509/1006 分别属于哪一代）、AVIC erratum #1235 的真实披露年份（与 CVE 分配年份区分）、CVE-2021-29657 的 CVSS（NVD 7.8 vs 二手源 7.4）、SNP 与 TDX 内存开销的两组相反测量、NPT 相对影子分页的"15–30%"是否有任何现代测量支撑。
+**待裁决（需查证后写入 errata 的 Open conflicts 节）**：SEV 密钥槽数与代际的对应（15/509/1006 分别属于哪一代）、AVIC erratum #1235 的真实披露年份（与 CVE 分配年份区分）、SNP 与 TDX 内存开销的两组相反测量、NPT 相对影子分页的"15–30%"是否有任何现代测量支撑。
 
 ### D8. 深度补全清单
 
@@ -385,7 +504,7 @@ Problem Statement 第二节列出的全部缺口按 D5 归位补齐。验收以"
 ### D9. Windows PC 定位与 client/server 分界
 
 - **硬件架构章 `01`–`11` 与操作系统无关**，照常按 AMD 官方文档写；但每章头部的 `Scope:` 行必须标明该章内容在客户端 Ryzen 上的可用性（例：AVIC 在客户端的固件启用状态、SR-IOV 在消费级平台不存在）。
-- **`12`–`14`（SEV 全家）标记为服务器范围**：文件开头强制写明"服务器/机密计算专题，客户端 Windows PC 上不存在（`Fn8000_001F EAX[1]` 在 Ryzen 上读 0）；仅在问题涉及 EPYC 时阅读"，SKILL.md 路由表对应行同样标注。**内容保留全深度**（用户裁定）。
+- **`12`–`14`（SEV 全家）标记为服务器范围**，但**措辞必须按核验 #31 精确化**——"客户端上不存在"是错的：实测 Ryzen 9 3900X / 5800X3D 等非 PRO 消费级部件 `Fn8000_001F EAX[1]=1`（509 ASID），**Zen 4 客户端起才只剩 SME**，**SEV-SNP 从未在客户端置位**。正确写法："**SEV 在 EPYC 上被产品化**；Zen 4 及更新的客户端部件只有 SME/TSME；SEV-SNP 客户端不可用。仅在问题涉及 EPYC 时阅读。"**不得写 "`EAX[1]` 在 Ryzen 上读 0"**。SKILL.md 路由表对应行同样标注。**内容保留全深度**（用户裁定）。
 - **`11-memory-encryption.md` 是客户端能用的那一章**：SME/TSME（AMD Memory Guard）、C-bit、物理地址位缩减、AMD-SP/fTPM 与 Windows 11 TPM 要求的关系。
 - **`16-windows-platform.md` 是新增章，权重最高**：Windows PC 上"谁占据 SVM"是解释绝大多数问题的关键事实，必须像 `intel-vt/17` 那样在 SKILL.md 正文里单独成节。
 - **`18-performance.md` 改为 Windows PC 开销**：VBS/HVCI 对客户端与游戏的影响、WSL2 与实用 VM 的开销、第三方 VMM 跑在 WHP 之上 vs 裸 SVM、PC 上的嵌套开销。删除云规模整合、NFV、数据中心能耗、EPYC 调优指南。
@@ -426,7 +545,7 @@ ID 区段（避免并行写入冲突，各章只在自己区段内分配）：
 | 区段 | 归属 |
 |---|---|
 | 1–40 | AMD 官方 T1（**由 D2 基线预置，只读**） |
-| 41–99 | 其他官方规范 T2（Microsoft Learn、PCI-SIG、Intel SDM、ARM、RISC-V） |
+| 41–99 | 其他官方规范 T2（Microsoft Learn、PCI-SIG、Intel SDM、ARM、RISC-V）——**同样由票 02 预置**，避免票 12 与票 14 在同一个无主区段里各自分配 |
 | 100–149 | `01`–`02` |
 | 150–199 | `03`–`05` |
 | 200–239 | `06` |
@@ -444,6 +563,8 @@ ID 区段（避免并行写入冲突，各章只在自己区段内分配）：
 
 旧 bibliography 中的一手来源（kernel.org、LKML、论文、AMD 官方页面、Microsoft Learn）可以按新格式重新录入并升级为 T1/T2；黑名单域名不得录入。
 
+`00-quickref.md` **不分配 ID 区段**——它是导航层，引用 owner 章已有的 ID。
+
 ### D14. 图片处理
 
 现有 14 张 PNG 逐张复核，处置三选一：**保留**（有量化信息且与重写后的事实一致，随 owner 章迁移）、**降级到 `90-dated-landscape.md`**（时间线/路线图类）、**删除**（顶替缺失表格的示意图，如 VMCB 布局图与"块高不代表字节数"那一类）。删除的图不补画——表格才是交付物。`references/images/` 目录保留。
@@ -453,8 +574,9 @@ ID 区段（避免并行写入冲突，各章只在自己区段内分配）：
 保持**唯一一份** lint 与 build，靠每技能一份配置区分：
 
 - `tools/lint.mjs` 现有的 Intel 专属常量（`T1_ANCHORS`、`T1_PREFIX`、`ARCH_CHAPTER`、`DATED_FILE`、`DEAD_SDM_TITLES`、`BANNED_ARCH_HOSTS`、`MISCONCEPTIONS`、`OWNERSHIP`、`NAVIGATIONAL`）外提到 `<skill>/lint.config.json`，两个技能各一份。脚本逻辑不分叉。
+  **复检发现四处不是纯数据、不能直接搬进 JSON**：(a) `isCorrection` 是个闭包，且是 `DEAD_SDM_TITLES` 与 `MISCONCEPTIONS` 两条规则共同的豁免开关，必须拆成共享基线 + 每技能 `correctionHints`；(b) 归属规则的豁免子句以字面正则内联在消费它的代码里；(c) `T1_ANCHORS` 被 claim 循环与题库校验两处以不同语义使用；(d) 脚本主体是模块级直线代码（`errors`/`warnings` 为模块作用域），多技能默认运行必须先把主体包成函数并按技能隔离状态。另外所有正则要以 `{ "re": "...", "flags": "..." }` 形式存 JSON（flags 必须显式；JSON 字符串里写 `\/` 会变成非法转义）。
 - `tools/build.mjs` 去掉 `const SKILL = 'intel-vt'`，改为遍历技能列表，生成两份 `index.json` + 两份 `agents/openai.yaml` + **一份同时描述两个技能的 `AGENTS.md`**；`--check` 漂移校验覆盖全部产物。
-- `eval/` 改为 `eval/RUNNER.md`（共享协议，措辞去 Intel 化）+ `eval/<skill>/questions.yaml` + `eval/<skill>/results/`。现有 `eval/RUNNER.md` 一并泛化。
+- `eval/` 改为 `eval/RUNNER.md`（共享协议，措辞去 Intel 化）+ `eval/<skill>/questions.yaml` + `eval/<skill>/results/`。**这是迁移不是新建**——Intel 侧已有 80 题题库、README 与 6 份实跑结果（见 T3），需一并搬迁，且必须在同一次改动里同步修改 `tools/lint.mjs` 中硬编码的题库路径，否则题库校验会静默失效。
 
 这三处对 `intel-vt` 的改动是**纯工具与配置层面**，不触碰其 SKILL.md 与 references 内容；改完后 `node tools/lint.mjs intel-vt` 与 `node tools/build.mjs --check` 必须保持通过，作为回归判据。
 
@@ -468,7 +590,7 @@ ID 区段（避免并行写入冲突，各章只在自己区段内分配）：
 
 - `eval/amd-virtualization/questions.yaml`：**80 题**，覆盖全部章节，题型配比约为 查表类 30% / 机制解释 30% / 诊断推理 25% / 讹传陷阱 15%。
 - 每题字段：`id`、`chapter`、`question`、`must_include`（必须出现的事实/数值/位号/偏移）、`must_not_include`（讹传表述，直接取自 `errata.md`）、`required_citation`（必须给出的 AMD 文档号 + 章节或表号）。
-- **陷阱题必须覆盖 D7 表中的每一项**。现状技能在这些题上会答错，精炼后必须答对。至少包括：`CmdBufRun` 在哪个寄存器、IOMMU MMIO 窗口多大、IRTE bit 0 叫什么、NPF EXITINFO1 的 ENC/SIZEM/VMPL 位号、VMRUN 对 CR4/EFER 的检查怎么表述、VMRUN 的 EXITCODE 是多少、`#VMEXIT` 恢复了哪些寄存器、VMLOAD 是否涉及 SS、CVE-2024-25744 属于谁、AMD 上 Hyper-V 能否嵌套、Ryzen 桌面能否用 SEV、跑 VMware 是否必须关 Hyper-V、嵌套遍历多少次访存、x2AVIC 的 CPUID 位、AMD 上的 Hyper-V 镜像文件名。
+- **陷阱题必须覆盖 D7 表中的每一项（20 条）**。注意算术：24+24+20+12 = 80 已经排满，12 道陷阱题装不下 20 条讹传——**允许一道题的 `must_not_include` 同时挂多条讹传**（例如一道"解读这个 `#NPF`"的题可以同时挂位号错位与"EXITCODE = 位序"两条）。现状技能在这些题上会答错，精炼后必须答对。至少包括：`CmdBufRun` 在哪个寄存器、IOMMU MMIO 窗口多大、IRTE bit 0 叫什么、NPF EXITINFO1 的 ENC/SIZEM/VMPL 位号、VMRUN 对 CR4/EFER 的检查怎么表述、VMRUN 的 EXITCODE 是多少、`#VMEXIT` 恢复了哪些寄存器、VMLOAD 是否涉及 SS、CVE-2024-25744 属于谁、AMD 上 Hyper-V 能否嵌套、Ryzen 桌面能否用 SEV、跑 VMware 是否必须关 Hyper-V、嵌套遍历多少次访存、x2AVIC 的 CPUID 位、AMD 上的 Hyper-V 镜像文件名。
 - **Windows 题至少 12 道**（占 15%）：为什么我的 VMM 用不了 AMD-V、VBS 需要哪些 AMD 硬件特性、Kernel DMA Protection 显示 Off 的原因、客户端能否做 GPU 直通、如何在 AMD 上开启嵌套、`CPUID 0x40000000` 返回什么。
 - **通过线**：`must_include` 命中率 ≥90%；`must_not_include` 违反 **0** 次；引用有效率 ≥95%（AMD 文档号与章节/表号存在且对得上）。
 - 评测协议用共享的 `eval/RUNNER.md`，结果写入 `eval/amd-virtualization/results/<agent>-<date>.md`。三家 agent（Claude Code / Codex / Hermes）各跑一轮，差异本身是路由质量的信号。
@@ -477,22 +599,33 @@ ID 区段（避免并行写入冲突，各章只在自己区段内分配）：
 
 共享的 `tools/lint.mjs` + `amd-virtualization/lint.config.json`，CI 与提交前运行，检查：
 
-1. 每条 claim 行带四个 token（锚点 / `[N]` / `C:` / `V:`）；
-2. 每个 `[N]` 在 `bibliography.md` 中可解析，且无孤儿条目；
-3. T1 锚点匹配 D2 基线中的文档号与编号格式（含 `Table X-N` 形式）；未核验锚点（`Ch.?`）必须配 `C:low`；
+1. 每条 claim 行带四个 token（锚点 / `[N]` / `C:` / `V:`）。注意现行实现**只对架构章强制锚点**，非架构章的 claim 允许无锚点；
+2. 每个 `[N]` 在 `bibliography.md` 中可解析，且无孤儿条目。**孤儿检查必须跳过预置区**——Intel 的实现豁免 ID ≤25，AMD 的官方文档预置区是 1–40，配置项 `orphanExemptBelow: 41`；
+3. T1 锚点匹配 D2 基线的文档号与编号格式；**必须新增 `Table X-N` 与 `[APM3 §4 "MNEMONIC"]` 两种 Intel 侧不存在的形式**；未核验锚点（`Ch.?`）必须配 `C:low`；
 4. `01`–`15` 中每条架构断言至少一条 T1 引用；
 5. `V:dated` 只允许出现在 `90-dated-landscape.md`；
-6. **黑名单域名**（D4 列表）不得出现在 `01`–`15` 章的引用链路上；33047 与 34434 Rev 1.20 只允许出现在历史陈述的 claim 行（配 `C:medium` 且断言文本含历史限定词）；
-7. **MISCONCEPTIONS 正则**（D7 表）：讹传表述出现在 `errata.md` 之外即失败；
-8. 归属映射不被违反（owner 之外的文件只交叉引用不复述）；`00-quickref.md` 与 `core-facts.md` 内不得出现 claim 行；
-9. frontmatter 仅含 6 个标准字段，`name` == 目录名，`description` ≤1024 且首句 ≤60 字符且为英文；
-10. SKILL.md ≤500 行；路由表中的每个文件与章节锚点都真实存在；
-11. 生成物（`index.json`、`agents/openai.yaml`、`AGENTS.md`）与源一致（漂移校验）；
-12. 术语一致性：`RemapEm`、`HPA`（在 AMD 章节中）、`VM Exit`（应为 `#VMEXIT`）等出现即警告。
+6. **黑名单域名——现行实现是空转，必须重写。** 现在的做法是在章节正文里做 `line.includes(host)` 字面匹配，而 **`bibliography.md` 根本不在被扫描的文件集内**；证据：`intel-vt/references/bibliography.md` 里此刻就躺着 `juejin.cn`、`xem.github.io`、`blog.csdn.net`、`ask.csdn.net`，而 lint 报 clean。本技能的章节只以 `[N]` 引用、正文不出现 URL，这条规则对 AMD 等于完全失效。**改为**：把 bibliography 解析成 `id → {url, host, tier}`，对每条架构 claim 解析它的每个 `[N]`，命中黑名单 host 即 **error**；另对包括 `bibliography.md` 在内的全部文件做字面匹配兜底。同一套 `[N]` 解析机制也是规则 6b（legacy 文档）能生效的前提——否则一条只写 `[412]` 而不出现 "33047" 字样的 claim 会直接逃逸；
+6b. **legacy 文档限制**：33047 与 IOMMU 34434 Rev 1.20 只允许出现在带历史限定词（historical / superseded / 2005 / 2007 / originally …）且 `C:` 不为 `high` 的 claim 行；
+7. **MISCONCEPTIONS 正则**（D7 表）：讹传表述出现在 `errata.md` 之外即失败。注意现行的 `isCorrection` 豁免是**关键词或运算**——一行里出现 "wrongly"/"rather than" 之类词就整行豁免掉所有讹传规则；AMD 的 `correctionHints` 必须收窄并与 Intel 的分开；
+8. **归属规则——现行实现是 warn-only 且实测输出为零，必须收紧。** 实测 Intel 语料：**73 条 claim 命中非 owner 主题，73 条全部被豁免子句吞掉，实际输出 0 条警告**（71 条靠 `` `NN-name.md` `` 文件名 token，2 条靠裸词 "see"）。**改为**：豁免只认显式的 `` `NN-file.md` `` 交叉引用 token，去掉裸 `see` 与 `→`；并新增一条**硬 error**——`claimFreeFiles`（AMD 为 `00-quickref.md` 与 `core-facts.md`）内不得出现 claim 行。该项**按技能开启**，原因见 D5 的分歧说明；
+9. frontmatter 仅含 6 个标准字段，`name` == 目录名，`description` ≤1024 且首句 ≤60 字符。"是英文"只能用 ASCII 近似（现行实现即如此，且只 warn）。**注意首句切分依赖终止标点**：AMD 现有的 description 是没有句号的折叠块，会被整体当成"首句"而报 474 字符——这正是 AMD 目前唯一的真 error；
+10. SKILL.md ≤500 行；路由表中的每个文件与 `§x.y` 锚点都真实存在；
+11. **生成物漂移校验归 `build.mjs --check`**，lint 只做"文件存在 + 带 `DO NOT EDIT` 头 + index.json 的 sha256 一致"这层弱校验——现行实现**从不校验 `agents/openai.yaml` 与 `AGENTS.md` 的内容**。CI 必须同时跑 lint 与 `build --check`，缺一不可；
+12. 术语一致性（`RemapEm` → `RemapEn`、架构章里的 `HPA` → `sPA`、`VM Exit` → `#VMEXIT`）——**新规则，现行实现没有**。必须带 `exceptFiles`，否则 `19-comparison-intel-arm-riscv.md` 里正当引用 Intel 术语会误报。
+
+> **复检结论**：上表 1–5、7、9、10 已在现行 `tools/lint.mjs` 中实现并对 Intel 生效（`node tools/lint.mjs intel-vt` → `lint clean — 22 chapter file(s), 314 bibliography entries, 2505 distinct claims`，零警告）；**6 与 8 名义上存在但实测为空转**；11 分属两个脚本且 lint 这半是弱的；12 尚不存在。票 01 必须先把 6/6b/8/11/12 修出来，否则本 spec 所说的"确定性拦截"只是纸面上的。
+>
+> 另外，`node tools/lint.mjs amd-virtualization` 当前报 **81 error / 495 warning**，但其中 **80 个 error 是串台**——`lint.mjs` 用仓库根的 *Intel* 题库去校验 AMD 的章节文件；**478 个 warning 是"条目从未被引用"**，因为 AMD 语料里**一条 `- **Claim.**` 行都没有**，所以规则 1–5、7 在 AMD 上不是失败、是**根本没运行**。不要把这个数字当成"AMD 侧的基线问题清单"。
 
 ### T3. 本仓既有测试先例
 
-`tools/lint.mjs`、`tools/build.mjs`、`eval/RUNNER.md` 是 `intel-vt` 重构时建立的第一套，**本次是它们第一次服务两个技能**。保持零依赖、可离线运行，不引入包管理器工作流。回归判据：泛化后 `node tools/lint.mjs intel-vt` 与 `node tools/build.mjs --check` 对 `intel-vt` 的结论不变。
+**先例比本 spec 初稿所记的完整得多（复检更正）。** `intel-vt` 的行为缝**已经建成并跑过**：`eval/questions.yaml` 有 **80 题**（lookup 24 / mechanism 24 / diagnosis 20 / trap 12）、`eval/README.md` 说明题型与覆盖、`eval/results/` 下有 6 份 2026-09-20 的实跑报告（`trap-smoke`、`trap-full`、`lookup`、`mechanism`、`diagnosis`、`SUMMARY`），并已驱动了两轮修复提交（`e130c44`、`efc64b2`）。本 spec 初稿写的"`eval/` 下只有 RUNNER.md"是过时快照——**AMD 的题库应当照抄这套结构与题型配比，而不是另起炉灶**。
+
+因此 `eval/` 的重组是**迁移而不是新建**，并且需要一个 spec 初稿里没有的 Intel 侧动作：`eval/questions.yaml` → `eval/intel-vt/questions.yaml`、`eval/README.md` → `eval/intel-vt/README.md`、`eval/results/*` → `eval/intel-vt/results/`。
+
+**这是整个重构里最危险的一次编辑。** `tools/lint.mjs` 用 `join(ROOT, 'eval', 'questions.yaml')` 硬编码了题库路径。迁移时若不同步改这一行，`existsSync` 返回 false，题库校验（重复 id、`chapter` 存在性、`required_citation` 锚点校验、题量 <80 警告）**整段被跳过，而 lint 依然打印 `lint clean`**——失败是静默的、向"更干净"的方向失败。
+
+保持零依赖、可离线运行，不引入包管理器工作流。回归判据见票 01，**且必须包含两个阳性对照**（只做 diff 对比证明不了任何东西，因为最危险的两种破坏都是静默失败）。
 
 ---
 

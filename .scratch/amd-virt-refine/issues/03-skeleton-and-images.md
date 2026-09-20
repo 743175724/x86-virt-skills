@@ -52,3 +52,42 @@ Spec: `.scratch/amd-virt-refine/spec.md` §D1, §D9, §D14
 - 每个 `Maps to:` 引用的文档编号在 CONVENTIONS §5 的已核验清单内，或按降级规则写成章/附录级。
 - `images-disposition.md` 覆盖全部 14 张，无"待定"。
 - `node tools/build.mjs` 能为 `amd-virtualization` 生成 `index.json`（此时章节正文为空，允许）。
+
+---
+
+## 复检补充
+
+### 1. 骨架必须带**编号小节**，否则章节级路由根本无法建立
+
+初稿的模板只有标题 + 中文速览 + `Maps to/Owns/Scope/See also` + 分隔线。但 `tools/lint.mjs` 解析路由锚点 `file.md §5.2` 时，是去匹配 `^#{2,4}\s+5\.2[\s.]` 形式的标题——**没有编号小节，票 16 的路由表建不出来，lint 规则 10 必然失败**。`intel-vt` 的 CONVENTIONS 明确要求 `## N.1 <Section>` 且"文件号与文件内 `## N.` 编号对齐"。
+
+模板补上：每章至少预置 `## N.1`…`## N.x` 的编号小节骨架，N = 文件号。
+
+### 2. 每章末尾预置 `## N.x Open items` 小节
+
+spec §D8 要求每章都有，但初稿的模板没有它，也没有任何 lint 规则检查。先在骨架里预置空节，作者填。
+
+### 3. 不再创建 `core-facts.md`
+
+复检裁决取消该文件（理由见 `recheck-findings.md` §3）。导航职责全部归 `00-quickref.md`。
+
+### 4. 图片处置：具体清单（初稿只给了政策）
+
+| PNG | 处置 | 理由 |
+|---|---|---|
+| `sec01_sev_key_slots.png` | **删** | 孤儿（从未被嵌入），且其数值是未决冲突 |
+| `sec03_vmcb_layout.png` | **删** | 图注自承"块高不代表字节数"——它就是顶替 D8 要求的偏移表的那张图 |
+| `sec03_exitcode_map.png` | **删** | 画的是退出码空间，而它编码了被勘误推翻的"退出码=位序"规则 |
+| `sec04_npt_vs_shadow.png` | **待判**（默认删） | 唯一带真实分源测量的图，但全是 Barcelona 代平台，且一条来源链是 AMD→AnandTech→CSDN；若保留必须迁到 `18` 并加"仅 2008–2009 平台"横幅 |
+| `sec05_avic_benefit.png` | **删** | 单一 T3 来源（Oracle 博客）、归一化单位、单平台单负载；两个数字改为带条件的 claim 行留在 `18` |
+| `sec05_avic_timeline.png` | **移入 `90`** | 纯时间线 |
+| `sec06_io_page_levels.png` | **删** | 把架构常量表（DTE `Mode` → 级数 → 默认页大小）画成图；`08`/`09` 必须给带位号的表，图无法被按位引用 |
+| `sec07_hugepage_tlb.png` | **删** | 纯算术（4 GiB ÷ 页大小），无测量，来源是营销页 |
+| `sec08_asid_keys_evolution.png` | **删** | 代际↔密钥槽映射是未决冲突；D14 禁止重画，所以错图无法修 |
+| `sec10_abi_timeline.png` | **移入 `90`** §2 | 固件/ABI 修订时间线 |
+| `sec11_attack_surface_timeline.png` | **删** | 画的是把 CVE-2024-25744 错挂到 SEV-SNP 的那张表——与勘误冲突 |
+| `sec12_kvm_sev_timeline.png` | **移入 `90`** §3 | 内核/QEMU/libvirt 版本落地时间线 |
+| `sec13_sev_gen_overhead.png` | **保留** → `18` 的服务器范围节 | 唯一四要素齐全的图（MASCOTS 2023 · EPYC 7763 Milan · 具名 benchmark · 2023），且区分了最坏界与实测 |
+| `sec14_snp_vs_tdx.png` | **有条件保留** → `18`/`19` | 四要素齐全，但它只呈现了一对已知互相矛盾的测量中的一侧——**只有在正文同时给出相矛盾的 Phoronix 结果时才能用** |
+
+净：删 8、移 3、留 2、待判 1。
