@@ -90,8 +90,8 @@ The two mechanisms are not alternatives on the same axis. `EVENTINJ` is an *unco
 ### 7.2.2 Interrupt shadows and the VINTR intercept
 
 - **Claim.** The x86 interrupt shadow is a single-instruction window in which interrupts are not recognized — the classic case being the instruction after an `STI` that raises `EFLAGS.IF` — and the VMCB `INTERRUPT_SHADOW` field records whether the guest is currently inside one. It is saved on `#VMEXIT` and loaded on VMRUN.  `[APM2 §15.21.5]` `[1]` `C:high` `V:durable`
-- **Claim.** A VMM that needs control at the moment the guest becomes able to take a virtual interrupt enables the **VINTR intercept**; the intercept fires just before the guest takes the virtual interrupt, with the interrupt still pending in the VMCB `V_IRQ` field.  `[APM2 §15.21.6]` `[1]` `C:high` `V:durable`
-- **Claim.** AMD states that VINTR is not required for ordinary fixed local-APIC interrupts and names its real uses as emulating ExtINT delivery mode — which TPR does not mask — and legacy PICs in auto-EOI mode. The intercept bit position and its exit code are owned by `03-intercepts.md` and `05-exit-decoding.md`.  `[APM2 §15.21.6]` `[1]` `C:high` `V:durable`
+- **Claim.** A VMM that needs control at the moment the guest becomes able to take a virtual interrupt enables the **VINTR intercept**; the intercept fires just before the guest takes the virtual interrupt, with the interrupt still pending in the VMCB `V_IRQ` field.  `[APM2 §15.13.5]` `[1]` `C:high` `V:durable`
+- **Claim.** AMD states that VINTR is not required for ordinary fixed local-APIC interrupts and names its real uses as emulating ExtINT delivery mode — which TPR does not mask — and legacy PICs in auto-EOI mode. The intercept bit position and its exit code are owned by `03-intercepts.md` and `05-exit-decoding.md`.  `[APM2 §15.13.5]` `[1]` `C:high` `V:durable`
 
 ### 7.2.3 NMI virtualization
 

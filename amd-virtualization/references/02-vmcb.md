@@ -329,7 +329,7 @@ in-memory descriptor, not a copy of it.
 
 - **Claim.** Segment registers are stored in the VMCB in a format similar to that used for SMM: base and limit are fully expanded, and **segment attributes are stored as 12-bit values formed by the concatenation of bits 55:52 and 47:40 of the original 64-bit in-memory segment descriptor**.  `[APM2 §15.5.1]` `[1]` `C:high` `V:durable`
 
-Concretely, with `d` the 64-bit descriptor, `attrib = ((d >> 52) & 0xF00) | ((d >> 40) & 0xFF)`:
+Concretely, with `d` the 64-bit descriptor, `attrib = ((d >> 44) & 0xF00) | ((d >> 40) & 0xFF)`:
 bits 3:0 of `attrib` are the descriptor Type field, bit 4 is S, bits 6:5 are DPL, bit 7 is P, bit 8
 is AVL, bit 9 is L, bit 10 is D/B and bit 11 is G. Going the other way, a hypervisor rebuilding a
 descriptor shifts bits 11:8 back to 55:52 and bits 7:0 back to 47:40.

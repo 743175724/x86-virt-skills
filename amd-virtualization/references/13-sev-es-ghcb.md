@@ -48,13 +48,13 @@ The VMSA is a 4 KiB page. Its lower part reuses the traditional VMCB save-state 
 | `0D0h` | qword | `EFER` | A |
 | `0E0h`–`138h` | qword | `PERF_CTL0`–`PERF_CTR5` | C |
 | `140h`/`148h`/`150h`/`158h` | qword | `XSS`, `CR4`, `CR3`, `CR0` | B/A |
-| `160h`/`168h` | qword | `DR7`, `DR6` | A/C |
-| `170h`/`178h` | qword | `RFLAGS`, `RIP` | C/A |
+| `160h`/`168h` | qword | `DR7`, `DR6` | C |
+| `170h`/`178h` | qword | `RFLAGS`, `RIP` | A |
 | `1D8h`/`1F8h` | qword | `RSP`, `RAX` | A |
-| `240h` | qword | `CR2` | B |
+| `240h` | qword | `CR2` | C |
 | `2E0h` | qword | `SPEC_CTRL` | A |
-| `2E8h`/`2ECh` | dword | `PKRU`, `TSC_AUX` | A/B |
-| `2F0h`/`2F8h` | qword | `GUEST_TSC_SCALE`, `GUEST_TSC_OFFSET` | B |
+| `2E8h`/`2ECh` | dword | `PKRU`, `TSC_AUX` | B |
+| `2F0h`/`2F8h` | qword | `GUEST_TSC_SCALE`, `GUEST_TSC_OFFSET` | – |
 | `300h` | qword | `REG_PROT_NONCE` | – |
 | `308h`–`378h` | qword | `RCX`, `RDX`, `RBX`, `SECURE_AVIC_CTL`, `RBP`, `RSI`, `RDI`, `R8`–`R15` | – / B |
 | `390h`/`398h`/`3A0h`/`3A8h` | qword | `GUEST_EXITINFO1`, `GUEST_EXITINFO2`, `GUEST_EXITINTINFO`, `GUEST_NRIP` | – |

@@ -98,7 +98,7 @@ An intercept is a bit in the VMCB control area that turns a guest event into a `
 
 ### How a bit maps to an exit code
 
-- **Claim.** The mapping is segmented rather than positional — CR reads at 00h, CR writes at 10h, DR at 20h/30h, exceptions at 40h, **vector 3 at 60h + bit, vector 4 at 80h + bit and vector 5 at A0h + bit** — which is why VMRUN (vector 4, bit 0) is 80h and the bus-lock exit (vector 5, bit 5) is A5h. The full enumeration is owned by `05-exit-decoding.md`.  `[APM2 App.C]` `[1]` `C:high` `V:durable`
+- **Claim.** The mapping is **positional, and the segmentation is its consequence**: Appendix C states that "intercept exit codes are equal to the bit position of the corresponding flag in the VMCB's intercept vector", which holds when the intercept words at `000h`–`014h` are read as one contiguous bit array, so `code = 32 × vector + bit`. Laid out that way the space looks segmented — CR reads at 00h, CR writes at 10h, DR at 20h/30h, exceptions at 40h, **vector 3 at 60h + bit, vector 4 at 80h + bit and vector 5 at A0h + bit** — which is why VMRUN (vector 4, bit 0) is 80h and the bus-lock exit (vector 5, bit 5) is A5h. The full enumeration is owned by `05-exit-decoding.md`.  `[APM2 App.C]` `[1]` `C:high` `V:durable`
 
 ## 3.2 Intercept ordering and priority
 

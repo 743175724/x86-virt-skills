@@ -328,7 +328,7 @@ this chapter follows the register definition in Chapter 3 over the prose in Chap
 - `Vector` in the `GuestMode=1` IRTE is labelled `Vector[8:0]` in Table 23 but occupies the 8-bit field 71:64 in Figure 18. Nine bits do not fit. The delivery algorithm only ever uses `IRTE[Vector] modulo 32` and `IRTE[Vector] / 32`, so the arithmetic is unaffected, but the label cannot be taken literally.
 - §2.7.1 says GA logging is enabled by `MMIO Offset 0018h[GAEn]`, while the restart procedure in §2.7.4 and the Chapter 3 register definition both name a separate `MMIO Offset 0018h[GALogEn]` bit. Treat `GAEn` as the guest-virtual-APIC enable and `GALogEn` as the log enable.
 - The GA log status bit is called `GAInt` in §2.7.1 and `GALogInt` in the `GAIntEn` register definition; both refer to `MMIO Offset 2020h`.
-- §2.8 places `MsiNumGA` at `Capability Offset 10h`; the register itself is defined in IOMMU Miscellaneous Information Register 1 at `Capability Offset 14h`, bits 4:0, which is also what §2.7.1 and the `GAIntEn` definition say.
+- §3.1 places `MsiNumGA` at `Capability Offset 10h`; the register itself is defined in IOMMU Miscellaneous Information Register 1 at `Capability Offset 14h`, bits 4:0, which is also what §2.7.1 and the `GAIntEn` definition say.
 - §2.10.2 writes the guest MMIO window as "offsets 2000h and 2FFFFh"; Figure 82 and the accompanying "aligned 4KB section" both give `2000h`–`2FFFh`.
 - Table 38 assigns dword `+04` bits 27:20 to Reserved and says nothing about 19:0, while Figure 48 shows the whole of `+04` below the opcode as reserved.
 

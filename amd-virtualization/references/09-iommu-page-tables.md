@@ -394,7 +394,7 @@ the platform-side story — Kernel DMA Protection, device assignment, what VBS r
 
 ## 9.7 Open items
 
-1. **`INSERT_GUEST_EVENT` has no field-definition table.** §2.4.9 gives a figure and prose but, uniquely among the ten commands, no bits-and-description table. The opcode is 09h and the command carries `GuestID[15:0]`, but the dword and bit offsets of that field cannot be determined from the text and are deliberately not stated in §9.4.
+1. **`INSERT_GUEST_EVENT` has no field-definition table**, uniquely among the ten commands — §2.4.9 gives a figure and prose only. The figure is nonetheless unambiguous and reproduces identically under both `-layout` and `-raw`: opcode **09h at `+04` bits 31:28** and **`GuestID[15:0]` at `+04` bits 15:0**, which §9.4 states. What remains genuinely absent is a per-field description table of the kind every other command has, so the *semantics* of the remaining payload bytes are undocumented.
 2. **`RESET_VMMIO`'s opcode field is printed as five bits.** Its field table lists "31:27 +04 = 0Ah" and "26:0 +04 Reserved", which both overlaps at bit 27 and contradicts the 4-bit opcode of the generic command format in §2.4. §9.4 follows the generic format.
 3. **The IVMD block has two conflicting byte maps.** Table 111 places the PCI Segment Group at bytes 8–9 and Reserved at 10–15; Table 112 lists Reserved at offset 8 with size 8 *and* PCI Segment Group at offset 8 with size 2. §9.5 follows Table 111.
 4. **Type 40h's Attributes dword double-assigns bit 0.** Table 102 lists "12:0 Reserved" and "0 HATDis" in the same table, where the equivalent Table 98 for type 11h correctly reads "12:1 Reserved".

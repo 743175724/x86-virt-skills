@@ -303,7 +303,7 @@ they belong on the same page: a VMM re-injects a lost event by copying the secon
 
 - **Claim.** The `EVENTINJ` layout above is the field definition, and its encoding matches that of `EXITINTINFO` field for field.  `[APM2 §15.20]` `[APM2 Figure 15-5]` `[1]` `C:high` `V:durable`
 - **Claim.** `TYPE` has **four** defined values — 0, 2, 3 and 4 — and value 1 is not among them; values not listed are unused and reserved.  `[APM2 Table 15-11]` `[1]` `C:high` `V:durable`
-- **Claim.** Injected events are treated as though they had occurred normally in the guest, including being recorded in `EXITINTINFO`, with five documented departures.  `[APM2 §15.20]` `[1]` `C:high` `V:durable`
+- **Claim.** Injected events are treated as though they had occurred normally in the guest, including being recorded in `EXITINTINFO`, with six documented departures.  `[APM2 §15.20]` `[1]` `C:high` `V:durable`
 - **Claim.** Departure one: injected events are not subject to intercept checks, although secondary exceptions raised during delivery of an injected event *are* subject to exception intercepts.  `[APM2 §15.20]` `[1]` `C:high` `V:durable`
 - **Claim.** Departure two: an injected NMI does not block delivery of further NMIs.  `[APM2 §15.20]` `[1]` `C:high` `V:durable`
 - **Claim.** Departure three: attempting to inject an event that is impossible for the guest mode — the manual's example is a `#BR` while the guest is in 64-bit mode — makes the injection fail with no guest instruction executed, and VMRUN exits immediately with `VMEXIT_INVALID`.  `[APM2 §15.20]` `[1]` `C:high` `V:durable`

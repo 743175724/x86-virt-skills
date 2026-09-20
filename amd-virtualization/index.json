@@ -52,8 +52,8 @@
         "2.6 Clean bits versus nested paging and ASID",
         "2.7 Open items"
       ],
-      "bytes": 47170,
-      "sha256": "27809d288e02493e6049ce56a2d98b63f80abca034d8b5ca2de294fb4c43fa9f"
+      "bytes": 47625,
+      "sha256": "a56ffd7f02a8e0cc86b67aec956cb67659f5cb2cd6583b1afee62bc2b1fb5dca"
     },
     {
       "path": "references/03-intercepts.md",
@@ -74,8 +74,8 @@
         "3.11 SMI interception",
         "3.12 Open items"
       ],
-      "bytes": 54459,
-      "sha256": "46f17858620da6c76993b59ad414ab7e0159b20f8d51909f54e12be06e8b57b5"
+      "bytes": 55106,
+      "sha256": "23649b6af6308f792ab2167d5314489009fc75667e1ed8c5750da62f7096e37f"
     },
     {
       "path": "references/04-world-switch.md",
@@ -93,8 +93,8 @@
         "4.8 Instruction reference: encodings, operands and exceptions",
         "4.9 Open items"
       ],
-      "bytes": 37646,
-      "sha256": "e24077363f67febf1a2a72a7c52ac392662b580aca6db23d172c70e68f0ca6a4"
+      "bytes": 37970,
+      "sha256": "bdb73afbe4d451f9ede709fd66eb148d50d773aa6645bef0f7c5bdfc46a277e0"
     },
     {
       "path": "references/05-exit-decoding.md",
@@ -109,8 +109,8 @@
         "5.5 Event injection and re-injection",
         "5.6 Open items"
       ],
-      "bytes": 37921,
-      "sha256": "e65238e675847c85855de897a2f6cc31dd62f5654d2ad04208ab90df52b06e1a"
+      "bytes": 38287,
+      "sha256": "42cd1d7a6aa4a3374ca1ff786efa829e784e5e4f02595629f00117549aa59b1f"
     },
     {
       "path": "references/06-nested-paging.md",
@@ -149,8 +149,8 @@
         "7.8 AVIC exits and their payloads",
         "7.9 Open items"
       ],
-      "bytes": 49082,
-      "sha256": "22d6b833a23bc93bd918236b3805894c9b04c90708d031e984d90234dfb72bee"
+      "bytes": 49425,
+      "sha256": "7ad45e6c9289afc65122b5055eb7c74395b76ec95666dc55ad1fe9507fbecff3"
     },
     {
       "path": "references/08-iommu-architecture.md",
@@ -168,8 +168,8 @@
         "8.8 Log entry formats: event, PPR and GA",
         "8.9 Open items"
       ],
-      "bytes": 50602,
-      "sha256": "d783a316d384d4f27bfd9e32466ad6bf4938444dca8e5e6c104612f0d9c12600"
+      "bytes": 51400,
+      "sha256": "0766e98a87e5d2ca7b54efeb1de566391dd01b5b6e2c4bac0c650a0da64a4950"
     },
     {
       "path": "references/09-iommu-page-tables.md",
@@ -185,8 +185,8 @@
         "9.6 Decoding an IO_PAGE_FAULT end to end",
         "9.7 Open items"
       ],
-      "bytes": 48857,
-      "sha256": "4df905bdf9a47245aef958a54e735dc9d9d07e262b56773b88860a42cb94f100"
+      "bytes": 49418,
+      "sha256": "26d0bc2b474c1cec03be9a3d102c01ca3f80d2eda62842e21863df7c54964161"
     },
     {
       "path": "references/10-iommu-interrupt-remapping.md",
@@ -204,7 +204,7 @@
         "10.8 Open items"
       ],
       "bytes": 40846,
-      "sha256": "c50923c803f5cb61e2f096b68db2be3b7ea4dda32efaca15ed1eb874b3fdc038"
+      "sha256": "c804de9927f704500d79d4f11b6ac1e79afb896aa796356fcde3a39175250aa8"
     },
     {
       "path": "references/11-memory-encryption.md",
@@ -262,8 +262,8 @@
         "13.8 Booting application processors",
         "13.9 Open items"
       ],
-      "bytes": 56290,
-      "sha256": "c9997d47e0600cf9c81a0bc3ca5398293f022201d37fe710d696cef2c0719528"
+      "bytes": 56688,
+      "sha256": "47ebd4294a28345ba779550b87f04b29c8330c30234ea8eab65f0cca7ba3ae31"
     },
     {
       "path": "references/14-sev-snp.md",

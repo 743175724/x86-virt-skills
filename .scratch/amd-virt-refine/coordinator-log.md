@@ -158,3 +158,34 @@ lint 未报错，是 `isCorrection` 启发式在正确工作。**语料必须能
 `14` 章另外**主动声明了 3 项无法核实**（Pub 57230 的 KDS 端点、固件的 CPUID 可接受性策略、RMP 条目的原始位布局——AMD 只发布字段列表），未猜测。
 
 `08` 章发现**规范自身的 Table 42 已过时**：把 `EVENT_COUNTER_ZERO` 印成 `1001b`（与 `INVALID_PPR_REQUEST` 撞码），并把 `1010b–1111b` 标为保留，而 §2.5.11–§2.5.15 明明分配了 `1010b–1110b`。改用逐事件图解码并记入 Open items——**报告规范的自相矛盾，不替它选边**。
+
+---
+
+## 交叉核验结果（2026-09-21）
+
+核验 agent **不是写这些章的人**，任务是找错不是辩护，并被要求**必须报告分母**。
+
+| 批次 | 查核 claims | WRONG | 错误率 |
+|---|---|---|---|
+| `01`–`07` | 682 | 5（+1 散文） | **0.7%** |
+| `08`–`14` | 819 | 4 | **0.5%** |
+
+对照 Intel 侧：对着 PDF 写的章节 1–3%，凭模型知识写的 7–13%。**本次全部对着 PDF 写，落在 1% 以下。**
+
+### `pdftotext` 列错位：第三次出现，也是最隐蔽的一次
+
+`13-sev-es-ghcb.md` 的 VMSA Swap Type 列**整体下移一行**——DR7 应为 C 写成 A、RFLAGS 应为 A 写成 C、CR2 应为 C 写成 B、PKRU 应为 B 写成 A、`GUEST_TSC_SCALE/OFFSET` 应为"–"写成 B。
+
+**每个错值都等于上一行的值**，这是列错位的指纹。偏移与字段名全对。这类错误不逐格比对 PDF 无法发现：表看上去完全正常。
+
+累计四次同类事故（Table 15-7 优先级列、GHCB Table 4、GHCB Table 3 偏移列、Table B-4 swap type 列），四次都发生在**宽表**上。结论已写进 `AGENT-BRIEF.md` §2.1，但值得强调：**表格值必须回 PDF 页确认，`-raw` 与 `-layout` 交叉比对只是次优替代。**
+
+### 我没有照改的一条
+
+核验报告称 `06-nested-paging.md` 的 ASID-零锚点也错。查证：手册**两处**都有——§15.5 的 VMRUN 非法状态组合列表有 "ASID is equal to zero"，§15.25.1 有 "ASID value of zero is reserved for the host"。`06` 引的是前者，**成立**；只有 `04:120` 锚到 §15.16（TLB Control，该节无此条件）是真错。
+
+**核验也会有假阳性，逐条复核不能省。**
+
+### 语料内部自相矛盾（已修）
+
+`03-intercepts.md` 写"映射是分段的而非位置性的"，而 App.C 原文是 "intercept exit codes are **equal to the bit position** of the corresponding flag"。`05-exit-decoding.md` 写对了。有意思的是 `errata.md` E06 在此前的修订里**已经预判了这个坑**（"不要过度更正这一条"），只是 `03` 的正文没跟上。
