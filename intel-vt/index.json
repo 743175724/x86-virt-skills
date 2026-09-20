@@ -241,8 +241,8 @@
         "10.8 Special request handling in Chapter 3",
         "10.9 Pitfalls"
       ],
-      "bytes": 48052,
-      "sha256": "e39f4bdca6581fe1a0c5ee2697b7b5965b782a91eec327b89a8261f7cbeaac22"
+      "bytes": 48231,
+      "sha256": "247d127a07166c78904b5ac2cf0804968ac318eed0451e351b72f2b75510c742"
     },
     {
       "path": "references/11-vtd-interrupt-remapping.md",
@@ -263,8 +263,8 @@
         "11.11 Programming the interrupt sources",
         "11.12 Pitfalls"
       ],
-      "bytes": 36039,
-      "sha256": "46d864d2533c96ce6155e2b55299b37b8284bfd459b34b23be06ffe1d0f6ec0f"
+      "bytes": 36040,
+      "sha256": "cc3b14815dc75f96ef7e9d72b2aff0ed0c762279bc34469e2cc7e7d8d1734d68"
     },
     {
       "path": "references/12-vtd-faults-bios-siov.md",
@@ -282,8 +282,8 @@
         "12.8 Security considerations",
         "12.9 Pitfalls"
       ],
-      "bytes": 54753,
-      "sha256": "347325dd0a166e1c38a03e325bc2e7c2d7cc13de8fbe1720a898c24084cce83d"
+      "bytes": 54804,
+      "sha256": "087704a24115bd6d84e29a4dc43ac097e07c8689cb1d2a344e5dafc29f338e1c"
     },
     {
       "path": "references/13-tdx.md",
@@ -314,8 +314,8 @@
         "13.21 Known vulnerabilities and public security research",
         "13.22 What this chapter deliberately does not state"
       ],
-      "bytes": 100385,
-      "sha256": "16936a76a5f31b8c4cf5d8f359a78c8fca268f4f1672e7668c632be0b9ff958a"
+      "bytes": 100438,
+      "sha256": "4e2a04b943b678ae475c46a2f39b27da64d92e2f36b71ba052d61bb5356050ad"
     },
     {
       "path": "references/14-nested-virtualization.md",

@@ -193,7 +193,7 @@ Leaf numbers below are from the SEAMCALL leaf-number table in the ABI specificat
 - **Claim.** `TDH.SERVTD.BIND` (leaf 48) binds a service TD to a target TD and returns a binding handle; `TDH.SERVTD.PREBIND` (49) pre-binds one before the target TD is finalized; `TDH.SERVTD.REBIND` rebinds an existing binding.  `[TDX-ABI §5.4.62]` `[TDX-ABI §5.4.64]` `[TDX-ABI §5.4.63]` `[TDX-BASE §13.2]` `[12][11]` `C:high` `V:durable`
 - **Claim.** `TDH.INTR.CONFIG` (leaf 62) allocates and initializes interrupt-related TD-scope metadata for one specific L1 or L2 VM within a TD.  `[TDX-ABI §5.4.22]` `[12]` `C:medium` `V:durable`
 - **Claim.** Migration leaves occupy the ranges 64–75 (`TDH.EXPORT.*`) and 80–87 (`TDH.IMPORT.*`), with `TDH.MIG.SETUP`, `TDH.MIG.SETUP.ABORT` and `TDH.MIG.STREAM.CREATE` defined alongside them; their semantics are specified in the TD Migration documents rather than in the base ABI text.  `[TDX-ABI §5.4.1]` `[TDX-ABI §5.4.2]` `[12]` `C:high` `V:durable`
-- **Claim.** `TDH.MEM.SCAN.RANGE` (92), `TDH.MEM.SCAN.COMP` (93), `TDH.MEM.SCAN.CONFIG` (94) and `TDH.MEM.SCAN.RESET` (95) form a memory-scan family, and leaf numbers at and above 96 are used by TDX Connect functions such as `TDH.MMIO.MAP`, `TDH.IQ.INV.REQUEST`, `TDH.MEM.SHARED.SEPT.WR` and `TDH.TDI.MT.*`.  `[TDX-ABI §5.4.1]` `[12]` `C:medium` `V:durable`
+- **Claim.** `TDH.MEM.SCAN.RANGE` (92), `TDH.MEM.SCAN.COMP` (93), `TDH.MEM.SCAN.CONFIG` (94) and `TDH.MEM.SCAN.RESET` (95) form a memory-scan family, leaves 96 and 97 are `TDH.MIG.STREAM.CREATE` and `TDH.SERVTD.REBIND`, and the **TDX Connect** leaves begin at **128** with `TDH.IOMMU.SETUP` — `TDH.TDI.*` occupy 136–141 and 164–166, `TDH.MMIO.*` 154–160.  `[TDX-ABI §5.4]` `[12]` `C:medium` `V:durable`
 
 ---
 

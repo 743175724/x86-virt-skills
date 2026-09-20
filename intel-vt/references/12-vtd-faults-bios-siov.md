@@ -30,9 +30,9 @@ something, or not?
 ## 12.2 Primary fault logging
 
 Rev 5.20 defines exactly one non-recoverable fault logging method. Material describing an
-"advanced fault logging" mode with a log buffer in memory is describing an older revision: the
-GCMD_REG bits that drove it (29 and 28) and the CAP_REG capability bit (3) are now reserved or
-marked Deprecated — see `10-vtd-dma-remapping.md` §10.5.1 and §10.5.3.
+"advanced fault logging" mode with a log buffer in memory is describing a revision older than 4.0,
+where it was removed: the GCMD_REG bits that drove it (29 and 28) are reserved, CAP_REG bit 3 is
+plain Reserved (RsvdZ) and bit 23 is the one marked Deprecated — see `10-vtd-dma-remapping.md` §10.5.1 and §10.5.3.
 
 - **Claim.** The remapping architecture defines Primary Fault Logging as the default fault logging method that must be supported by all implementations of the architecture.  `[VT-d 5.20 §7.2]` `[8]` `C:high` `V:durable`
 - **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is **CAP_REG.NFR + 1** (the NFR field reports N, not the count — a ring walk driven by NFR alone is short by one register) and whose base is **register-base + 16 × CAP_REG.FRO**, with FSTS_REG.FRI giving the index to start from; you cannot walk the fault ring without both → register layout in `10-vtd-dma-remapping.md` §10.5.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`

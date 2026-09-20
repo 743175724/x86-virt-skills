@@ -342,7 +342,7 @@ capability registers.
 | 2:0 | ND — Number of domains supported |
 
 - **Claim.** In CAP_REG, ND is bits 2:0, RWBF bit 4, PLMR bit 5, PHMR bit 6, CM bit 7, SAGAW bits 12:8, MGAW bits 21:16, ZLR bit 22, FRO bits 33:24, SSLPS bits 37:34, PSI bit 39, NFR bits 47:40, MAMV bits 53:48, DWD bit 54, DRD bit 55, FS1GP bit 56, PI bit 59, FS5LP bit 60, ECMDS bit 61, ESIRTPS bit 62 and ESRTPS bit 63.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
-- **Claim.** CAP_REG bits 3 and 23 are marked Deprecated in Rev 5.20 and must be reported as 0 for backward compatibility.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
+- **Claim.** In Rev 5.20 CAP_REG bit 3 is plain **Reserved (RsvdZ)** while **only bit 23 carries the DEP "Deprecated" marking**; both read as 0. The distinction matters when reading the register table — bit 3 lost the advanced-fault-logging capability outright rather than being deprecated in place.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** CAP_REG.ND encodes domain-id width: 000b = 4-bit (16 domains), 001b = 6-bit (64), 010b = 8-bit (256), 011b = 10-bit (1024), 100b = 12-bit (4K).  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** The Maximum Guest Address Width is computed as N+1 where N is the value in CAP_REG.MGAW; an implementation supporting 48-bit MGAW reports 47 (101111b).  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`
 - **Claim.** CAP_REG.SSLPS bit 0 indicates support for a 21-bit offset to page frame (2 MB) and bit 1 a 30-bit offset (1 GB); bits 2 and 3 are reserved.  `[VT-d 5.20 §11.4.2]` `[8]` `C:high` `V:durable`

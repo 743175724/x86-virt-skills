@@ -266,10 +266,10 @@ treated as an Unsupported Request.
 | 22h | The Present (P) field in the IRTE is Clear | Yes |
 | 23h | Hardware access to the interrupt-remapping table through IRTA_REG resulted in error | No |
 | 24h | Reserved fields not zero in an IRTE with P Set, including wrongly programmed conditional reserved fields | Yes |
-| 25h | A Compatibility-format interrupt request was blocked (EIME Set, or CFIS Clear) | Yes |
+| 25h | A Compatibility-format interrupt request was blocked (EIME Set, or CFIS Clear) | No |
 | 26h | Source-id verification failure against SID, SVT and SQ in an IRTE with P Set | Yes |
-| 27h | Hardware access to the posted descriptor via the PDAH/PDAL fields resulted in error | No |
-| 28h | Reserved fields not zero in the posted descriptor | No |
+| 27h | Hardware access to the posted descriptor via the PDAH/PDAL fields resulted in error | Yes |
+| 28h | Reserved fields not zero in the posted descriptor | Yes |
 | 29h | An untranslated request-without-PASID to FEEx_xxxxh that does not meet the requirements of a valid interrupt | No |
 | 2Ah | EIME is 0 in IRTA_REG on an implementation reporting EIMER Set in ECAP_REG | — |
 | 2Bh | An MSI request arrived while Interrupt Remapping is disabled on hardware reporting IRREQ Set in ECAP_REG | — |
