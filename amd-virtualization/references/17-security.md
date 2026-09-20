@@ -273,7 +273,7 @@ AMD has no documentation-errata channel, and its only public *silicon* errata do
 EPYC. That asymmetry decides how a feature may be tested for.
 
 - **Claim.** AMD publishes no equivalent of Intel's "SDM Documentation Changes": corrections to the APM are folded silently into the next revision and recorded only in the volume's own Revision History table.  `[no-spec]` `[1]` `C:high` `V:durable`
-- **Claim.** The closest thing to an errata channel is the per-family Revision Guide, and **every public one is for EPYC**: 55449 and 56323 (Family 17h), 57095 (Family 19h Models 10h–1Fh, Rev 1.05, 2025-11), 57926 (19h A0h), 58251 (Family 1Ah Models 00h–0Fh, Rev 1.30, 2025-07) and 58730 (1Ah 10h–1Fh). **Client Ryzen — Vermeer, Raphael, Phoenix, Strix — has no public revision guide and no public PPR**, so a client erratum claim must say that no AMD document records it rather than cite one that does not exist.  `[RevGuide 57095 Ch.1]` `[25][27]` `C:high` `V:durable`
+- **Claim.** The closest thing to an errata channel is the per-family Revision Guide, and **every public one is for EPYC**: 55449 and 56323 (Family 17h), 57095 (Family 19h Models 10h–1Fh, Rev 1.05, 2025-11), 57926 (19h A0h), 58251 (Family 1Ah Models 00h–0Fh, Rev 1.30, 2025-07) and 58730 (1Ah 10h–1Fh). **Client Ryzen — Vermeer, Raphael, Phoenix, Strix — has no public revision guide and no public PPR**, so a client erratum claim must say that no AMD document records it rather than cite one that does not exist.  `[RevGuide 57095 p.5]` `[25][27]` `C:high` `V:durable`
 
 ### 17.7.1 The erratum process, as AMD describes it
 
@@ -290,7 +290,7 @@ why a workaround must be conditional rather than permanent.
 - **Claim.** `OSVW MSR0` holds `OSVW_ID_Length` in bits 15:0, and the status vector is read as `MSR address = OSVW_MSR0 + 1 + floor(OSVW_ID / 64)`, bit `OSVW_ID mod 64`; a status bit of 1 means "hardware contains the erratum, apply the workaround" and 0 means "hardware has corrected it — if a workaround is installed, it must be disabled".  `[APM2 App.E]` `[1]` `C:high` `V:durable`
 - **Claim.** The fallback rule is explicit and is the only place where model-number inference is sanctioned: if an erratum's OSVW ID is greater than or equal to `OSVW_ID_Length`, the running firmware does not know about that erratum and the OS must compare the processor model ID against the starting model AMD supplied.  `[APM2 App.E]` `[1]` `C:high` `V:durable`
 - **Claim.** The OSVW MSRs are read-only to the operating system — "the OS should never write into these registers" — while platform firmware may write them, which is why a firmware update can retire a workaround without any OS change.  `[APM2 App.E]` `[1]` `C:high` `V:durable`
-- **Claim.** The Revision Guides pin the value: for Family 19h Models 10h–1Fh, "system software shall program the `OSVW_ID_Length` to 0005h prior to hand-off to the OS", with `OSVW_ID_Length` in MSR C001_0140h and the status vector in C001_0141h.  `[RevGuide 57095 §2.1]` `[27]` `C:medium` `V:durable`
+- **Claim.** The Revision Guides pin the value: for Family 19h Models 10h–1Fh, "system software shall program the `OSVW_ID_Length` to 0005h prior to hand-off to the OS", with `OSVW_ID_Length` in MSR C001_0140h and the status vector in C001_0141h.  `[RevGuide 57095 p.8]` `[27]` `C:medium` `V:durable`
 
 ### 17.7.3 Worked examples, and why per-bit probing is the only safe rule
 

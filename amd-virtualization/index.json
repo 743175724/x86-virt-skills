@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 58971,
-      "sha256": "e80781d2120792cd2b615dee1373211160fc200441fffbf685ef1f06c0defb7a"
+      "bytes": 58968,
+      "sha256": "f5571b4e01449fb886dabbd46e23a025bb7f59edfe1fa8cb65c897e80fa7225b"
     },
     {
       "path": "references/18-performance.md",

@@ -57,7 +57,7 @@
         "re": "^NP-WP (§[0-9]+(\\.[0-9]+)*|p\\.[0-9]+)$"
       },
       {
-        "re": "^RevGuide [0-9]{5} (erratum [0-9]{3,4}|§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$"
+        "re": "^RevGuide [0-9]{5} (erratum [0-9]{3,4}|p\\.[0-9]+)$"
       },
       {
         "re": "^PPR [0-9]{5}-[A-Z0-9]+ (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+)$"
@@ -66,7 +66,7 @@
         "re": "^AMD-SB-[0-9]{4}$"
       }
     ],
-    "$comment_revguide": "AMD Revision Guides are the ONLY public AMD errata documents and are Tier-1, but §2 originally defined no anchor shape for them. A ch07 author found two real AVIC errata (1458, 1579) and correctly refused to cite them rather than invent a shape. A Tier-1 source with no citable form is a rule that cannot be satisfied honestly. Client Ryzen still has no public revision guide - do not fabricate one.",
+    "$comment_revguide": "AMD Revision Guides are the only public AMD errata documents and are Tier-1, but the anchor table originally had no shape for them at all - a ch07 author found two real AVIC errata and correctly refused to cite them rather than invent a shape. The first version of this rule allowed section and chapter forms; that was a mistake and it immediately produced a fabricated [RevGuide 57095 section 2.1]. These documents have NO numbered sections and NO numbered chapters: the bookmark tree is Overview / Conventions / Product Errata / cross-reference tables, by title, with errata identified by number. So the only legal forms are 'erratum <n>' and 'p.<n>'. Client Ryzen still has no public revision guide - do not fabricate one.",
     "$comment_memwp": "AMD memory-encryption white paper, pub 70363 (Kaplan/Powell/Woller). Added 2026-09-21: the APM does not contain the string TSME anywhere, so this paper is the only substantive source for it, and 8 of chapter 11's [no-spec] claims existed purely because no anchor shape could cite it. Second time the grammar table was found incomplete (RevGuide was the first) - a Tier-1/2 source with no citable form is a rule that cannot be satisfied honestly. Non-normative: cite by page, and never let it outrank the APM."
   },
   "$comment_offSpec": "Subjects the AMD manuals do not document. A Windows or CVE claim anchored only to the APM is citation filler — the section resolves, but to an unrelated subject.",
