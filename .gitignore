@@ -1,3 +1,6 @@
 # Installed skill links (recreate with: node tools/install.mjs)
 .agents/skills/
 .claude/skills/
+
+# Pre-refactor snapshots, superseded by the tracked sources
+*.zip
