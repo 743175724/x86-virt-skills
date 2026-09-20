@@ -1,0 +1,1267 @@
+# amd-virtualization golden evaluation set
+#
+# 80 questions.  Scoring protocol: eval/RUNNER.md
+#   lookup     24  (00 01 02 03 05 06 07 08 10 11 12 13 14)
+#   mechanism  24  (02 03 04 05 06 07 09 10 11 13 14 15 19)
+#   diagnosis  20  (01 05 06 07 09 10 12 13 14 16 17 18 90) - eight of them Windows
+#   trap       12  (one per high-value erratum - all must be present)
+#
+# Every must_include item is verifiable against the chapter named in `chapter`.
+# Every required_citation is an anchor that appears verbatim in that chapter, or,
+# where the corpus deliberately carries no AMD anchor - Windows behaviour, CVEs,
+# measurements - the Tier-2 source the chapter actually cites.  Demanding an APM
+# section for those would fail a correct answer; `16-windows-platform.md` and
+# `90-dated-landscape.md` carry none at all, and `18-performance.md` carries one.
+#
+# `must_not_include` strings are written in assertion form.  An answer that names
+# a misconception in order to refute it is a pass - see RUNNER.md "Scoring
+# honestly".  Nine questions have an honest answer of "the knowledge base does
+# not have this figure" or "the sources disagree"; their expected refusal is in
+# must_include.
+
+# ===========================================================================
+# LOOKUP  (24)
+# ===========================================================================
+
+- id: amd-document-set
+  chapter: 00-quickref.md
+  type: lookup
+  question: "Which AMD publications does this knowledge base treat as normative, at which revisions, and what are the citation traps I should know before I go looking for a section number?"
+  must_include:
+    - "24593 is APM Vol.2, System Programming, Rev 3.45 (2026-07), and SVM is Chapter 15"
+    - "24594 is APM Vol.3, General-Purpose and System Instructions, Rev 3.38 (2026-07)"
+    - "48882 is the AMD I/O Virtualization Technology (IOMMU) Specification, Rev 3.11 (2026-04)"
+    - "56860 is the SEV-SNP Firmware ABI Specification, Rev 1.59 (2026-08), and 56421 is the GHCB Standardization, Rev 2.04 (2025-01)"
+    - "55766 is the Secure Encrypted Virtualization API, Rev 3.24 (2020-04), and it covers SEV and SEV-ES only"
+    - "APM Vol.3 Chapter 4 is alphabetical and has page numbers, not subsection numbers, so an instruction is cited by mnemonic - `[APM3 §4.7.2 VMRUN]` is invented"
+    - "the IOMMU specification has five chapters and no appendices, so `[IOMMU 3.11 App.x]` is always wrong; IVRS is §5.2"
+    - "there is no public PPR or revision guide for client Ryzen, so a claim about a client part says so rather than citing a document that does not exist"
+  required_citation: "00-quickref.md §0.1"
+  notes: "Quickref section 0.1, including the 'Three traps worth knowing' list. This question tests whether the agent can cite AMD correctly at all; every other citation in the set depends on it. 70363 (memory encryption) and 70366 (SEV-SNP) are non-normative white papers - a bonus."
+
+- id: vm-cr-msr-layout
+  chapter: 01-svm-intro.md
+  type: lookup
+  question: "What is the address of the `VM_CR` MSR and what does each of its defined bits do?"
+  must_include:
+    - "`VM_CR` is MSR `C001_0114h`"
+    - "bit 0 `DPD` disables the external hardware debug port and certain internal debug features"
+    - "bit 1 `R_INIT` converts non-intercepted INIT signals into an `#SX` exception"
+    - "bit 2 `DIS_A20M` disables A20 masking"
+    - "bit 3 `LOCK` - writes to `LOCK` and `SVMDIS` are silently ignored while it is set"
+    - "bit 4 `SVMDIS` - writes to `EFER` treat `SVME` as MBZ while it is set"
+    - "bits 63:5 are reserved, MBZ"
+  required_citation: "APM2 Figure 15-27"
+  notes: "Chapter 01 section 1.4. Bonus: once set, `LOCK` can only be cleared through the `SVM_KEY` MSR and is not affected by INIT or SKINIT; `SVMDIS` does not stop CPUID reporting that SVM is available."
+
+- id: vm-hsave-pa-rules
+  chapter: 01-svm-intro.md
+  type: lookup
+  question: "What is `VM_HSAVE_PA`, what are the rules for writing it, and what may I assume about the memory it points at?"
+  must_include:
+    - "`VM_HSAVE_PA` is MSR `C001_0117h`"
+    - "it holds the physical address of a 4 KB block where VMRUN saves host state and from which `#VMEXIT` reloads it"
+    - "the VMM must set it up before the first VMRUN"
+    - "writing it causes a `#GP` if any of the low 12 bits are non-zero, or if the address is at or above the maximum supported physical address for the implementation"
+    - "implementations may store only part or none of the host state there and may keep some or all of it in hidden on-chip storage"
+    - "so software must not rely on the format or contents of the host save area, and must not try to change host state by modifying it"
+  required_citation: "APM2 §15.30.4"
+  notes: "Chapter 01 section 1.4; chapter 04 section 4.1 repeats the opacity contract anchored `[APM2 §15.5.1]`. An answer that offers a layout for the host save area has invented one - there is no such table."
+
+- id: fn8000-0001-ecx-bit2-scope
+  chapter: 01-svm-intro.md
+  type: lookup
+  question: "`CPUID Fn8000_0001 ECX[2]` is set. Exactly which instructions does that let me execute?"
+  must_include:
+    - "`Fn8000_0001_ECX` bit 2 is `SVM`, secure virtual machine supported"
+    - "it does not gate all eight SVM instructions"
+    - "the instructions gated on `EFER.SVME` are VMRUN, VMLOAD, VMSAVE, CLGI, VMMCALL and INVLPGA - six, not eight - and they raise `#UD` when it is clear"
+    - "STGI's `#UD` condition is `EFER.SVME = 0` and `Fn8000_000A_EDX[SVML] = 0` and `Fn8000_0001_ECX[SKINIT] = 0`"
+    - "`Fn8000_0001_ECX` bit 12 is `SKINIT`, described by AMD as 'SKINIT and STGI are supported, independent of the value of `MSRC000_0080[SVME]`'"
+  required_citation: "APM3 App.E"
+  notes: "Chapter 01 section 1.2. Neighbouring bits: ECX[3] `ExtApicSpace`, ECX[4] `AltMovCr8`."
+
+- id: vmcb-clean-bit-map
+  chapter: 02-vmcb.md
+  type: lookup
+  question: "Give me the VMCB clean-bit map: where the field is, what each bit covers, and what bit 31 is for."
+  must_include:
+    - "the VMCB Clean Bits field is at control-area offset `0C0h`, bits 31:0, with bits 63:32 reserved SBZ"
+    - "bit 0 `I` intercepts - all intercept vectors, TSC offset, PAUSE Filter Count"
+    - "bit 1 `IOPM` - `IOPM_BASE`, `MSRPM_BASE`"
+    - "bit 2 `ASID`, bit 3 `TPR` (the offset 60h-67h fields), bit 4 `NP` (`NCR3`, `G_PAT`)"
+    - "bit 5 `CRx` - CR0, CR3, CR4 and EFER; bit 6 `DRx` - DR6, DR7"
+    - "bit 7 `DT` - GDT and IDT limit and base; bit 8 `SEG` - CS/DS/SS/ES selector, base, limit, attributes and CPL"
+    - "bit 9 `CR2`, bit 10 `LBR`, bit 11 `AVIC`, bit 12 `CET`"
+    - "bit 31 is a special bit reserved for the host that the CPU will never use as a clean bit, so a hypervisor may use it for its own tracking"
+  required_citation: "APM2 Figure 15-4"
+  notes: "Chapter 02 sections 2.2.4 and 2.5. The bit-31 rule is anchored `[APM2 §15.15.3]` and sits in tension with the map's '31:13 Reserved' row - noting that is a bonus. `SEG` covers CS, DS, SS and ES only."
+
+- id: int-ctl-60h-layout
+  chapter: 02-vmcb.md
+  type: lookup
+  question: "Lay out the virtual interrupt control word at VMCB offset `60h` field by field."
+  must_include:
+    - "bits 7:0 `V_TPR`, of which the 4-bit virtual TPR value is bits 3:0 and bits 7:4 are SBZ"
+    - "bit 8 `V_IRQ`, bit 9 `VGIF`, bit 11 `V_NMI`, bit 12 `V_NMI_MASK`"
+    - "bits 19:16 `V_INTR_PRIO`, bit 20 `V_IGN_TPR`"
+    - "bit 24 `V_INTR_MASKING`, bit 25 `VGIF_EN`, bit 26 `V_NMI_ENABLE`"
+    - "bit 30 x2AVIC Enable and bit 31 AVIC Enable"
+    - "bits 39:32 `V_INTR_VECTOR`, bits 63:40 reserved SBZ"
+  required_citation: "APM2 Table B-1"
+  notes: "Chapter 02 section 2.2.2; chapter 07 section 7.1 owns the semantics. Bonus: bit 10 has no row at all in AMD's layout table, and `INT_CTL` is a Linux/KVM name - AMD names the individual bits, not the containing word. The AMD spellings are `VGIF` and `VGIF_EN`, and the two enables are written in prose as 'x2AVIC Enable' and 'AVIC Enable'."
+
+- id: vmcb-state-save-offsets
+  chapter: 02-vmcb.md
+  type: lookup
+  question: "In the VMCB state save area, where do CPL, EFER, CR0/CR3/CR4, RFLAGS, RIP, RSP, RAX and CR2 live, and what is the offset convention?"
+  must_include:
+    - "state-save-area offsets are relative to the start of the save area; add 400h for the VMCB offset"
+    - "`CPL` is a single byte at save-area offset `0CBh`"
+    - "`EFER` is at `0D0h`"
+    - "`CR4` `148h`, `CR3` `150h`, `CR0` `158h` - note that CR4 precedes CR3 and CR0"
+    - "`DR7` `160h` and `DR6` `168h`, also not in numeric order"
+    - "`RFLAGS` `170h`, `RIP` `178h`, `RSP` `1D8h`, `RAX` `1F8h`"
+    - "`CR2` is at `240h`, after the SYSCALL/SYSENTER block rather than with the other control registers"
+    - "general-purpose registers other than RAX and RSP have no home in the VMCB save area at all"
+  required_citation: "APM2 Table B-2"
+  notes: "Chapter 02 sections 2.3.2, 2.3.3 and 2.3.5. The save area starts at VMCB offset 400h when SEV-ES is not enabled; under SEV-ES the guest save state moves to a separate VMSA page (chapter 13)."
+
+- id: intercept-vector-4-and-5
+  chapter: 03-intercepts.md
+  type: lookup
+  question: "What is in intercept vector 4, and what is intercept vector 5 - I have a manual that shows 014h as reserved."
+  must_include:
+    - "vector 4 is at VMCB control-area offset `010h`: bit 0 VMRUN, 1 VMMCALL, 2 VMLOAD, 3 VMSAVE, 4 STGI, 5 CLGI, 6 SKINIT, 7 RDTSCP, 8 ICEBP, 9 WBINVD and WBNOINVD"
+    - "bit 10 MONITOR/MONITORX, 11 MWAIT/MWAITX unconditionally, 12 MWAIT/MWAITX only if monitor hardware is armed, 13 XSETBV, 14 RDPRU, 15 EFER writes (trap)"
+    - "bit 16 CR0 writes (trap), bit 19 CR3 writes (trap), bit 20 CR4 writes (trap), with 17, 18 and 21:31 reserved"
+    - "vector 5 exists at `014h`; it did not exist in Rev 3.30, where 014h-03Bh was a single RESERVED, SBZ span"
+    - "vector 5 bit 0 intercepts all INVLPGB, bit 1 only illegally specified INVLPGB, bit 2 INVPCID, bit 3 MCOMMIT, bit 4 TLBSYNC, bit 5 bus-lock operations when the Bus Lock Threshold Counter is 0, bit 6 HLT if a virtual interrupt is not pending (IdleHlt), bits 31:7 reserved SBZ"
+  must_not_include:
+    - "vector 4 bits 16 to 31 intercept writes of CR0 through CR15"
+    - "there is no sixth intercept vector"
+  required_citation: "APM2 Table B-1"
+  notes: "Chapter 03 section 3.1. Rev 3.30 defined bit 15 as EFER writes and bits 16-31 as CR0-15 writes; Rev 3.45 defines only 16, 19 and 20, which Appendix C corroborates with exit codes 8Fh, 90h, 93h and 94h. Vector 5 bit 4 is present only when `CPUID Fn8000_000A_EDX[24]` (TlbiCtl) is 1."
+
+- id: msrpm-ranges-and-encoding
+  chapter: 03-intercepts.md
+  type: lookup
+  question: "How is the MSR permissions map laid out, and which MSR ranges does it actually cover?"
+  must_include:
+    - "four separate bit vectors of 16 Kbits (2 Kbytes) each, packed together in two contiguous physical pages, 4-Kbyte aligned"
+    - "each 16-Kbit vector covers a range of 8K MSRs"
+    - "each MSR is covered by two bits: the lsb controls read access and the msb controls write access, and 1 means intercepted"
+    - "the covered ranges are not contiguous - byte offsets 000h-7FFh cover MSRs 0000_0000h-0000_1FFFh, 800h-FFFh cover C000_0000h-C000_1FFFh, 1000h-17FFh cover C001_0000h-C001_1FFFh, and 1800h-1FFFh is reserved"
+    - "if MSR_PROT is active, any attempt to read or write an MSR not covered by the MSRPM automatically causes an intercept - the uncovered default is intercept, not allow"
+  required_citation: "APM2 Table 15-8"
+  notes: "Chapter 03 section 3.4. The index arithmetic given there is the chapter's own derivation and AMD never prints it, so an answer that presents it as quoted from the APM is overclaiming. MSR_PROT is vector 3 bit 28."
+
+- id: exit-codes-60h-61h-band
+  chapter: 05-exit-decoding.md
+  type: lookup
+  question: "I have exit codes `60h` and `61h` in a trace. What are they, and what else is in that band?"
+  must_include:
+    - "`60h` is `VMEXIT_INTR`, a physical INTR - a maskable interrupt"
+    - "`61h` is `VMEXIT_NMI`, a physical NMI"
+    - "`62h` is `VMEXIT_SMI`, a physical SMI, and EXITINFO1 provides more information for it"
+    - "`63h` is `VMEXIT_INIT`, a physical INIT"
+    - "`64h` is `VMEXIT_VINTR`, a virtual INTR"
+    - "`65h` is `VMEXIT_CR0_SEL_WRITE`, a write of CR0 changing bits other than `CR0.TS` or `CR0.MP`"
+    - "they are intercept vector 3 at `0x60 + bit`, so 60h is vector 3 bit 0 (INTR) and 61h is vector 3 bit 1 (NMI)"
+    - "when an external or virtual interrupt is intercepted the interrupt is left pending rather than consumed"
+  required_citation: "APM2 App.C"
+  notes: "Chapter 05 section 5.1; the left-pending rule is chapter 03 section 3.2, anchored `[APM2 §15.7]`. Appendix C has exactly one table, which is why the corpus anchors to `[APM2 App.C]` and never to a table number."
+
+- id: npf-exitinfo1-bits
+  chapter: 05-exit-decoding.md
+  type: lookup
+  question: "Give me the full EXITINFO1 bit layout for a nested page fault, and say what EXITINFO2 holds."
+  must_include:
+    - "bit 0 `P` - cleared to 0 if the nested page was not present, 1 otherwise"
+    - "bit 1 `RW` set if the access was a write, bit 2 `US` set if it was a user access, bit 3 `RSV` set if reserved bits were set in the corresponding nested page table entry, bit 4 `ID` set if it was a code read"
+    - "bit 6 `SS` set if the fault was caused by a shadow stack access - bit 5 is absent"
+    - "bit 31 `RMP` set if the fault was caused by an RMP check or a VMPL check failure"
+    - "bit 32 set if the fault occurred while translating the guest's final physical address, bit 33 set if it occurred while translating the guest page tables"
+    - "bit 34 `ENC`, bit 35 `SIZEM`, bit 36 `VMPL`, bit 37 `SSS`"
+    - "EXITINFO2 holds the faulting guest physical address"
+  must_not_include:
+    - "bit 33 is the encryption mismatch"
+    - "bit 34 is the page-size mismatch"
+    - "bit 35 is the VMPL violation"
+  required_citation: "APM2 §15.36.10"
+  notes: "errata E04 hangs on this one. Chapter 05 section 5.3; the low bits are anchored `[APM2 §15.25.6]`. Bits 32 and 33 have no AMD mnemonics - GUEST_FINAL and GUEST_PAGE are OS header names. Bit 37 is genuinely double-defined between §15.25.14 and §15.36.10, and saying so is a bonus."
+
+- id: tlb-control-values
+  chapter: 06-nested-paging.md
+  type: lookup
+  question: "What are the legal `TLB_CONTROL` values, where does the field live, and what gates the extended ones?"
+  must_include:
+    - "`TLB_CONTROL` occupies bits 39:32 of the VMCB control area at byte offset `058h`, above the 32-bit guest ASID in bits 31:0 of the same qword"
+    - "`00h` do not flush"
+    - "`01h` flush entire TLB - all entries, all ASIDs - on VMRUN, which AMD says should be used only on legacy hardware"
+    - "`03h` flush this guest's TLB entries"
+    - "`07h` flush this guest's non-global TLB entries"
+    - "those four encodings are the whole of the table and all encodings not defined in it are reserved"
+    - "`03h` and `07h` are optional and indicated by `CPUID Fn8000_000A_EDX[FlushByAsid]`, bit 6"
+  required_citation: "APM2 Table 15-9"
+  notes: "Chapter 06 section 6.8. Bonus: a reserved `TLB_CONTROL` encoding is not rejected by any consistency check, which the chapter marks C:medium."
+
+- id: avic-id-table-entries
+  chapter: 07-virtual-interrupts-avic.md
+  type: lookup
+  question: "What do the AVIC Physical and Logical APIC ID Table entries look like, and where are their pointers in the VMCB?"
+  must_include:
+    - "a Physical APIC ID Table entry is 64 bits, indexed by guest physical APIC ID: bit 63 `V` valid, bit 62 `IR` IsRunning, bits 61:52 reserved SBZ, bits 51:12 the Backing Page Pointer, and bits 11:0 the Host Physical APIC ID, which is not valid unless `IR` is set"
+    - "a Logical APIC ID Table entry is 32 bits, indexed by logical ID: bit 31 `V`, bits 30:8 reserved SBZ, bits 7:0 the Guest Physical APIC ID"
+    - "the `AVIC LOGICAL_TABLE` pointer is at VMCB offset `0F0h`, bits 51:12"
+    - "the `AVIC PHYSICAL_TABLE` pointer is at VMCB offset `0F8h`, bits 51:12, with `AVIC_PHYSICAL_MAX_INDEX` in bits 11:0 of the same qword"
+    - "the `AVIC APIC_BACKING_PAGE` pointer is at `0E0h`, bits 51:0, and `AVIC APIC_BAR` is at `098h`"
+    - "there is one Physical APIC ID Table and one Logical APIC ID Table per virtual machine"
+  required_citation: "APM2 Table 15-23"
+  notes: "Chapter 07 sections 7.4.2, 7.5.1 and 7.5.2; the logical entry is `[APM2 Table 15-24]`. `AVIC_LOGICAL_PAGE` and `AVIC_PHYSICAL_PAGE` appear nowhere in the manual and must not be used. VMRUN fails with `VMEXIT_INVALID` if MAX_INDEX exceeds 255 in xAVIC, or 511 in x2AVIC when `Fn8000_000A_ECX[x2AVIC_EXT]` is 0."
+
+- id: avic-doorbell-msr
+  chapter: 07-virtual-interrupts-avic.md
+  type: lookup
+  question: "What is the AVIC doorbell register, and what happens if I read it?"
+  must_include:
+    - "it is MSR `C001_011Bh`"
+    - "bits 7:0 hold the destination Physical APIC ID and bits 63:8 are reserved, MBZ"
+    - "writing it sends the doorbell signal to that physical core"
+    - "any attempt to read the register raises `#GP`"
+  required_citation: "APM2 Figure 15-22"
+  notes: "Chapter 07 section 7.6; the read-raises-`#GP` rule is `[APM2 §15.29.8.2]`. A write-only MSR is unusual enough that an answer describing how to read back the destination is wrong."
+
+- id: iommu-control-register-bits
+  chapter: 08-iommu-architecture.md
+  type: lookup
+  question: "Which bits of the IOMMU Control Register do I need to bring up translation, command processing and the event log?"
+  must_include:
+    - "the Control Register is at MMIO offset `0018h`"
+    - "bit 0 `IommuEn`, and the Device Table Base Address Register must be configured before it is set"
+    - "bit 1 `HtTunEn`, bit 2 `EventLogEn`, bit 3 `EventIntEn`, bit 4 `ComWaitIntEn`"
+    - "bits 7:5 `InvTimeOut`, bit 8 `PassPW`, bit 9 `ResPassPW`, bit 10 `Coherent`, bit 11 `Isoc`"
+    - "bit 12 `CmdBufEn`"
+    - "bit 13 `PPRLogEn`, bit 14 `PprIntEn`, bit 15 `PPREn`, bit 16 `GTEn`, bit 17 `GAEn`"
+    - "bit 28 `GALogEn` and bit 29 `GAIntEn`"
+  required_citation: "IOMMU 3.11 §3.4.1"
+  notes: "Chapter 08 section 8.3. `InvTimeOut` runs 000b no timeout through 110b 100 s with 111b reserved; `Coherent` resets to 1. Getting `CmdBufEn` at bit 12 right is what the `CmdBufRun` trap question depends on."
+
+- id: iommu-event-codes
+  chapter: 08-iommu-architecture.md
+  type: lookup
+  question: "List the IOMMU event log codes, and tell me how to read an event record."
+  must_include:
+    - "an event record is 16 bytes: a 4-bit `EventCode` at bits 31:28 of dword +04, a 60-bit first operand in dword +00 plus bits 27:0 of +04, and a 64-bit second operand in dwords +08 and +12"
+    - "the codes are binary, not hex: 0001b `ILLEGAL_DEV_TABLE_ENTRY`, 0010b `IO_PAGE_FAULT`, 0011b `DEV_TAB_HARDWARE_ERROR`, 0100b `PAGE_TAB_HARDWARE_ERROR`, 0101b `ILLEGAL_COMMAND_ERROR`, 0110b `COMMAND_HARDWARE_ERROR`, 0111b `IOTLB_INV_TIMEOUT`"
+    - "1000b `INVALID_DEVICE_REQUEST`, 1001b `INVALID_PPR_REQUEST`, 1010b `EVENT_COUNTER_ZERO`, 1011b `GUEST_EVENT_FAULT`, 1100b `VIOMMU_HARDWARE_ERROR`, 1101b `RMP_PAGE_FAULT`, 1110b `RMP_HARDWARE_ERROR`"
+    - "Rev 3.11 defines fourteen event codes, 0001b through 1110b; 0000b and 1111b are not assigned"
+    - "Table 42, the summary table, is stale relative to the sections it summarises - it prints 1001b for both `INVALID_PPR_REQUEST` and `EVENT_COUNTER_ZERO` and declares 1010b-1111b reserved, so decode from the per-event figures rather than from Table 42"
+  required_citation: "IOMMU 3.11 §2.5"
+  notes: "Chapter 08 section 8.8. The record shape is `[IOMMU 3.11 Figure 54]`. A GA log record is 8 bytes, not 16 - that contrast is a bonus."
+
+- id: dte-translation-fields
+  chapter: 08-iommu-architecture.md
+  type: lookup
+  question: "How big is a Device Table Entry, how is it indexed, and where are `V`, `TV`, `Mode`, the page-table root pointer and `DomainID`?"
+  must_include:
+    - "the Device Table is an array of 256-bit entries indexed directly by the 16-bit DeviceID, so a fully populated table is 65,536 entries and 2 Mbytes; it must be 4-Kbyte aligned and a multiple of 4 Kbytes long"
+    - "bit 0 `V` and bit 1 `TV`"
+    - "bits 11:9 `Mode[2:0]`"
+    - "bits 51:12 Host Page Table Root Pointer[51:12]"
+    - "bits 79:64 `DomainID[15:0]`"
+    - "bit 61 `IR` and bit 62 `IW`"
+    - "`Mode` 000b means translation is disabled so the system physical address equals the guest physical address, with access still gated by IR and IW; 001b through 110b select one to six levels, and 111b is reserved and reported as an event when V=1 and TV=1"
+    - "`V` validates bits 127:1 of the entry and `TV` validates the translation fields specifically - IW, IR, the page table root pointer, Mode and GV"
+  required_citation: "IOMMU 3.11 Figure 7"
+  notes: "Chapter 08 section 8.6; the `Mode` encoding is `[IOMMU 3.11 Table 7]` and the V/TV matrix `[IOMMU 3.11 Table 8]`. Bonus: `SA` bit 98 suppresses all `IO_PAGE_FAULT` events and `SE` bit 97 suppresses repeats; the whole entry is read in a single 256-bit transaction."
+
+- id: irte-guest-mode-format
+  chapter: 10-iommu-interrupt-remapping.md
+  type: lookup
+  question: "Lay out the 128-bit guest-virtual-APIC IRTE - the one with `GuestMode = 1`."
+  must_include:
+    - "bits 127:116 reserved"
+    - "bits 115:76 the Guest Virtual APIC Table Root Pointer, the system physical address of the APIC backing page when `RemapEn` is 1"
+    - "bits 75:72 reserved, bits 71:64 `Vector`"
+    - "bits 63:32 `GATag[31:0]`, bits 31:16 reserved, bits 15:8 `Destination[7:0]`"
+    - "bit 7 `GuestMode`, which must be 1; bit 6 `IsRun`; bit 5 `GAPPIDis`; bits 4:3 reserved; bit 2 `GALogIntr`; bit 1 `SupIOPF`; bit 0 `RemapEn`"
+    - "with `RemapEn` 0 the whole entry is ignored except `SupIOPF`, and an interrupt landing on it raises an `IO_PAGE_FAULT` rather than being silently dropped"
+  must_not_include:
+    - "bit 0 is `RemapEm`"
+  required_citation: "IOMMU 3.11 Table 23"
+  notes: "Chapter 10 section 10.2. Open item: Table 23 labels the vector `Vector[8:0]` while Figure 18 gives it the 8-bit field 71:64 - nine bits do not fit, and the chapter follows the figure. The basic 32-bit IRTE and the wide `GuestMode = 0` entry are `[IOMMU 3.11 Table 20]` and `[IOMMU 3.11 Table 22]`."
+
+- id: fn8000-001f-fields
+  chapter: 11-memory-encryption.md
+  type: lookup
+  question: "Decode `Fn8000_001F` for me: what is in EAX, EBX, ECX and EDX, and how do I extract the C-bit position?"
+  must_include:
+    - "EAX is the memory-encryption feature bitmap: bit 0 `SME`, bit 1 `SEV`, bit 2 `PageFlushMsr`, bit 3 `SEV-ES`, bit 4 `SEV-SNP`, bit 5 `VMPL`"
+    - "EBX packs three fields: `CbitPosition` in bits 5:0, `PhysAddrReduction` in bits 11:6 and `NumVMPL` in bits 15:12"
+    - "so the masks are `EBX & 3Fh`, `(EBX >> 6) & 3Fh` and `(EBX >> 12) & Fh`"
+    - "`Fn8000_001F_ECX[31:0]` is `NumEncryptedGuests`, the number of encrypted guests supported simultaneously"
+    - "`Fn8000_001F_EDX[31:0]` is `MinSevNoEsAsid`, the minimum ASID usable by a guest that enables SEV with SEV-ES disabled"
+  required_citation: "APM3 App.E"
+  notes: "Chapter 11 sections 11.2 and 11.2.2. Higher EAX bits worth knowing: 6 `RMPQUERY`, 8 `SecureTsc`, 21 `RMPREAD`, 26 `SecureAvic`, 31 `IbpbOnEntry`. Do not derive `CbitPosition` from `Fn8000_0008_EAX[7:0]` - chapter 11's first open item records measured parts reporting 51 against a 48-bit physical address size."
+
+- id: sev-status-bit-map
+  chapter: 12-sev.md
+  type: lookup
+  question: "A guest reads `SEV_STATUS`. What is the MSR address, what does each bit mean, and how does it relate to `SEV_FEATURES`?"
+  must_include:
+    - "`SEV_STATUS` is MSR `C001_0131`, read-only, and accesses to it cannot be intercepted by the hypervisor"
+    - "bit 0 `SEV_Enabled` and bit 1 `SEV_ES_Enabled`, both sourced from VMCB offset `90h`"
+    - "bit 2 `SNP_Active`, bit 3 `vTOM_Active`, bit 4 `ReflectVC_Active`, bit 5 `RestrictedInjection_Active`, bit 6 `AlternateInjection_Active`, bit 7 `DebugVirtualization_Active`"
+    - "bit 11 `SecureTsc_Active`, bit 16 `VmsaRegProt_Active`, bit 18 `SecureAVIC_Active`, bit 23 `IbpbOnEntry_Active`"
+    - "every bit from 2 upward mirrors `SEV_FEATURES[n - 2]` in the VMSA, which is why `DebugVirtualization` is `SEV_FEATURES[5]` but `SEV_STATUS[7]`"
+    - "AMD's table prints a row reading '22-18 Reserved' immediately above the row that defines bit 18, so read the reserved range as 22:19"
+  must_not_include:
+    - "bit 7 is Debug Swap"
+  required_citation: "APM2 §15.34.10"
+  notes: "errata E24. Chapter 12 section 12.6. 'Debug Swap' is the Linux-side name and appears nowhere in AMD's documentation. A table written in `SEV_FEATURES` terms is offset by exactly two and is not in conflict with this one."
+
+- id: sev-firmware-error-codes
+  chapter: 12-sev.md
+  type: lookup
+  question: "My SEV firmware command came back with a status code. What are the defined values, and which two are nearly identical?"
+  must_include:
+    - "`0x0000` `SUCCESS`, `0x0001` `INVALID_PLATFORM_STATE`, `0x0002` `INVALID_GUEST_STATE`, `0x0003` `INVALID_CONFIG`, `0x0004` `INVALID_LENGTH`, `0x0005` `ALREADY_OWNED`, `0x0006` `INVALID_CERTIFICATE`, `0x0007` `POLICY_FAILURE`"
+    - "`0x0008` `INACTIVE`, `0x0009` `INVALID_ADDRESS`, `0x000A` `BAD_SIGNATURE`, `0x000B` `BAD_MEASUREMENT`, `0x000C` `ASID_OWNED`, `0x000D` `INVALID_ASID`, `0x000E` `WBINVD_REQUIRED`, `0x000F` `DF_FLUSH_REQUIRED`"
+    - "`0x0010` `INVALID_GUEST`, `0x0011` `INVALID_COMMAND`, `0x0012` `ACTIVE`, `0x0013` `HWERROR_PLATFORM`, `0x0014` `HWERROR_UNSAFE`, `0x0015` `UNSUPPORTED`, `0x0016` `INVALID_PARAM`, `0x0017` `RESOURCE_LIMIT`, `0x0018` `SECURE_DATA_INVALID`"
+    - "the numbering is contiguous from `0x0000` to `0x0018` and then jumps to `0x001F` `RB_MODE_EXITED`"
+    - "`HWERROR_PLATFORM` and `HWERROR_UNSAFE` differ in exactly one respect: after `HWERROR_PLATFORM` it is safe to re-allocate the parameter buffers and after `HWERROR_UNSAFE` it is not"
+  required_citation: "SEV-API 3.24 Table 14"
+  notes: "Chapter 12 section 12.8.2. AMD spells the code `WBINVD_REQUIRED`; `SEV_RET_WBINVD_REQUIRED` is the Linux name."
+
+- id: ghcb-layout-offsets
+  chapter: 13-sev-es-ghcb.md
+  type: lookup
+  question: "Give me the GHCB layout: the fields a `#VC` handler fills in, the valid bitmap, and the version and usage words."
+  must_include:
+    - "the GHCB is a 4096-byte page the guest must map decrypted, and its format is defined by software rather than by hardware - hardware never accesses it directly"
+    - "`SW_EXITCODE` at `0x0390`, `SW_EXITINFO1` at `0x0398`, `SW_EXITINFO2` at `0x03a0`, `SW_SCRATCH` at `0x03a8`"
+    - "`VALID_BITMAP` is 16 bytes at `0x03f0`"
+    - "the Shared Buffer is `0x7f0` bytes at `0x0800`"
+    - "the SEV-ES/GHCB Protocol Version is the 2-byte field at `0x0ffa` and GHCB Usage is the 4-byte field at `0x0ffc`"
+    - "`RAX` is at `0x01f8`, `RCX` `0x0308`, `RDX` `0x0310`, `RBX` `0x0318`, `XCR0` `0x03e8`, `DR7` `0x0160`, `CPL` `0x00cb`"
+    - "the valid bitmap marks which qwords of the save-state area from `0x000` through `0x3ef` the sender filled in - 126 qwords - and both sides must clear the whole bitmap first"
+  must_not_include:
+    - "the valid bitmap is at offset 0xFF0"
+  required_citation: "GHCB 2.04 Table 3"
+  notes: "Chapter 13 sections 13.4 and 13.4.1. `0x0ff0` is a 10-byte reserved region, not the bitmap. AMD's worked index example: RAX at `0x01f8` is qword 63, bitmap byte 7, bit 7. Only `XSS` at `0x0140` is version-gated, to protocol version 2 and later."
+
+- id: snp-instructions-and-return-codes
+  chapter: 14-sev-snp.md
+  type: lookup
+  question: "List the SEV-SNP instructions with their opcodes and who may execute them, and give the return-code space."
+  must_include:
+    - "`PSMASH` `F3 0F 01 FF`, hypervisor, ASID 0"
+    - "`PVALIDATE` `F2 0F 01 FF`, guest, VMPL0 only"
+    - "`RMPADJUST` `F3 0F 01 FE`, guest, any VMPL"
+    - "`RMPQUERY` `F3 0F 01 FD`, guest, enumerated by `Fn8000_001F_EAX[6]`"
+    - "`RMPREAD` `F2 0F 01 FD`, hypervisor, enumerated by `Fn8000_001F_EAX[21]`"
+    - "`RMPUPDATE` `F2 0F 01 FE`, hypervisor, ASID 0"
+    - "the shared return-code space is 0 `SUCCESS`, 1 `FAIL_INPUT`, 2 `FAIL_PERMISSION`, 3 `FAIL_INUSE`, 4 `FAIL_OVERLAP`, 6 `FAIL_SIZEMISMATCH`, 7 `FAIL_BADADDR`, with each instruction publishing only the subset it can produce"
+    - "all six are CPL0-only and all but `PVALIDATE` are 64-bit-mode only"
+  required_citation: "APM3 §4 \"RMPUPDATE\""
+  notes: "Chapter 14 section 14.4. APM Vol.3 Chapter 4 is alphabetical, so each is cited by mnemonic. Per-instruction subsets: `PSMASH` 0/1/2/3/7, `PVALIDATE` 0/1/6, `RMPADJUST` 0/1/2/6, `RMPQUERY` 0/2, `RMPREAD` 0/1/2, `RMPUPDATE` 0/1/2/3/4 - a description that knows only `FAIL_OVERLAP` is describing `RMPUPDATE` alone. Value 5 is not assigned."
+
+- id: attestation-report-fields
+  chapter: 14-sev-snp.md
+  type: lookup
+  question: "What is in an `ATTESTATION_REPORT`, at which offsets, and which VERSION values are legal?"
+  must_include:
+    - "`VERSION` at `00h`, `GUEST_SVN` at `04h`, `POLICY` at `08h`, `FAMILY_ID` at `10h`, `IMAGE_ID` at `20h`, `VMPL` at `30h`, `SIGNATURE_ALGO` at `34h`"
+    - "`CURRENT_TCB` at `38h`, `PLATFORM_INFO` at `40h`, `REPORT_DATA` 64 bytes at `50h`, `MEASUREMENT` 48 bytes at `90h`, `HOST_DATA` at `C0h`"
+    - "`REPORT_ID` at `140h`, `REPORTED_TCB` at `180h`, `CHIP_ID` 64 bytes at `1A0h`, `COMMITTED_TCB` at `1E0h`, `LAUNCH_TCB` at `1F0h`"
+    - "`SIGNATURE` 512 bytes at `2A0h`, and the signature covers bytes 0h to 29Fh inclusive"
+    - "the report version has moved across firmware ABI revisions - 3h, then 5h, then 6h - and 4h never existed"
+  must_not_include:
+    - "the VERSION field takes the values 2, 3 or 5"
+  required_citation: "SNP-ABI 1.59 Table 27"
+  notes: "errata E25. Chapter 14 section 14.11. The structure runs to 4A0h, 1184 bytes. The current version value is version-bearing and belongs to `90-dated-landscape.md`; what is durable is that the set is a moving progression and that 4h was never in it."
+
+# ===========================================================================
+# MECHANISM  (24)
+# ===========================================================================
+
+- id: clean-bits-mechanism
+  chapter: 02-vmcb.md
+  type: mechanism
+  question: "How does VMCB state caching actually work, and when must I zero the clean field?"
+  must_include:
+    - "each set clean bit allows the processor to reuse cached state instead of loading that register or group from the VMCB; each clear bit requires it to load from the VMCB"
+    - "set bits are a hint the processor may ignore, but clean bits set to zero are always honoured"
+    - "SVM uses the physical address of the VMCB as the unique identifier of a guest virtual CPU for caching purposes, and the ASID is explicitly not a unique identifier"
+    - "the whole field must be zeroed the first time a guest is run, when it is executed on a different CPU core than last time, and when its VMCB has moved to a different physical page"
+    - "the CPU automatically treats the clean field as zero when the hypervisor runs a guest that is not currently cached"
+    - "a hypervisor that has not modified the VMCB may write `FFFF_FFFFh`; it should write `0h` when the VMCB is new or potentially inconsistent"
+    - "some state has no clean bit and is never cached: `TLB_CONTROL`, the interrupt shadow, the status fields (`EXITCODE`, `EXITINFO1`, `EXITINFO2`, `EXITINTINFO`, Decode Assist), event injection, and RFLAGS, RIP, RSP and RAX"
+    - "support is enumerated by `CPUID Fn8000_000A_EDX[VmcbClean]`"
+  required_citation: "APM2 §15.15.2"
+  notes: "Chapter 02 section 2.5. The per-bit map is the lookup question; this one is the caching contract. Clean bit 4 (`NP`) covers exactly `NCR3` and `G_PAT`."
+
+- id: intercept-priority-ordering
+  chapter: 03-intercepts.md
+  type: mechanism
+  question: "When an instruction would raise an exception and is also intercepted, which one wins? Is there a single rule?"
+  must_include:
+    - "AMD states it in two places: a general rule in §15.7 and a per-instruction Priority column in Table 15-7"
+    - "exception intercepts are checked when normal instruction processing must raise an exception, before double-fault conditions are resolved and before delivery begins - before any exception frame is pushed and before the IDT is read"
+    - "instruction intercepts occur before the results of the instruction are committed, generally after simple exceptions such as `#UD` or a CPL-related `#GP` but before memory-access exceptions and exceptions that depend on operand values, with RSM explicitly called out as an exception to the rule"
+    - "instruction breakpoints for the current instruction and pending data-breakpoint traps from the previous instruction are designed to be checked before instruction intercepts"
+    - "several rows invert the general guideline: INTn, XSETBV, VMMCALL, the PUSHF/POPF/CPUID/RSM/IRET group and the INVLPGB/INVLPGB_ILLEGAL/INVPCID group all place the intercept ahead of some or all exception checks"
+    - "so there is no single rule - the per-instruction table is authoritative"
+    - "when an external or virtual interrupt is intercepted the interrupt is left pending rather than consumed"
+  required_citation: "APM2 §15.7"
+  notes: "Chapter 03 section 3.2. Bonus: MCOMMIT has an intercept bit at vector 5 bit 3 but no row in the instruction-intercept table, so its ordering is undocumented; the conditional MWAIT intercept is checked before the unconditional one."
+
+- id: tsc-offset-and-ratio-composition
+  chapter: 03-intercepts.md
+  type: mechanism
+  question: "If I set both a TSC offset and a TSC ratio, in what order are they applied, and what exactly do they affect?"
+  must_include:
+    - "`TSC_OFFSET` is a 64-bit VMCB control field that is added in RDTSC and RDTSCP"
+    - "the TSC Ratio MSR is `C000_0104h`, supported when `CPUID Fn8000_000A_EDX[4]` (`TscRateMsr`) is 1, and holds an 8.32 fixed-point number: `INT` in bits 39:32, `FRAC` in bits 31:0, bits 63:40 MBZ, reset value 1.0"
+    - "the composition is `TSC(guest) = (P0 frequency x TSCRatio x t) + VMCB.TSC_OFFSET + (last value written to TSC) x TSCRatio`"
+    - "the ratio is applied first and the offset is added afterwards, unscaled"
+    - "the ratio scales what a guest sees from RDTSC, RDTSCP and RDMSR of the TSC, MPERF and MPerfReadOnly MSRs"
+    - "it has no effect in host mode or when virtualization is disabled, and it changes neither the rate of the underlying counters nor the value written by a host or guest write - it is a read-side transform only"
+  required_citation: "APM2 §15.30.5"
+  notes: "Chapter 03 section 3.6; chapter 01 section 1.4 carries the same MSR. Open item: the body text below Figure 15-29 mislabels FRAC as bits 39:32, repeating INT's range; the figure is the correct one and the chapter follows it."
+
+- id: vmrun-ordering
+  chapter: 04-world-switch.md
+  type: mechanism
+  question: "Walk me through what VMRUN does, in order, from the moment it executes to the first guest instruction."
+  must_include:
+    - "step 1 saves host state into the 4 KB block addressed by `VM_HSAVE_PA`: CS.SEL and NEXT_RIP, RFLAGS and RAX, SS.SEL and RSP, CR0, CR3, CR4 and EFER, IDTR and GDTR, and ES.SEL and DS.SEL"
+    - "NEXT_RIP here means the rIP of the instruction following the VMRUN"
+    - "step 2 loads guest state from the VMCB: CS and rIP with hidden state, RFLAGS and RAX, SS and RSP, CR0/CR2/CR3/CR4/EFER, `INTERRUPT_SHADOW`, IDTR and GDTR, ES and DS, DR6 and DR7, `V_TPR`, `V_IRQ` and CPL"
+    - "CPL is forced to 0 in real mode and to 3 in virtual-8086 mode"
+    - "step 3 reads the control information - `TSC_OFFSET`, the virtual-interrupt fields, `V_INTR_MASKING`, the ASID, the TLB-flush control and the intercept vectors - which are read and not written back"
+    - "the ordering inside VMRUN is explicit: guest-state consistency checks run first, then the command in `TLB_CONTROL` is executed, then `GIF` is set to 1, and only then is the injected event delivered or the first guest instruction fetched"
+    - "writing the paging control registers with VMRUN does not flush the TLB"
+    - "the architecture assumes the VMM cleared `GIF` some time before VMRUN so the state switch is atomic"
+  required_citation: "APM2 §15.5.1"
+  notes: "Chapter 04 section 4.1; the intra-VMRUN ordering is anchored `[APM3 §4 \"VMRUN\"]`. The host-save list is the same fourteen items `#VMEXIT` restores - see the trap question."
+
+- id: vmrun-consistency-checks
+  chapter: 04-world-switch.md
+  type: mechanism
+  question: "How does VMRUN decide that my guest state is illegal, and how should I express the CR4 and EFER checks in my own validator?"
+  must_include:
+    - "failure is reported as `#VMEXIT(VMEXIT_INVALID)`, exit code -1"
+    - "the CR4 and EFER conditions are stated as 'any MBZ bit of CR4 is set' and 'any MBZ bit of EFER is set'"
+    - "the fixed-mask forms `CR4[63:11]` and `EFER[63:15]` come from the 2005-era SVM manual, are superseded, and appear nowhere in Rev 3.45"
+    - "CR4 bits 11, 12, 16-18 and 20-24 and EFER bits 15, 17, 18 and 21 are architecturally defined today, so the old masks would reject a legal guest state"
+    - "other conditions include `EFER.SVME` zero, `CR0.CD` zero with `CR0.NW` set, `CR0[63:32]` non-zero, any MBZ bit of CR3, `DR6[63:32]` or `DR7[63:32]` non-zero, the long-mode combinations, the VMRUN intercept bit being clear, an IOPM or MSRPM reaching the maximum supported physical address, illegal event injection and an ASID of zero"
+    - "things that look illegal but are not: an out-of-limit or non-canonical guest rIP is a `#GP` inside the guest rather than a consistency failure, and paged real mode with `CR0.PE = 0` and `CR0.PG = 1` is explicitly legal"
+  must_not_include:
+    - "VMRUN fails when `CR4[63:11]` is non-zero"
+    - "the check is `EFER[63:15]` non-zero"
+  required_citation: "APM2 §15.5"
+  notes: "errata E05. Chapter 04 section 4.2 lists twenty conditions. Quickref section 0.2 routes 'VMRUN exits immediately with VMEXIT_INVALID' here."
+
+- id: gif-stgi-clgi-vgif
+  chapter: 04-world-switch.md
+  type: mechanism
+  question: "What does the global interrupt flag do to pending events, and what does vGIF change?"
+  must_include:
+    - "GIF controls whether interrupts and other events can be taken by the processor; STGI sets it and CLGI clears it"
+    - "with `GIF = 0`, INIT, NMI, external SMI, INTR and virtual INTR are held pending"
+    - "a debug exception or trap from a breakpoint register match, and an internal SMI from I/O trapping, are ignored and discarded"
+    - "a debug trace trap from `EFLAGS.TF`, RESET and A20M carry on as normal operation"
+    - "a machine check is held pending until `GIF` is 1 if the implementation can, and otherwise causes shutdown"
+    - "vGIF is enumerated by `CPUID Fn8000_000A_EDX[16]` and enabled by bit 25 (`VGIF_EN`) of the VMCB field at offset `60h`, with the virtual flag itself in bit 9 of the same field, loaded on VMRUN and saved on `#VMEXIT`"
+    - "VMRUN sets GIF to 1 as part of the world switch"
+  required_citation: "APM2 §15.17"
+  notes: "Chapter 04 section 4.6; the disposition table is `[APM2 Table 15-10]` and vGIF is `[APM2 §15.33.2]`. Held-pending versus ignored-and-discarded is the distinction being tested. Setting the STGI or CLGI intercept bits intercepts those instructions regardless of whether vGIF is enabled."
+
+- id: event-injection-and-reinjection
+  chapter: 05-exit-decoding.md
+  type: mechanism
+  question: "How do I inject an event into a guest, and how do I re-inject one that was interrupted by an intercept during IDT delivery?"
+  must_include:
+    - "`EVENTINJ` is bits 7:0 `VECTOR`, bits 10:8 `TYPE`, bit 11 `EV` error-code-valid, bit 31 `V` valid, and bits 63:32 `ERRORCODE`"
+    - "`TYPE` has four defined values - 0 external or virtual interrupt, 2 NMI, 3 exception, 4 software interrupt - and value 1 is not among them"
+    - "injected events are not subject to intercept checks, though secondary exceptions raised during their delivery are"
+    - "an injected NMI does not block further NMIs"
+    - "`EVENTINJ` is cleared on `#VMEXIT`"
+    - "`EXITINTINFO` has the same layout and is written when the intercept occurred while the guest was delivering an event: `V` set means the intercept happened during IDT delivery, and the VMM re-injects by copying the record into `EVENTINJ`"
+    - "an intercepted exception exits before `EXITINTINFO` is written, the combined result is checked against the `#DF` and shutdown intercepts next, `EXITINTINFO` is then set to the event being delivered, and it is cleared once the exception has been successfully taken in the guest"
+    - "events raised by opcodes `F1h`, `CCh` and `CEh` count as exceptions for `EXITINTINFO` purposes; only INTn, opcode `CDh`, counts as a software interrupt"
+  required_citation: "APM2 §15.20"
+  notes: "Chapter 05 section 5.5; `EXITINTINFO` is anchored `[APM2 §15.7.2]`. Injecting a reserved `TYPE`, or `TYPE = 3` with a vector that is not an exception - vector 2 included - produces `VMEXIT_INVALID`."
+
+- id: nested-permission-combining
+  chapter: 06-nested-paging.md
+  type: mechanism
+  question: "Under nested paging, how do the guest page tables and the nested page tables combine to decide whether an access is allowed?"
+  must_include:
+    - "a page is writable by the guest only if it is writable at both levels; `gCR0.WP` affects only the interpretation of the guest entry and can never make a nested-read-only page writable at any CPL, and `hCR0.WP` is ignored entirely under nested paging"
+    - "a page is executable by the guest only if it is executable at both levels"
+    - "the U/S rule is asymmetric: a page is user in the guest only if the guest entry marks it user, but the nested entry must mark the page user for the guest to be allowed any access at all"
+    - "the global attribute is taken from the guest alone; the nested G bit and `hCR4.PGE` are irrelevant, and a global page is global only within its ASID"
+    - "NX is honoured only when `EFER.NXE` is 1, and the host's EFER governs the nested level - with host `EFER.NXE` cleared, all nested mappings are executable at the nested level"
+    - "unless Read Only Guest Page Tables is enabled, a walk of the guest's page tables is always treated as a user write at the nested level, and Accessed and Dirty bits are set in every nested entry touched"
+    - "a walk for the guest page itself is always a user access at the nested level, classified as data read, data write or code read according to the guest's own access"
+    - "when the two levels map different page sizes the TLB entry matches the smaller of the two - AMD calls this page splintering"
+  required_citation: "APM2 §15.25.7"
+  notes: "Chapter 06 section 6.2. ROGPT is `CPUID Fn8000_000A_EDX[21]` plus bit 6 of VMCB offset 090h, anchored `[APM2 §15.25.5]`; splintering is `[APM2 §15.25.9]`."
+
+- id: memory-type-combining
+  chapter: 06-nested-paging.md
+  type: mechanism
+  question: "With nested paging on, how is the effective memory type for a guest access decided, and what happens to guest MTRRs?"
+  must_include:
+    - "with nested paging disabled the processor behaves as though there were no guest PAT register: the host PAT MSR determines the memory type, and un-intercepted guest writes to the PAT MSR alter the host PAT MSR"
+    - "with nested paging enabled the result combines the PCD/PWT/PAT bits in both the nested and the guest entries, the PCD/PWT bits in nested CR3 and guest CR3, the guest PAT type, the host PAT type, the MTRRs, and `gCR0.CD` together with `hCR0.CD`"
+    - "it is two stages: nested and guest PAT types combine into a combined PAT type per Table 15-19, and that result combines with the MTRR type selected by the system physical address per Table 15-20"
+    - "either `gCR0.CD` or `hCR0.CD` can disable caching outright"
+    - "there is no hardware support for guest MTRRs - the MTRRs are referenced only by system physical address"
+    - "the guest PAT register lives in the VMCB state-save area at byte offset `268h` and is loaded by VMRUN only when nested paging is enabled"
+    - "VMRUN and `#VMEXIT` flush the write combiners, a WC+ memory type exists that combines writes like WC but snoops every processor's caches, and incompatible nested and guest types produce WC+ rather than WC"
+  required_citation: "APM2 §15.25.8"
+  notes: "Chapter 06 section 6.6. The two matrices are `[APM2 Table 15-19]` and `[APM2 Table 15-20]`; the `G_PAT` offset is `[APM2 Table B-2]`. The corpus writes the field as `G_PAT`."
+
+- id: npf-check-ordering
+  chapter: 06-nested-paging.md
+  type: mechanism
+  question: "In what order does the hardware perform the checks that can produce an `#NPF` versus a guest `#PF`, and where do RMP checks sit?"
+  must_include:
+    - "step 1: walk the guest page-table entries through the nested tables, setting Dirty and Accessed bits in the nested tables as needed; any nested fault produces `#VMEXIT(NPF)`"
+    - "step 2: as the guest walk descends, a not-present entry or a set reserved bit at any guest level produces a guest `#PF`, with guest Accessed and Dirty bits set as needed - steps 1 and 2 repeat per guest level"
+    - "step 3: once the guest physical address is known, check guest permissions; any failure produces a guest `#PF`"
+    - "step 4: perform the final guest-physical to system-physical translation; any fault produces `#VMEXIT(NPF)`"
+    - "all RMP and VMPL checks happen after the page-table and nested-page-table access checks and have lower priority than the existing paging checks"
+    - "the exit is code `400h` `VMEXIT_NPF`, with the fault error code in EXITINFO1 and the faulting guest physical address in EXITINFO2"
+  required_citation: "APM2 §15.25.6"
+  notes: "Chapter 06 section 6.5; the RMP ordering is `[APM2 §15.36.10]`. Quickref section 0.2 sends `#NPF` questions to 05 for the bits and 06 for the ordering, so this question also exercises the two-chapter stop rule."
+
+- id: asid-allocation-and-exhaustion
+  chapter: 06-nested-paging.md
+  type: mechanism
+  question: "How should a hypervisor allocate ASIDs, what happens when it runs out, and how many are there?"
+  must_include:
+    - "ASID 0 is reserved for the host, and the current ASID is 0 whenever the CPU is not inside a guest context"
+    - "a guest ASID of zero is illegal guest state and VMRUN produces `#VMEXIT(VMEXIT_INVALID)`"
+    - "the number of ASIDs is implementation-specific and is the value returned in EBX by `CPUID Fn8000_000A` - the whole 32-bit register is the `NASID` field, not a subfield of it"
+    - "there is no architectural constant for the maximum ASID; it is discoverable only by executing CPUID on the machine"
+    - "software may flush a guest's TLB entries effectively by allocating it a new ASID and not reusing the old ASID until the entire TLB has been flushed at least once"
+    - "the recycle path is normally paired with `TLB_CONTROL` = 1 rather than with per-guest invalidation"
+    - "under nested paging the ASID tags the guest physical address space; under shadow paging it tags the guest virtual address space"
+  required_citation: "APM2 §15.16.1"
+  notes: "Chapter 06 section 6.7. Quickref section 0.2 routes 'I ran out of ASIDs' here. The recycle consequence is marked C:medium in the chapter."
+
+- id: gmet-mechanism
+  chapter: 06-nested-paging.md
+  type: mechanism
+  question: "What is the Guest Mode Execute Trap, how does it work at the page-table level, and how is it turned on?"
+  must_include:
+    - "GMET lets a hypervisor cause nested page faults when a guest attempts to execute code at CPL 0, 1 or 2 from pages the hypervisor designates"
+    - "presence is `CPUID Fn8000_000A EDX[17] = 1`"
+    - "it is selected per guest by setting bit 3 of VMCB offset `090h`, a bit ignored on processors without the extension"
+    - "it works by changing how the nested U/S bit is interpreted: NX = 1 still prohibits execution at any privilege level, but with GMET enabled and an effective NX of 0, an effective U/S of 1 combined with an execute access at CPL 0, 1 or 2 generates `#VMEXIT(NPF)`, while effective NX = 0 with effective U/S = 0 allows the code translation"
+    - "a GMET violation is not flagged by a dedicated error bit"
+    - "AMD footnotes that on some implementations a GMET erratum may require the CPL to be read from the guest VMCB instead of from the exit information"
+  required_citation: "APM2 §15.25.13"
+  notes: "Chapter 06 section 6.9; the truth table is `[APM2 Table 15-21]`. GMET is the AMD half of the MBEC/GMET pair Microsoft treats as a memory-integrity compatibility gate. No Zen generation is attached to GMET anywhere in chapter 06, so an answer that names one from this chapter is inventing it - Microsoft's own hardware table names Zen 2 as the floor, and that is a Microsoft statement."
+
+- id: avic-ipi-delivery-path
+  chapter: 07-virtual-interrupts-avic.md
+  type: mechanism
+  question: "Trace an AVIC-accelerated IPI from the guest's ICR write to the target vCPU's IRR, step by step."
+  must_include:
+    - "if DSH is 01b, self, the processor updates IRR, sends a doorbell to itself and stops"
+    - "if DSH is non-zero or the destination is FFh (broadcast), the logical lookup is skipped"
+    - "otherwise logical destinations are resolved through the Logical APIC ID Table"
+    - "the backing-page address is looked up in the Physical APIC ID Table by guest physical APIC ID"
+    - "for every valid destination the IRR bit is set atomically, IsRunning is checked, and if set a doorbell is sent using the Host Physical APIC ID from the table"
+    - "if any destination is not scheduled, a `#VMEXIT` is taken"
+    - "for directed interrupts an invalid Logical APIC ID Table entry causes a `#VMEXIT`, while for broadcast IPIs invalid entries are simply ignored"
+  required_citation: "APM2 §15.29.6.1"
+  notes: "Chapter 07 section 7.6.1. The device-interrupt path in 7.6.2 is the same table lookups driven by a device ID instead of an ICR write - a bonus, not required."
+
+- id: vnmi-virtualization
+  chapter: 07-virtual-interrupts-avic.md
+  type: mechanism
+  question: "How does NMI virtualization work on AMD, and what does it require me to configure?"
+  must_include:
+    - "it is enumerated by `CPUID Fn8000_000A_EDX[VNMI]`, bit 25"
+    - "it is enabled by `V_NMI_ENABLE`, bit 26 of the word at offset `60h`"
+    - "it requires the NMI intercept bit to be set - running a guest with `V_NMI_ENABLE` and no NMI intercept produces `#VMEXIT(INVALID)`"
+    - "with it enabled the NMI intercept applies to physical NMIs only"
+    - "a virtual NMI is taken when `V_NMI` is set, virtual NMIs are unmasked, and there is no interrupt shadow"
+    - "on recognition the processor clears `V_NMI` and sets `V_NMI_MASK` before accessing the IDT"
+    - "`V_NMI_MASK` is cleared on a guest `IRET`, and is saved as 0 if a `#VMEXIT` occurs during delivery"
+    - "a physical NMI has priority over a virtual NMI"
+  required_citation: "APM2 §15.21.10"
+  notes: "Chapter 07 sections 7.2.1 and 7.2.3. Bonus: when NMI virtualization is enabled and `EVENTINJ` injects an NMI, VMRUN sets `V_NMI_MASK` in the guest state."
+
+- id: io-page-table-walk
+  chapter: 09-iommu-page-tables.md
+  type: mechanism
+  question: "How does an IOMMU host I/O page-table walk work, and how do I get a page size other than the level default?"
+  must_include:
+    - "it is a multi-level tree of 4-Kbyte tables indexed by 9 virtual-address bits per level, holding 8-byte entries"
+    - "an entry is a page translation entry when its Next Level field is 0h or 7h, and a page directory entry for every other Next Level value - there is no separate type bit"
+    - "bit 0 `PR` is present; when `PR` is 0 the remaining 63 bits are ignored"
+    - "`IR` at bit 61 and `IW` at bit 62 are ANDed cumulatively down the walk, and skipped levels are treated as 1"
+    - "level 1 covers VA bits 20:12 with a 4096-byte default page, level 2 bits 29:21 with 2 Mbytes, level 3 bits 38:30 with 1 Gbyte, and the index field is always 9 bits except at level 6, which uses the 7 bits 63:57"
+    - "setting Next Level = 7h in a translation entry overrides the default page size: the size is then determined by the position of the first zero bit in the page address starting from bit 12, and the result must be larger than the level's default and smaller than the next higher level's default"
+    - "a non-default size means the entry is replicated - a 32-Kbyte page needs the level-1 PTE repeated eight times"
+  required_citation: "IOMMU 3.11 §2.2.3"
+  notes: "Chapter 09 section 9.1; the entry layout is `[IOMMU 3.11 Table 16]` and the level parameters `[IOMMU 3.11 Table 15]`. The walk depth itself comes from DTE `Mode[11:9]`, which chapter 08 owns."
+
+- id: gcr3-pasid-translation
+  chapter: 09-iommu-page-tables.md
+  type: mechanism
+  question: "How does the IOMMU turn a PASID into a guest CR3, and how wide a PASID can it actually translate?"
+  must_include:
+    - "the GCR3 path exists only when `EFR[GTSup]` is 1, is armed globally by `Control[GTEn]` and per device by DTE `GV`, and its depth is set by DTE `GLX` within the limit `EFR[GLXSup]`"
+    - "with `GLX` = 00b there is a single naturally aligned 4-Kbyte page holding 512 eight-byte entries indexed by `PASID[8:0]`, and the upper PASID bits are ignored"
+    - "`GLX` = 01b adds a level-2 table indexed by `PASID[17:9]`, and `GLX` = 10b a level-3 table indexed by `PASID[19:18]`"
+    - "so the maximum translatable PASID is 9 bits with one level, 18 with two and 20 with three, while `EFR[PASmax]` separately bounds what the IOMMU can handle internally"
+    - "every GCR3 base pointer inside a level-1 table is a guest physical address"
+    - "the DTE-side GCR3 table root pointer is a system physical address when `Control[GCR3TRPMode]` is 0 and a guest physical address when it is 1"
+    - "IOMMU TLBs are not cleared when a GCR3 table entry changes"
+  required_citation: "IOMMU 3.11 §2.2.6.3"
+  notes: "Chapter 09 section 9.2. The guest tables themselves are AMD64 long-mode compatible; the DTE carries the GCR3 root pointer in three discontiguous slices, which chapter 08 owns."
+
+- id: msi-remapping-end-to-end
+  chapter: 10-iommu-interrupt-remapping.md
+  type: mechanism
+  question: "Walk an MSI from a passthrough device through the IOMMU to a running guest vCPU's IRR."
+  must_include:
+    - "the interrupt address range is not translated by the page tables - `FD_F800_0000h` to `FD_F8FF_FFFFh` is the Interrupt/EOI range, and the adjacent `FD_0000_0000h` to `FD_F7FF_FFFFh` is reserved interrupt address space where a request produces an `INVALID_DEVICE_REQUEST` event"
+    - "the message type decides the path: MT 0 and 1 go through the DTE and IRTE, while NMI, INIT, ExtInt, SMI and the LINT types are governed by the DTE pass bits or target-aborted"
+    - "the IRTE index is `MSI Data[10:0]`"
+    - "for a remapped interrupt the IOMMU builds the new message address by OR-ing `IRTE[23:2]` with bits 63:2 of the HyperTransport interrupt address range base `FFFF_FFFD_F800_0000h`"
+    - "for a `GuestMode = 1` entry the IOMMU instead posts into the guest APIC backing page: bit index `IRTE[Vector] modulo 32`, byte offset `(IRTE[Vector] / 32) << 4`, and an atomic set of one bit at `IRTE[GuestVirtualAPICTableRootPointer] + 0200h + byte offset`"
+    - "it then re-reads the entry: with `IsRun` 0 and `GALogIntr` 1 it writes a GA log entry and raises an interrupt, and with `IsRun` 1 it sends a guest APIC doorbell to the core named by `Destination`"
+    - "`RemapEn` = 0 is the per-vector deny: the interrupt is target aborted and reported as an `IO_PAGE_FAULT`"
+  required_citation: "IOMMU 3.11 §2.2.5.2"
+  notes: "Chapter 10 section 10.4; the message-type routing table is `[IOMMU 3.11 Table 19]` and the address ranges `[IOMMU 3.11 Table 3]`. Only `IntCtl` = 10b validates."
+
+- id: ga-log-and-gappi
+  chapter: 10-iommu-interrupt-remapping.md
+  type: mechanism
+  question: "What is the GA log actually telling the hypervisor, and what does GAPPI change?"
+  must_include:
+    - "the GA log is a circular buffer in system physical memory holding virtual interrupt requests that could not be delivered because the target virtual processor was not running"
+    - "each entry identifies the source by `DeviceID` and the target by the `GATag` software put in the IRTE; the IOMMU never interprets the tag, it only copies it back"
+    - "the entry is a notification that a pending interrupt needs the hypervisor to schedule the target, not a record of a lost interrupt - the IRR bit was already set"
+    - "GA log overflow does not drop one entry and carry on - it stops the log, and logging stays disabled until software runs the restart procedure"
+    - "GAPPI replaces the log entry with a direct interrupt to a physical core: it is enabled by `MMIO Offset 0030h[GAPPISup]` and `MMIO Offset 0018h[GAPPIEn]`, and fires when all the guest IRR bits were clear before the last update"
+    - "the GAPPI message uses `Destination = IRTE[Destination]`, `Vector = IRTE[GATag[7:0]]`, message type 0, destination mode 0 and `RQEOI = 0`"
+    - "software must tolerate spurious GAPPIs"
+  required_citation: "IOMMU 3.11 §2.2.5.4"
+  notes: "Chapter 10 section 10.5; the log as a data structure is `[IOMMU 3.11 §2.7.1]` and is owned by chapter 08, which gives the 8-byte record shape. Open item: §2.7.1 names `GAEn` as the log enable while the Chapter 3 register definition names a separate `GALogEn` - the chapter follows the register definition."
+
+- id: c-bit-mechanics
+  chapter: 11-memory-encryption.md
+  type: mechanism
+  question: "How does the C-bit work, and what do I have to do when I change it on a page?"
+  must_include:
+    - "the C-bit's position is implementation-specific and is read from `Fn8000_001F_EBX[5:0]`; the APM's own example is address bit 47"
+    - "setting it to 1 marks the page encrypted in DRAM and clearing it leaves the page unencrypted; it may be applied to page-table entries for any page size - 4 KB, 2 MB or 1 GB"
+    - "the C-bit is not considered a physical address bit and is masked by hardware for range checks, which use the reduced physical address size"
+    - "any page corresponding to an MMIO address must be configured with the C-bit clear; an access with the C-bit set is ignored"
+    - "in some implementations coherency between the encrypted and unencrypted mappings of the same physical page is not enforced, so software must flush the page from all CPU caches in the system before changing the value of the C-bit for that page"
+    - "the flush is not required when `Fn8000_001F_EAX[10]` `HwEnfCacheCoh` is set"
+    - "changing the C-bit does not re-encrypt the page's existing contents - whatever was there becomes unintelligible"
+  required_citation: "APM2 §7.10.4"
+  notes: "Chapter 11 sections 11.3 and 11.4; the coherence rule is `[APM2 §7.10.6]` and the MMIO rule `[APM2 §7.10.5]`. Quickref section 0.2 routes 'reads of guest memory return ciphertext' to 11.3."
+
+- id: ghcb-establishment
+  chapter: 13-sev-es-ghcb.md
+  type: mechanism
+  question: "Walk me through how a SEV-ES guest and the hypervisor negotiate and establish the GHCB before the first ordinary `#VC`."
+  must_include:
+    - "the GHCB is located by MSR `C001_0130h`, whose value is saved and restored by hardware through VMCB offset `0A0h`, may be accessed only in guest mode, and must not be intercepted by the hypervisor"
+    - "the MSR splits into `GHCBInfo` in bits 11:0 and `GHCBData` in bits 63:12"
+    - "before it has a GHCB the guest uses the MSR protocol: `GHCBInfo` `0x002` SEV Information Request and `0x001` SEV Information Response, which returns the maximum protocol version in `GHCBData[63:48]`, the minimum in `[47:32]` and the page-table encryption bit number in `[31:24]`"
+    - "AMD's worked example writes `0x0001_0001_2f00_0001` for a hypervisor supporting only version 1 with encryption bit 47, and `0x0002_0001_3300_0001` for one supporting up to version 2 with encryption bit 51"
+    - "a guest that cannot support any advertised version must request termination, `GHCBInfo` `0x100`, whose reason-code set is `GHCBData[15:12]` and reason code `GHCBData[23:16]`"
+    - "the guest then allocates a page, marks it shared (decrypted), and registers it - `0x012` Register GHCB GPA Request with `0x013` as the response, or writes the GPA directly with `GHCBInfo` `0x000`"
+    - "until the encryption-bit position is known and the GHCB is marked shared, the guest must avoid any unplanned NAE event, because every access uses the guest key"
+  required_citation: "GHCB 2.04 §2.3.1"
+  notes: "Chapter 13 sections 13.2, 13.3, 13.3.1 and 13.5. The MSR-protocol code set also carries `0x004`/`0x005` CPUID, `0x006`/`0x007` AP Reset Hold, `0x014`/`0x015` Page State Change, `0x018`/`0x019` Unregister and `0x080`/`0x081` Hypervisor Feature Support. `GHCBInfo` is 12 bits wide, not 4."
+
+- id: rmp-page-states
+  chapter: 14-sev-snp.md
+  type: mechanism
+  question: "What are the RMP page states, what determines which one a page is in, and which transitions are not possible?"
+  must_include:
+    - "the state is determined by the combination of `Assigned`, `Validated`, `ASID`, `Immutable`, `GPA` and `VMSA`"
+    - "the eleven states are Hypervisor, HV-fixed, Reclaim, Firmware, Context, Metadata, Pre-Guest, Guest-Invalid, Pre-Swap, Guest-Valid and Default"
+    - "Hypervisor is `Assigned=0, ASID=0`; a guest page is `Assigned=1` with the guest's ASID; the AMD-SP owns `Assigned=1, ASID=0, Immutable=1`"
+    - "Default is a page whose sPA indexes past `RMP_END`: it has Hypervisor-page permissions but cannot transition to any other state"
+    - "HV-fixed cannot be created by `RMPUPDATE` - it comes from `SNP_PAGE_SET_STATE` or `SNP_INIT_EX`"
+    - "Reclaim is the only exit from immutability"
+    - "`RMPUPDATE` can invalidate a page but never validate one, and `PVALIDATE` cannot move Pre-Guest or Pre-Swap pages because both carry `Immutable = 1`"
+    - "`PSMASH` converts a 2 MB entry into 512 4 KB entries while preserving the `Validated` bit, whereas doing the same conversion with `RMPUPDATE` clears it"
+  required_citation: "SNP-ABI 1.59 Table 14"
+  notes: "Chapter 14 section 14.3; `PSMASH` is `[APM2 §15.36.11]`. RMP granularity is 4 KB or 2 MB only - there is no 1 GB RMP entry. Coalescing has no x86 instruction; the firmware exposes `SNP_PAGE_UNSMASH`."
+
+- id: vmpl-and-rmpadjust
+  chapter: 14-sev-snp.md
+  type: mechanism
+  question: "How do VMPLs work, what is in a VMPL permission mask, and how does a guest hand permissions downward?"
+  must_include:
+    - "within one vCPU the levels are distinct VMSAs expected to run mutually exclusively, each tagged by the `VMPL` field in its VMSA; VMPL0 is the most privileged and numbering increases as privilege decreases"
+    - "the number of implemented levels is `Fn8000_001F_EBX[15:12]` (`NumVMPL`)"
+    - "the permission mask is bit 0 Read, bit 1 Write, bit 2 Execute-User, bit 3 Execute-Supervisor, bit 4 Supervisor-Shadow-Stack, with bits 7:5 reserved SBZ"
+    - "a cleared bit makes the corresponding access cause `#VMEXIT(NPF)`"
+    - "when the hypervisor assigns a page, VMPL0 receives full permissions and every other level none; the guest then uses `RMPADJUST` to hand out subsets downward"
+    - "`RMPADJUST` fails with `FAIL_PERMISSION` if `TARGET_VMPL <= CURRENT_VMPL` or if the requested mask contains any bit absent from the caller's own mask, so a vCPU at VMPL1 can alter neither its own mask nor VMPL0's"
+    - "three combinations are invalid: `R==0 && Permissions[7:1]!=0`, `SSS==1 && (XU==1 || XS==1)`, and `XS==1 && XU==0`"
+    - "the `VMSA` flag is not a mask bit - it is `RDX[16]` of `RMPADJUST` and is ignored unless the current VMPL is 0"
+  required_citation: "APM2 §15.36.7"
+  notes: "Chapter 14 section 14.5; the mask is `[APM2 Table 15-36]` and the invalid combinations `[APM2 Table 15-37]`. `PVALIDATE` is VMPL0-only and raises `#GP(0)` at any other level, which is why the SVSM exposes `SVSM_CORE_PVALIDATE`."
+
+- id: vmcb02-construction
+  chapter: 15-nested-virtualization.md
+  type: mechanism
+  question: "When L1 asks to run L2 on AMD, what does L0 have to build, and how are the two hypervisors' intercepts combined?"
+  must_include:
+    - "three VMCBs are in play and only one is handed to hardware: vmcb01, with which L0 runs L1; vmcb12, which L1 prepared for L2 and which L0 sees only as a page of L1 guest-physical memory; and vmcb02, which L0 synthesises and passes to VMRUN"
+    - "the naming is a software convention from the Turtles work and the Linux implementation, not AMD terminology"
+    - "L0 cannot let hardware consume vmcb12 for two reasons: every physical address in a VMCB control area is a system physical address to hardware but an L1 guest-physical address in vmcb12, and vmcb12's intercept vectors describe only what L1 wants"
+    - "the composition is a union, bit by bit: vmcb02's intercept vectors are vmcb01's OR vmcb12's, and the permissions maps are the bitwise OR of L0's and L1's"
+    - "nothing in the architecture computes this; it is entirely L0's software"
+    - "dropping an L0 intercept hands L2 a capability L0 withheld from L1, and dropping an L1 intercept silently changes L2's behaviour relative to running on bare L1"
+    - "ASIDs are a hardware-wide namespace L1 does not own, so the ASID L1 wrote into vmcb12 is a virtual number L0 must map onto a real one"
+    - "L0 must keep one stable vmcb02 page per (L1 virtual CPU, vmcb12) pair, because SVM uses the physical address of the VMCB as the unique identifier for caching and the ASID is explicitly not one"
+  required_citation: "APM2 App.B"
+  notes: "Chapter 15 sections 15.1.2, 15.2.3, 15.2.4 and 15.3.1. The union rule itself carries `[no-spec]` - AMD publishes no nested-SVM programming guide. Nothing in this model is intersected. Events injected through `EVENTINJ` bypass intercept checks, so L0 must apply L1's exception intercepts in software."
+
+- id: vmcb-versus-vmcs
+  chapter: 19-comparison-intel-arm-riscv.md
+  type: mechanism
+  question: "What is the real architectural difference between AMD's VMCB and Intel's VMCS, and what follows from it?"
+  must_include:
+    - "the VMCB is an ordinary 4-Kbyte-aligned memory page whose field offsets are architecturally published, so a hypervisor reads and writes it with ordinary loads and stores and needs no dedicated accessor instruction"
+    - "the VMCS has an implementation-specific layout and is reachable only through VMREAD and VMWRITE using architectural field encodings"
+    - "the trade is symmetric and neither side is strictly better: Intel can rearrange the VMCS between generations at the cost of one privileged instruction per field access, while AMD gets bulk access at the cost of a layout that can only be extended, never rearranged"
+    - "that is why AMD's newer controls appear in previously reserved bits and in software-reserved regions rather than in relocated fields"
+    - "host state differs too: AMD keeps it outside the VMCB at `VM_HSAVE_PA` and the block is architecturally opaque, while Intel's VMCS contains a host-state area the processor loads on every VM exit"
+    - "AMD's caching contract is visible to software as the VMCB clean field, keyed on the VMCB's physical address and explicitly not on the ASID, whereas Intel's working copy is invisible and VMCLEAR forces it to memory"
+    - "AMD feature discovery is a flat list of bits in `Fn8000_000A`, while Intel requires each control field to be computed against allowed-0 and allowed-1 capability masks"
+  required_citation: "APM2 App.B"
+  notes: "Chapter 19 sections 19.2, 19.2.1, 19.2.2 and 19.2.4. The Intel-side statements are anchored to the SDM and are Tier-2 in this skill; the chapter's open items say anchor depth is uneven on purpose, so an answer that cites the SDM at chapter level for the Intel half is correct. This mechanism is also why AMD has no enlightened VMCS - see the trap question."
+
+# ===========================================================================
+# DIAGNOSIS  (20) - eight are Windows-platform
+# ===========================================================================
+
+- id: diag-svm-unavailable-chain
+  chapter: 01-svm-intro.md
+  type: diagnosis
+  question: "CPUID says SVM is present but my `WRMSR` to `EFER` takes a `#GP` and `SVME` reads back 0. Walk the chain."
+  must_include:
+    - "read `VM_CR` (`C001_0114h`): `SVMDIS = 1` means firmware disabled SVM"
+    - "note the polarity - it is the absence of the disable, not the presence of an enable, that clears the gate, so `VM_CR.SVMDIS == 0` means SVM is allowed"
+    - "if `SVMDIS = 1` and `Fn8000_000A_EDX[SVML]` is 0, the part has no SVM-Lock and there is no key mechanism: the only remedy is a firmware setting change - AMD names this outcome `SVM_DISABLED_AT_BIOS_NOT_UNLOCKABLE`"
+    - "if `SVMDIS = 1` and `SVML` is 1, SVM-Lock is present and the block may be releasable with the 64-bit key through `SVM_KEY` (`C001_0118h`), obtained from platform firmware or the TPM - `SVM_DISABLED_WITH_KEY`"
+    - "if `VM_CR` cannot be rewritten to clear `SVMDIS`, `VM_CR.LOCK` is set; `SVM_KEY` is write-only and clears `LOCK` only if the written value matches the stored key and both are non-zero"
+    - "if the key is zero while `LOCK` is 1, `LOCK` can only be cleared by a processor reset"
+    - "setting `SVMDIS` while `EFER.SVME` is 1 generates a `#GP` regardless of `VM_CR.LOCK`"
+    - "before concluding it is firmware, check `Fn0000_0001 ECX[31]`: a hypervisor may already hold SVM, in which case the whole hardware chain reads healthy and tells you nothing - see `16-windows-platform.md`"
+  required_citation: "APM2 §15.30.1"
+  notes: "Chapter 01 sections 1.4 and 1.5; the detection algorithm and its outcome names are AMD's own, `[APM2 §15.4]`. Quickref section 0.2 routes 'CPUID says SVM is present, VMRUN still fails' here and then to 04 section 4.2."
+
+- id: diag-exit-code-80h
+  chapter: 05-exit-decoding.md
+  type: diagnosis
+  question: "I set the VMRUN intercept, which is bit 0 of a vector, and I am getting exit code `80h` rather than `00h`. Is my table wrong?"
+  must_include:
+    - "no - `80h` is correct: the VMRUN intercept is bit 0 of intercept vector 4, and vector 4 starts at `0x80`"
+    - "the encoding is segmented across the six 32-bit intercept words at `000h` through `014h` read as one contiguous bit array, so `exit code = 32 x (vector number) + (bit position within that vector)`"
+    - "CR reads are `00h-0Fh` and CR writes `10h-1Fh` (vector 0), DR reads `20h-2Fh` and writes `30h-3Fh` (vector 1), exceptions `40h-5Fh` (vector 2), vector 3 is `60h-7Fh`, vector 4 is `80h-9Fh` and vector 5 is `A0h-BFh`"
+    - "for exceptions the shortcut is `exit code = 40h + vector`"
+    - "the rule does not extend past `BFh`: `400h`, `401h`, `402h`, `403h` and `407h` are not intercept-vector bits, and neither are the negative codes"
+    - "`00h` is a CR0 read, not VMRUN"
+  must_not_include:
+    - "the exit code equals the bit position of the intercept bit within its 32-bit word"
+    - "AMD's statement in Appendix C is wrong"
+  required_citation: "APM2 App.C"
+  notes: "errata E06. Chapter 05 section 5.1; chapter 03 section 3.1 gives the same mapping. Do not over-correct: Appendix C's own sentence is that exit codes equal the bit position of the flag in the VMCB's intercept vector, and read as one contiguous array across all six words that is true. The misconception is reading the bit index within a single 32-bit word."
+
+- id: diag-stale-guest-tlb
+  chapter: 06-nested-paging.md
+  type: diagnosis
+  question: "I changed a nested page table entry and the guest keeps using the old translation. What am I missing?"
+  must_include:
+    - "VMRUN and `#VMEXIT` write CR0, CR3, CR4 and EFER but those writes do not flush the TLB"
+    - "use `TLB_CONTROL` in bits 39:32 of VMCB offset `058h`: `03h` flushes this guest's TLB entries and `07h` flushes its non-global entries"
+    - "`03h` and `07h` require `CPUID Fn8000_000A_EDX[FlushByAsid]`, bit 6; without it you must downgrade to `01h`, flush everything"
+    - "`INVLPGA` invalidates by guest virtual address and ASID, and AMD states plainly that it does not provide a means to invalidate a nested translation by guest physical address - so there is no targeted nested-page invalidation"
+    - "the alternative is to allocate the guest a new ASID and not reuse the old one until the whole TLB has been flushed at least once"
+    - "if you intercepted the action that would have caused a flush, the `#VMEXIT` occurs and the TLB is not flushed"
+    - "clean bit 4 (`NP`) covers `N_CR3` and `G_PAT`, so clearing it does not substitute for a TLB command"
+  required_citation: "APM2 §15.16.1"
+  notes: "Chapter 06 section 6.8; `INVLPGA`'s limitation is `[APM2 §15.16.2]`. Quickref section 0.2 routes 'guest TLB entries are stale after I changed a page table' here. Under AVIC with multiple vCPUs a `TLB_CONTROL` of `3h` is required regardless of the respective ASID values."
+
+- id: diag-avic-incomplete-ipi
+  chapter: 07-virtual-interrupts-avic.md
+  type: diagnosis
+  question: "I am taking exit code `401h` repeatedly and a guest vCPU has stopped receiving interrupts. How do I decode it and what are the causes?"
+  must_include:
+    - "`401h` is `AVIC_INCOMPLETE_IPI`"
+    - "EXITINFO1 holds the value written to the vAPIC ICR: ICRH in bits 63:32 and ICRL in bits 31:0"
+    - "EXITINFO2 holds the failure reason `ID` in bits 63:32 and, for `ID` values 1 through 3, a table index in bits 11:0, with bits 31:12 reserved"
+    - "there are six defined `ID` values, 0 through 5: 0 Invalid Interrupt type, 1 IPI Target Not Running, 2 Invalid IPI Target, 3 Invalid Backing Page Pointer, 4 Invalid IPI Vector when the vector is below 16, and 5 Un-accelerated IPI"
+    - "`ID` = 1 is the ordinary case: the target vCPU is not scheduled, and the hypervisor must deliver the interrupt itself or schedule the target"
+    - "for directed interrupts an invalid Logical APIC ID Table entry causes a `#VMEXIT`, while for broadcast IPIs invalid entries are simply ignored"
+  must_not_include:
+    - "there are four defined ID values"
+  required_citation: "APM2 Table 15-27"
+  notes: "Chapter 07 section 7.8.1; the delivery path is 7.6.1. Quickref section 0.2 routes 'interrupts stop being delivered to a guest vCPU' to 07 section 7.2. The companion exit `402h` `AVIC_NOACCEL` reports an un-accelerated register access with the offset in EXITINFO1 bits 11:4 and the direction in bit 32."
+
+- id: diag-io-page-fault
+  chapter: 09-iommu-page-tables.md
+  type: diagnosis
+  question: "I have an `IO_PAGE_FAULT` in the IOMMU event log with dword +04 reading `2050_0000h`. Decode it, and tell me whether the transaction can be retried."
+  must_include:
+    - "`EventCode` is bits 31:28 of dword +04 = 2h, an `IO_PAGE_FAULT`"
+    - "`DeviceID` is bits 15:0 of dword +00, split as Bus[15:8] / Device[7:3] / Function[2:0]"
+    - "`GN` is bit 16 of +04: 0 here, so the address is a guest physical address and `D/P[15:0]` is the DomainID"
+    - "`PR` is bit 20: 1 here, so the page is marked present"
+    - "`PE` is bit 22 and `RW` is bit 21: PE = 1 with RW = 0 is a read denied by cumulative permissions; `PE` and `RZ` are only meaningful when `PR` = 1"
+    - "`RZ` is bit 23: 0 here, so it is an invalid level encoding rather than a reserved bit"
+    - "`TR` is bit 24 (translation request versus ordinary transaction) and `I` is bit 19 (interrupt versus memory)"
+    - "the address in dwords +08 and +12 is the device virtual address"
+    - "an `IO_PAGE_FAULT` is not recoverable the way a CPU page fault is - there is no faulting-access restart"
+  required_citation: "IOMMU 3.11 Table 57"
+  notes: "Chapter 09 section 9.6; the record shape is `[IOMMU 3.11 Figure 56]`. Logging is controlled by the DTE's `SA` (bit 98), `SE` (bit 97) and `IG` (bit 133) plus `SupIOPF` in the IRTE. An ATS request is the exception: it returns a translation-not-present response and creates no event log entry."
+
+- id: diag-passthrough-interrupts-missing
+  chapter: 10-iommu-interrupt-remapping.md
+  type: diagnosis
+  question: "A passthrough device's MSIs never reach the guest, and the device is otherwise working. Where do I look?"
+  must_include:
+    - "check the DTE interrupt cluster first: with `IV` = 0 all interrupts are forwarded without remapping, and `IntCtl` 00b target-aborts fixed and arbitrated interrupts while only 10b actually remaps them"
+    - "the Interrupt Table Root Pointer is used only when `IntCtl` is 10b and is otherwise ignored"
+    - "`IntTabLen` must be large enough - the IRTE index is `MSI Data[10:0]`, so a short table means the entry is out of range"
+    - "in the IRTE, `RemapEn` = 0 is the per-vector deny: the interrupt is target aborted and reported as an `IO_PAGE_FAULT`"
+    - "if `SupIOPF` is set, or the DTE's `IG` bit is set, the fault is suppressed and you get silence instead of a log entry"
+    - "for a `GuestMode = 1` entry the IOMMU posts into the guest APIC backing page and then re-reads the entry: with `IsRun` 0 and `GALogIntr` 1 it writes a GA log entry, so the interrupt is pending rather than lost and the hypervisor must schedule the target"
+    - "GA log overflow stops the log entirely and logging stays disabled until software runs the restart procedure, so an empty GA log is not evidence that nothing is pending"
+  must_not_include:
+    - "check that `RemapEm` is set"
+  required_citation: "IOMMU 3.11 Table 9"
+  notes: "Chapter 10 sections 10.3, 10.4 and 10.5. Quickref section 0.2 routes 'a passthrough device's interrupts never arrive' to 10 section 10.4. The message type also matters: with `DM` = 1 only MT 0-1 reach the tables unless `NumIntRemapSup` is 01b and `NumIntRemapMode` is 01b."
+
+- id: diag-sev-launch-failure
+  chapter: 12-sev.md
+  type: diagnosis
+  question: "My SEV guest will not launch: the firmware returns `INVALID_PLATFORM_STATE`, and later `WBINVD_REQUIRED`. What is going on?"
+  must_include:
+    - "the firmware refuses commands that are wrong for the current state, so check the state machines first"
+    - "the platform state machine has three states - `UNINIT` `0h`, `INIT` `1h`, `WORKING` `2h` - and the guest state machine has seven: `UNINIT` 0h, `LUPDATE` 1h, `LSECRET` 2h, `RUNNING` 3h, `SUPDATE` 4h, `RUPDATE` 5h, `SENT` 6h"
+    - "`WBINVD_REQUIRED` is `0x000E` and `DF_FLUSH_REQUIRED` is `0x000F`"
+    - "the ASID reuse handshake is `DEACTIVATE`, then `WBINVD` on every hardware thread, then `DF_FLUSH` - skipping either step produces those two codes"
+    - "`ACTIVATE` also requires a non-zero, valid, not-in-use SEV ASID on an inactive guest"
+    - "the ASID range matters: a SEV-ES guest must use an ASID from 1h to `MIN_SEV_ASID - 1`, and a SEV guest without SEV-ES from `MIN_SEV_ASID` to the maximum, where `MIN_SEV_ASID` is `Fn8000_001F[EDX]` and the maximum is `Fn8000_001F[ECX]`"
+  required_citation: "SEV-API 3.24 Table 14"
+  notes: "Chapter 12 sections 12.3.1, 12.4, 12.7 and 12.8.2. Quickref section 0.2 routes 'SEV guest fails to launch / firmware returns an error' to 12 section 12.8. The pre-rebuild corpus listed five guest states; there are seven."
+
+- id: diag-vc-storm-early-boot
+  chapter: 13-sev-es-ghcb.md
+  type: diagnosis
+  question: "My SEV-ES guest hangs very early in boot, apparently in a `#VC` loop, before it reaches long mode."
+  must_include:
+    - "`#VC` is vector 29, a precise, contributory, fault-type exception that cannot be masked and is raised whenever an NAE event occurs in an SEV-ES guest"
+    - "the `#VC` error code equals the `#VMEXIT` code of the event that caused it"
+    - "before long mode, or before 32-bit PAE paging is set up, all accesses use the guest key, so the GHCB cannot yet be shared"
+    - "the guest must therefore avoid any unplanned NAE event until it has discovered the encryption-bit position and marked the GHCB shared"
+    - "the encryption-bit position comes from the MSR protocol's SEV Information Response, `GHCBData[31:24]`"
+    - "until then the only usable channel is the GHCB MSR protocol itself - for example the CPUID request at `GHCBInfo` `0x004`, whose response `0x005` returns one register selected by `GHCBData[31:30]`"
+    - "the hypervisor must not intercept MSR `C001_0130h`, and it is inadvisable for it to set the `#VC` intercept bit"
+  required_citation: "GHCB 2.04 §2.5"
+  notes: "Chapter 13 sections 13.2, 13.3.1 and 13.5. Quickref section 0.2 routes '#VC storms, or a guest hangs in early boot under SEV-ES' here. Leaf `0x0000_000D` is explicitly unsupported by the MSR-protocol CPUID request."
+
+- id: diag-attestation-verify-failure
+  chapter: 14-sev-snp.md
+  type: diagnosis
+  question: "An SEV-SNP attestation report fails signature verification, or my parser reports nonsense TCB numbers. What are the usual causes?"
+  must_include:
+    - "check what the signature covers: `SIGNATURE` is 512 bytes at `2A0h` and covers bytes 0h to 29Fh inclusive, so hashing the whole structure is wrong"
+    - "the algorithm is ECDSA P-384 with SHA-384, encoding 1h, and R and S are each zero-extended little-endian, R at 000h and S at 048h of the signature field"
+    - "if `MASK_CHIP_KEY` is set the firmware writes zeroes into `SIGNATURE` instead of signing at all, so an all-zero signature is a configuration result rather than corruption"
+    - "check which key signed it: `SIGNING_KEY` in bits 4:2 at offset `48h` is 0 legacy VCEK, 1 VLEK, 2 chip-secret VCEK, 7 none"
+    - "`TCB_VERSION` field layout differs by product line - the Venice, Turin, and Genoa/Milan layouts assign different bit ranges - so a parser that assumes one layout misreads the others"
+    - "check `VERSION` at offset `00h`: the value has moved across firmware ABI revisions, 3h then 5h then 6h, and a parser pinned to an older version will mis-slice the newer report"
+  required_citation: "SNP-ABI 1.59 Table 27"
+  notes: "Chapter 14 section 14.11. Quickref section 0.2 routes 'attestation report fails to verify' here. `AUTHOR_KEY_DIGEST` is zero unless `AUTHOR_KEY_EN` is 1. AMD's own Rev 1.59 prose mis-numbers the TCB_VERSION tables, so cite the caption rather than the prose."
+
+- id: diag-vmm-cannot-use-amd-v
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "My hypervisor reports that AMD-V is disabled in the BIOS on this Windows 11 desktop. SVM Mode is clearly enabled in firmware and CPUID reports SVM. What is going on?"
+  must_include:
+    - "the Windows hypervisor already holds `EFER.SVME`, so your software cannot take SVM host mode"
+    - "the Windows installation the user interacts with is itself a guest: it is the root partition, running in VTL0 above the hypervisor"
+    - "enabling the Hyper-V role, the Virtual Machine Platform component that WSL 2 uses, Windows Sandbox, Docker Desktop's Windows backends, memory integrity or Credential Guard launches the hypervisor at boot, whether or not a virtual machine is ever created"
+    - "Microsoft documents that only one software component at a time can use this hardware and that virtualization applications cannot share it"
+    - "the product is reporting the symptom, not the cause - nothing on the machine is misconfigured"
+    - "the three options are the Windows Hypervisor Platform, running as a nested guest, or turning the hypervisor off with `bcdedit /set hypervisorlaunchtype off` and a reboot"
+    - "turning it off stops every Hyper-V-backed feature at once - VBS, memory integrity, Credential Guard, WSL 2, Windows Sandbox and Docker Desktop's Windows backends"
+    - "the architecture provides no way for two pieces of software to hold SVM host mode on one logical processor at the same time"
+  must_not_include:
+    - "re-enable SVM Mode in the BIOS"
+    - "the firmware setting is wrong"
+  required_citation: "[101] Microsoft Learn — virtualization applications and Hyper-V"
+  notes: "Chapter 16 sections 16.1, 16.1.3 and 16.6.2; quickref section 0.5 question 1 and SKILL.md 'The Windows fact that resolves most questions'. Chapter 16 carries no APM anchors by design, so an answer that cites an APM section for this is citing the wrong document."
+
+- id: diag-probe-chain-reads-clean
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "I walked the whole hardware chain on a Windows machine - CPUID, `VM_CR`, `EFER.SVME`, `VM_HSAVE_PA` - and every stage reads healthy, but VMRUN never runs. What did I get wrong?"
+  must_include:
+    - "the order of questions: the hardware chain describes the silicon and says nothing about a second hypervisor already occupying host mode"
+    - "ask first whether a hypervisor is present - CPUID leaf 1, ECX bit 31, the hypervisor-present bit, which is set by hypervisors and clear on a physical processor"
+    - "then ask which one - CPUID leaf `0x40000000`, where Hyper-V returns the string 'Microsoft Hv' in EBX, ECX and EDX together with the maximum hypervisor CPUID leaf"
+    - "leaf `0x40000001` returns the interface signature `Hv#1`, and Microsoft recommends basing compatibility decisions on that signature rather than on the vendor string"
+    - "only then walk the hardware chain in `01-svm-intro.md`"
+    - "reversing those steps is exactly what produces the 'everything looks fine but VMRUN never runs' report"
+    - "a guest-side reading of `VM_CR` or `EFER` under Hyper-V is not a reading of the physical processor's state - the values are whatever the level above chose to present"
+  required_citation: "[463] Hypervisor Top-Level Functional Specification — CPUID leaves"
+  notes: "Chapter 16 sections 16.1.1 and 16.9. The leaf range `0x40000000`-`0x400000FF` is the hypervisor CPUID range and is unrelated to Hyper-V's synthetic MSR block. Anti-cheat software that treats hypervisor presence as tampering will see it on an untampered PC."
+
+- id: diag-driver-rejected-memory-integrity
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "Our signed kernel driver loaded for years and now fails as soon as memory integrity is turned on."
+  must_include:
+    - "memory integrity is HVCI: the kernel-mode code-integrity decision moves into the secure kernel in VTL1, so a VTL0 kernel page cannot be both writable and executable"
+    - "the constraint is enforced from VTL1 using nested-paging permissions the VTL0 kernel cannot modify, so it is structural rather than a signing-policy change"
+    - "drivers that allocate writable-executable memory, generate code at run time or patch kernel code are incompatible by construction"
+    - "a compromised or merely creative VTL0 driver cannot mark its own page executable"
+    - "on AMD the enforcement is cheaper than the naive form because GMET lets the hypervisor trap supervisor-mode execution of a page without withdrawing user-mode execute permission"
+    - "Microsoft lists 'MBEC/GMET Required' as compatibility bit 4 in its x64 compatibility-issue table, alongside SLAT required, IOMMU required and hardware virtualization required"
+    - "without GMET the hypervisor falls back to making pages non-executable for both privilege levels and taking a nested page fault on every transition"
+  required_citation: "[461] Microsoft Learn — memory integrity enablement and compatibility"
+  notes: "Chapter 16 sections 16.3.2 and 16.3.5. Microsoft's default-enablement hardware table names the AMD floor as 'AMD Zen 2 architecture and newer'. The GMET mechanism itself is owned by `06-nested-paging.md` section 6.9; the compatibility gate is a Microsoft statement and carries no APM anchor."
+
+- id: diag-kernel-dma-protection-off
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "`msinfo32` shows Kernel DMA Protection `Off` on my AM5 desktop even though I enabled the IOMMU in firmware. Why, and what would it take to turn it on?"
+  must_include:
+    - "check `msinfo32` for 'Hyper-V - Virtualization Enabled in Firmware': if that reads NO, the firmware switch is the cause"
+    - "if that switch is on and Kernel DMA Protection is still Off, Microsoft's answer is that the system does not support Kernel DMA Protection"
+    - "the AMD-specific requirement is that firmware must set the DMA remap support bit in the IVRS table's `IVinfo` field - the Intel equivalent is `DMA_CTRL_PLATFORM_OPT_IN_FLAG` in the DMAR table"
+    - "the firmware must also satisfy the pre-boot isolation rules: no device may perform DMA outside IVMD blocks on AMD after `ExitBootServices()`, and a violation raises an IOMMU fault and bug check `0xE6`"
+    - "enabling PCI Express Native Control through the `_OSC` ACPI method is required, and a TPM 2.0 must be present"
+    - "this is the usual outcome on a consumer desktop board, because the firmware never publishes the IVRS `IVinfo` DMA-remap indicator"
+    - "turning IOMMU from Auto to Enabled makes the IOMMU usable for passthrough and for VBS, and does not by itself make Kernel DMA Protection available"
+    - "VBS is not a prerequisite - Microsoft states the requirement as UEFI firmware support plus virtualization enabled in firmware"
+  required_citation: "[462] Microsoft Learn — Kernel DMA Protection firmware requirements"
+  notes: "Chapter 16 sections 16.4 and 16.4.1. Kernel DMA Protection protects only against drive-by DMA after the OS is loaded, and not against 1394/FireWire, PCMCIA, CardBus or ExpressCard."
+
+- id: diag-nested-hyperv-on-ryzen-7000
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "Can I run nested Hyper-V inside a VM on my Ryzen 7000 desktop under Windows 11, and what do I have to set?"
+  must_include:
+    - "yes - nested virtualization on AMD under Hyper-V is supported"
+    - "Microsoft's AMD prerequisite set is a Hyper-V host running Windows Server 2022 or later, or Windows 11 or later, and a VM configuration version of 9.3 or higher"
+    - "the Intel set on the same page is Windows Server 2016 or later / Windows 10 or later with configuration version 8.0 or higher, so the two vendors differ"
+    - "Microsoft names no Zen generation in the requirement - the gate is the host OS version and the VM configuration version, not a silicon generation"
+    - "the enable step is `Set-VMProcessor -VMName <VMName> -ExposeVirtualizationExtensions $true` with the virtual machine turned off, and `$false` reverses it"
+    - "networking needs either MAC address spoofing on the level-1 VM's adapter or NAT inside it"
+    - "Microsoft states that virtualization applications other than Hyper-V are not supported inside a Hyper-V virtual machine, so a nested VMware or VirtualBox installation is outside what Microsoft supports"
+  must_not_include:
+    - "Hyper-V nested virtualization is Intel-only"
+    - "nested virtualization is not supported on AMD"
+  required_citation: "[460] Microsoft Learn — run Hyper-V in a virtual machine with nested virtualization"
+  notes: "errata E13. Chapter 16 section 16.5; chapter 15 section 15.6 carries the 'AMD EPYC / Ryzen processor or later' phrasing with citation `[41]`. This is also the cross-skill routing question: an AMD-primary Windows question must resolve in this skill, not in the sibling `intel-vt` skill."
+
+- id: diag-vmware-virtualbox-coexistence
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "Do I have to turn Hyper-V off to run VMware Workstation or VirtualBox on this machine?"
+  must_include:
+    - "no - both run over the Windows Hypervisor Platform with VBS enabled"
+    - "VMware Workstation Pro supports the path from 15.5.5, which Broadcom calls 'Host VBS Mode', and VirtualBox gained it in 6.0"
+    - "the VMM is then no longer the software that executes VMRUN: it is a user-mode process whose guest is a partition created and scheduled by Hyper-V, so its guest is already nested"
+    - "the documented limits are slower virtual machines, no nested virtualization inside the WHP-backed guest, no performance counters, no RTM/HLE and no PKU"
+    - "VirtualBox still labels the path experimental"
+    - "turning the hypervisor off was the standard advice before the WHP path existed and is now usually the wrong first move, because it stops VBS, memory integrity, Credential Guard, WSL 2, Windows Sandbox and Docker Desktop's Windows backends"
+  must_not_include:
+    - "you must disable Hyper-V to run VMware Workstation or VirtualBox"
+    - "turn Hyper-V off first"
+  required_citation: "[47] Broadcom — running VMware Workstation Pro on a Hyper-V enabled host"
+  notes: "errata E15. Chapter 16 sections 16.6, 16.6.1 and 16.6.2; quickref section 0.5 question 4. The WHP API itself is `[100]`, exported from `WinHvPlatform.dll` with entry points such as `WHvCreatePartition` and `WHvRunVirtualProcessor`."
+
+- id: diag-gpu-passthrough-client
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "Can I pass my Radeon through to a Hyper-V VM on Windows 11?"
+  must_include:
+    - "not by Discrete Device Assignment - Microsoft documents DDA for a host running Windows Server 2016 or later and requires server-class hardware capable of granting the operating system Native PCI Express Control"
+    - "a desktop AM5 board does not meet that platform requirement"
+    - "the root complex must also support Access Control Services so that Hyper-V can force all PCIe traffic through the IOMMU"
+    - "DDA assigns a device by PCI location path, using `Dismount-VMHostAssignableDevice` and then `Add-VMAssignableDevice`, and each physical GPU can accelerate at most one VM"
+    - "GPU partitioning shares one physical GPU across multiple VMs through an SR-IOV interface, and Microsoft documents it beginning with Windows Server 2025 via `Add-VMGpuPartitionAdapter`"
+    - "what a client Windows PC actually reaches is WDDM GPU paravirtualization, available from Windows 10 version 1803 (WDDM 2.4), whose documented consumers are Hyper-V VMs, Windows Sandbox and Hyper-V isolated containers"
+    - "so the supported client paths share the GPU rather than assigning it"
+  required_citation: "[467] Microsoft Learn — plan for deploying devices by using Discrete Device Assignment"
+  notes: "Chapter 16 section 16.8. Microsoft ships a `SurveyDDA.ps1` survey script; devices using legacy INTx PCI interrupts are not supported for DDA. Chapter 16 open item 4 records that no single Learn page states the client GPU-partitioning story end to end."
+
+- id: diag-confirm-vbs-status
+  chapter: 16-windows-platform.md
+  type: diagnosis
+  question: "How do I actually confirm, on a Windows machine, whether VBS is running and whether the hypervisor launched?"
+  must_include:
+    - "in System Information (`msinfo32`), confirm what is shown next to 'Virtualization-based Security Services Running' - for example Credential Guard"
+    - "the scriptable equivalent is `(Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\\Microsoft\\Windows\\DeviceGuard).SecurityServicesRunning`"
+    - "Microsoft says explicitly that checking whether `LsaIso.exe` is running is not a recommended method"
+    - "`Systeminfo.exe` has a Hyper-V requirements section reporting VM Monitor Mode extensions, virtualization enabled in firmware, second-level address translation and hardware-enforced DEP"
+    - "`hypervisorlaunchtype` reading `Auto` only means the hypervisor is on the boot path - it does not prove the hypervisor launched, because the silicon and firmware layers can still refuse"
+    - "reading `systeminfo` and `msinfo32` together separates those cases"
+    - "if `msinfo32` reports virtualization-based security running, no amount of work on the `VM_CR` and `EFER` chain will free SVM"
+  required_citation: "[465] Microsoft Learn — manage Credential Guard and verify VBS"
+  notes: "Chapter 16 section 16.10. The boot-option reference for `hypervisorlaunchtype` is `[474]` and the systeminfo guidance `[475]`. Chapter 16 carries no APM anchors."
+
+- id: diag-vbs-cost-figure
+  chapter: 18-performance.md
+  type: diagnosis
+  question: "How much performance will memory integrity cost me for gaming on an AMD desktop?"
+  must_include:
+    - "one measurement exists here and it is the only client-part measurement in the chapter: ComputerBase, 2023-03-16, memory integrity on versus off on a Ryzen 7 5800X (Zen 3) with a Radeon RX 7900 XTX at 1280x720, deliberately CPU-limited, reporting about 6% on average frame rate and about 8% on frame times"
+    - "the per-title spread is far wider than the suite average - Forspoken showed essentially no measurable difference while Diablo II: Resurrected lost over 30% on frame times, so a suite average says nothing about any individual title"
+    - "only the 5800X received the on/off comparison in that article, so it supports no Zen 3 versus Zen 4 statement"
+    - "the toggle was memory integrity alone with kernel isolation left on in both arms, so the figure is the marginal cost of code-integrity enforcement on a machine that already has the hypervisor resident"
+    - "the widely relayed '5-10% system-wide' and '5-25% in games' ranges have no traceable primary source here and must not be averaged with the 6%"
+    - "the measurement is a media benchmark, quoted attributively, and the article does not publish RAM timings, the Windows build or the graphics driver revision, so one of the five mandatory condition fields is missing"
+    - "a comparison that toggles memory integrity and one that disables the hypervisor entirely are not measuring the same thing - the second also removes the whole-machine nested-paging cost"
+  must_not_include:
+    - "expect around 10% on average"
+    - "memory integrity costs 5-25%"
+  required_citation: "[554] ComputerBase 2023-03-16 — memory integrity benchmark"
+  notes: "Chapter 18 sections 18.1.3, 18.1.4, 18.2.2, 18.2.3 and 18.9; quickref section 0.5 question 3. Chapter 18 carries exactly one APM anchor in the whole chapter and states that an APM section number on a benchmark result is citation filler - demanding one here would fail a correct answer."
+
+- id: diag-sev-es-disabled-on-snp-host
+  chapter: 17-security.md
+  type: diagnosis
+  question: "After a firmware update, SEV-ES guests stopped working on a host with SEV-SNP enabled. Is this a Zen 5 generational change?"
+  must_include:
+    - "no - it is the documented side effect of a security mitigation"
+    - "AMD-SB-3023 footnote 2 reads 'Applying mitigation CVE-2025-48514 will result in disabling SEV-ES when SEV-SNP is enabled'"
+    - "the trigger is SEV-SNP being enabled, not merely supported"
+    - "only SEV-ES is affected, not SEV"
+    - "the mitigation spans Zen 3 (Milan), Zen 4 (Genoa/Siena) and Zen 5 (Turin), so it is not a generational property"
+    - "the companion CVE-2025-48517 covers an SEV-ES guest being given an ASID from the range reserved for SNP guests, fixed at the same firmware levels - 1.37.23, 1.37.31 and 1.37.41"
+  must_not_include:
+    - "SEV-ES is disabled on SNP-capable CPUs because of a Zen 5 generational change"
+    - "the trigger is the CPU supporting SNP"
+  required_citation: "AMD-SB-3023"
+  notes: "errata E17. Chapter 17 sections 17.1.1 and 17.1.2; the firmware levels are also in chapter 90 section 90.3. A CVE is not an architectural fact and carries no APM anchor, so requiring an APM section here would fail a correct answer. A second, independent route to the same symptom exists: KVM's `kvm_amd.ciphertext_hiding_asids` can assign all ASIDs from the joint range to SEV-SNP."
+
+- id: diag-avic-default-state
+  chapter: 90-dated-landscape.md
+  type: diagnosis
+  question: "Is AVIC enabled by default? I have read both that it has been off by default for years and that it is on now."
+  must_include:
+    - "both statements are true of different kernels, and this is a dated snapshot as of 2026-09-21 that must be re-verified"
+    - "AVIC support landed in KVM at Linux 4.7 and the module parameter defaulted to off from then through Linux 6.17 inclusive"
+    - "Linux 6.18 flipped the default to an 'auto' mode encoded as -1, distinct from both y and n"
+    - "in auto mode KVM enables AVIC when x2AVIC is present in CPUID and the CPU is Zen 4 or newer, so on Zen 3 or older it remains off unless the user asks for it"
+    - "AVIC also requires nested paging, and is refused on an SNP-enabled host that lacks `HvInUseWrAllowed`"
+    - "current mainline still disables IPI virtualization - not AVIC as a whole - on AMD Family 17h (Zen 1 and Zen 2) and Hygon Family 18h, attributed to erratum 1235"
+    - "the getter resolves auto mode to N, so `/sys/module/kvm_amd/parameters/avic` can read N on a machine where AVIC is in fact enabled"
+    - "whether a given client part has AVIC at all cannot be settled from AMD primary sources - there is no public revision guide or PPR for client Ryzen, so only `CPUID Fn8000_000A` on the machine settles it"
+  required_citation: "[610] kernel.org — arch/x86/kvm/svm/avic.c"
+  notes: "Chapter 90 section 90.6; chapter 07 section 7.9 states the scope split. Every claim in chapter 90 is `V:dated` and carries no APM anchor by rule. Erratum 1235 is named in `avic.c` from v5.17 and is absent at v5.16, which rules out a 2025-2026 disclosure but does not date AMD's own publication - `errata.md` O2 stays open."
+
+# ===========================================================================
+# TRAP  (12) - one per high-value erratum; every one must be present
+# ===========================================================================
+
+- id: trap-client-sev-cpuid
+  chapter: 11-memory-encryption.md
+  type: trap
+  question: "SEV is an EPYC feature, so on a desktop Ryzen `Fn8000_001F EAX[1]` reads 0 - right?"
+  must_include:
+    - "no - measured client parts report `Fn8000_001F_EAX[1] = 1`"
+    - "measured Zen 2 and Zen 3 client desktop parts report `Fn8000_001F_EAX` with bits 0-3 set - `SME`, `SEV`, `PageFlushMsr` and `SEV-ES` - with `ECX` reading `1FDh`, that is 509"
+    - "what is true is narrower: SEV is productised on EPYC, Zen 4 and later client parts expose SME only, and `Fn8000_001F_EAX[4]` `SEV-SNP` is clear on every client part measured"
+    - "the defensible client statement is about TSME, which AMD markets as AMD Memory Guard, not about the SEV bit reading 0"
+  must_not_include:
+    - "`Fn8000_001F EAX[1]` reads 0 on client Ryzen"
+    - "the SEV bit is clear on every consumer Ryzen"
+    - "SEV does not exist on client parts"
+  required_citation: "errata.md E12 — with the measured CPUID data of 11-memory-encryption.md §11.8, not an APM section"
+  notes: "errata E12 [reversed]. Chapter 11 sections 11.2 and 11.8; SKILL.md scope boundaries states the same correction. The measured dumps in §11.8 are the Ryzen 5 3600X and Ryzen 7 5800X, anchored `[no-spec]` `[330]`; errata E12 and chapter 90 cite the Ryzen 9 3900X and Ryzen 7 5800X3D, anchored `[35]`. Either set of parts is a correct answer; naming none but stating the CPUID result is also correct. The key must not demand the old 'client parts read 0' hedge."
+
+- id: trap-x2avic-cpuid-bit
+  chapter: 07-virtual-interrupts-avic.md
+  type: trap
+  question: "Which CPUID bit enumerates x2AVIC? I have `Fn8000_000A EDX[14]` written down."
+  must_include:
+    - "x2AVIC is `Fn8000_000A_EDX[18]`"
+    - "`EDX[14]` is reserved"
+    - "`EDX[13]` is AVIC and `EDX[15]` is VMSAVEvirt"
+    - "the EDX[14] value came from a 2022 kernel patch letter that carried it in error, and the mistake propagated"
+  must_not_include:
+    - "x2AVIC is enumerated by `Fn8000_000A EDX[14]`"
+    - "x2AVIC is EDX[14]"
+  required_citation: "APM3 App.E"
+  notes: "errata E09. Chapter 07 section 7.7, which also anchors the x2AVIC feature itself to `[APM2 §15.29.10]`; the full feature-bit table is chapter 01 section 1.3."
+
+- id: trap-cmdbufrun-register
+  chapter: 08-iommu-architecture.md
+  type: trap
+  question: "The IOMMU is not draining my command buffer. I am polling `CmdBufRun` in the Control Register at MMIO 0018h and it never sets. What is wrong?"
+  must_include:
+    - "`CmdBufRun` is not in the Control Register - it is a read-only status bit at bit 4 of the IOMMU Status Register, MMIO offset 2020h"
+    - "the control that enables command-buffer processing is `CmdBufEn`, Control Register MMIO offset 0018h bit 12"
+    - "so the fix is to set `CmdBufEn` in the Control Register and then read `CmdBufRun` in the Status Register"
+    - "`CmdBufRun` is level-sensitive: once 1 it stays 1 until command processing stops for cause, and once 0 it stays 0 until software writes `CmdBufEn` = 1"
+  must_not_include:
+    - "`CmdBufRun` is in the Control Register"
+    - "`CmdBufRun` is at MMIO 0018h"
+  required_citation: "IOMMU 3.11 §3.4.16"
+  notes: "errata E01, which anchors the same correction to `[IOMMU 3.11 §3.4]`; either section is a valid citation. Chapter 08 section 8.3. Quickref section 0.2 routes 'the IOMMU is not processing my commands' here and names E01 explicitly."
+
+- id: trap-irte-bit0-name
+  chapter: 10-iommu-interrupt-remapping.md
+  type: trap
+  question: "What is bit 0 of an interrupt remapping table entry called?"
+  must_include:
+    - "the field is `RemapEn`"
+    - "the specification uses that spelling throughout, in every one of the three IRTE tables, and `RemapEm` appears nowhere in it"
+  must_not_include:
+    - "bit 0 is called `RemapEm`"
+    - "the field is RemapEm"
+  required_citation: "IOMMU 3.11 §2.2.5"
+  notes: "errata E03. Chapter 10 section 10.1. A single transposed letter makes the specification unsearchable, which is why this is a deterministic lint rule as well as a trap. The field at bit 5 is `RqEoi`, not `RqEow` - a bonus."
+
+- id: trap-iommu-mmio-window-size
+  chapter: 08-iommu-architecture.md
+  type: trap
+  question: "How large is the IOMMU MMIO window? I have 14 KiB written down."
+  must_include:
+    - "14 KiB is wrong, and the size is conditional"
+    - "the region is 16 KBytes when `MMIO offset 0030h[PCSup]` is 0"
+    - "it is 512 KBytes when `PCSup` is 1"
+    - "the figure 14 is a misreading of the `BaseAddress[31:14]` field width, which is a field width and not a size"
+  must_not_include:
+    - "the IOMMU MMIO region is 14 KiB"
+    - "the MMIO window is 14 KB"
+  required_citation: "IOMMU 3.11 §2.3"
+  notes: "errata E02. Chapter 08 section 8.2. Reporting a single unconditional size, even the right one, loses the `PCSup` half. When `PCSup` is 1, `BaseAddress[18:14]` must be zero."
+
+- id: trap-vmexit-restores
+  chapter: 04-world-switch.md
+  type: trap
+  question: "On `#VMEXIT` the processor restores the host's RIP, RSP and RAX. Is that the whole list?"
+  must_include:
+    - "no - the enumerated set is fourteen items, given in §15.5.1 'Saving Host State': what VMRUN saves is exactly what `#VMEXIT` restores"
+    - "CS.SEL and NEXT_RIP, RFLAGS and RAX, SS.SEL and RSP, CR0, CR3, CR4 and EFER, IDTR and GDTR, ES.SEL and DS.SEL"
+    - "`#VMEXIT` additionally forces CR0.PE to 1"
+    - "the manual says 'at least the following', so the list is not closed"
+    - "host LDTR is explicitly not saved or restored, and APM Vol.3's VMRUN pseudo-code names host CR2 and host PAT as two further non-restores"
+  must_not_include:
+    - "`#VMEXIT` restores only RIP, RSP and RAX"
+    - "the three registers restored are RAX, RSP and RIP"
+    - "that is the whole list"
+  required_citation: "APM2 §15.5.1"
+  notes: "errata E07. Chapter 04 sections 4.1 and 4.3; the ordered reload sequence is anchored `[APM3 §4 \"VMRUN\"]` and `[APM2 §15.6]`. The 'at least' qualifier is part of the answer: a closed list of fourteen is also wrong, and chapter 04's open items say so twice."
+
+- id: trap-vmload-vmsave-ss
+  chapter: 04-world-switch.md
+  type: trap
+  question: "Does VMLOAD/VMSAVE cover SS along with the other segment state, so I can skip saving it myself?"
+  must_include:
+    - "no - SS is not among the state VMLOAD and VMSAVE transfer"
+    - "they transfer FS, GS, TR and LDTR including all hidden state, `KernelGsBase`, `STAR`, `LSTAR`, `CSTAR`, `SFMASK`, and `SYSENTER_CS`, `SYSENTER_ESP` and `SYSENTER_EIP`"
+    - "SS is handled by VMRUN and `#VMEXIT` instead"
+  must_not_include:
+    - "VMLOAD and VMSAVE transfer SS"
+    - "SS is among the segments VMSAVE writes"
+  required_citation: "APM2 §15.5.2"
+  notes: "errata E08. Chapter 04 section 4.4. SS.SEL and RSP move through the VMRUN / `#VMEXIT` host-state path, which is where the confusion starts. The pair is exactly symmetric - VMLOAD reads what VMSAVE writes."
+
+- id: trap-two-dimensional-walk-count
+  chapter: 06-nested-paging.md
+  type: trap
+  question: "Nested paging turns the native 4-reference page walk into a 16-reference walk. What does that cost, and where is the number specified?"
+  must_include:
+    - "the worst case is 24 memory references, not 16"
+    - "the general form is `nm + n + m`, identical to `(n+1)(m+1) - 1`, with four-level guest paging over four-level nested paging"
+    - "the subtracted reference is the fetch of the datum itself"
+    - "neither the APM nor the Intel SDM states this figure - both give only per-dimension walk lengths"
+    - "cite the AMD-V Nested Paging white paper or the ASPLOS'08 paper; an anchor of the form `[APM2 §15.25.x]` on this number is a fabrication"
+  must_not_include:
+    - "nested paging turns a 4-reference walk into 16 references"
+    - "the worst case is 16 memory references"
+    - "the APM states the 24-reference figure"
+  required_citation: "NP-WP §4.2.2"
+  notes: "errata E11. Chapter 06 section 6.4; chapter 19 section 19.3 repeats the figure and the sourcing rule. Two failures are being tested at once: the wrong count, and a fabricated APM anchor on the right count. The five-level derivations 29 and 35 are derivations and no published source states them - `errata.md` O6."
+
+- id: trap-branch-type-confusion-cve
+  chapter: 17-security.md
+  type: trap
+  question: "Which CVE should I cite for Branch Type Confusion / RETbleed on AMD? AMD's bulletin shows CVE-2022-23816."
+  must_include:
+    - "CVE-2022-23816 is REJECTED at NVD, with the note that this candidate is unused by its CNA"
+    - "the citable identifier for the AMD RETbleed variant is CVE-2022-29900"
+    - "AMD-SB-1037 itself writes the pairing as 'CVE-2022-29900 (RETbleed) (aka CVE-2022-23816)', which is how the dead number keeps circulating"
+    - "the bulletin covers two CVEs: CVE-2022-23825 Branch Type Confusion, found internally by AMD, and CVE-2022-29900 RETbleed, credited to Kaveh Razavi and Johannes Wikner of ETH Zurich"
+  must_not_include:
+    - "Branch Type Confusion is CVE-2022-23816"
+    - "cite CVE-2022-23816"
+  required_citation: "AMD-SB-1037"
+  notes: "errata E26. Chapter 17 sections 17.1.1 and 17.1.3. A CVE is not an architectural fact and carries no APM anchor - chapter 17 states that rule explicitly, so the Tier-1 anchor is the AMD bulletin and NVD is the corroborating source. Demanding an APM section here would fail a correct answer."
+
+- id: trap-hyperv-image-name
+  chapter: 16-windows-platform.md
+  type: trap
+  question: "Which hypervisor binary does Hyper-V load on my Ryzen desktop, and where is that documented?"
+  must_include:
+    - "on AMD systems the image is `Hvax64.exe`"
+    - "`Hvix64.exe` is the Intel build and `Hvaa64.exe` is the ARM64 build"
+    - "Hyper-V ships a per-architecture hypervisor binary and picks one at boot"
+    - "this is documented in Windows Internals, Part 2, 7th edition - it is not on learn.microsoft.com, so no product-documentation citation for it exists"
+  must_not_include:
+    - "Hyper-V loads `hvix64.exe` on AMD hosts"
+    - "the image is hvix64.exe"
+  required_citation: "[46] Windows Internals, Part 2, 7th edition"
+  notes: "errata E10. Chapter 16 section 16.2. Both x64 images are present in `%SystemRoot%\\System32` on every x64 Windows installation because the selection is made at boot, so finding the Intel-build image on an AMD machine is not evidence of anything. A Windows fact with no AMD anchor: an answer that cites the APM for it is wrong twice."
+
+- id: trap-enlightened-vmcb
+  chapter: 15-nested-virtualization.md
+  type: trap
+  question: "Intel has the enlightened VMCS for nested Hyper-V. AMD has no counterpart at all, correct?"
+  must_include:
+    - "the negative form of that statement is a trap"
+    - "there is no AMD enlightened VMCS, because the VMCB is already ordinary memory that L1 accesses with loads and stores, so a memory-shaped replacement would replace nothing"
+    - "but the Hypervisor Top-Level Functional Specification does define an enlightened VMCB field block: reserved bytes in the VMCB control section at offset 0x3E0-0x3FF, with an associated clean bit, bit 31, that must be invalidated whenever the hypervisor modifies the enlightenments area"
+    - "Hyper-V uses that region through a structure named `HV_SVM_ENLIGHTENED_VMCB_FIELDS`"
+    - "Linux corroborates the layout: its SVM control-area definition overlays a 32-byte Hyper-V enlightenment structure onto the software-reserved region at control-area offset `3E0h`, as a union with `u8 reserved_sw[32]`"
+  must_not_include:
+    - "AMD has no enlightened VMCB counterpart"
+    - "AMD has nothing on this side"
+    - "there is no enlightenment interface on AMD"
+  required_citation: "[464] Hypervisor Top-Level Functional Specification — nested virtualization"
+  notes: "SKILL.md names this the worked example for 'a negative claim needs the same evidence as a positive one'. Chapter 15 section 15.5.4; chapter 16 section 16.5.1 and chapter 19 section 19.7 repeat it. The corpus carries `[no-spec]` here, so an APM anchor on the enlightened-VMCB claim would be a fabrication. AMD's two real nesting accelerators, VLS and vGIF, are §15.33's only two subsections."
+
+- id: trap-vmgexit-encoding
+  chapter: 13-sev-es-ghcb.md
+  type: trap
+  question: "Is VMGEXIT encoded as `F3 0F 01 D9` only, with the `F2` form a transcription error?"
+  must_include:
+    - "no - the instruction reference gives the opcode as `F2/F3 0F 01 D9`"
+    - "both prefixes are architectural"
+    - "the unprefixed `0F 01 D9` on the same page is VMMCALL"
+  must_not_include:
+    - "VMGEXIT is `F3 0F 01 D9` only"
+    - "the `F2` form is not architectural"
+  required_citation: "APM3 §4 \"VMGEXIT\""
+  notes: "errata E22 [reversed] - the entry was drafted the other way round and a primary-source check refuted the draft. Chapter 13 section 13.6.1. APM Vol.3 Chapter 4 is alphabetical, so the citation is by mnemonic. VMGEXIT is always intercepted, has no intercept bit, and exits with code `403h`."
