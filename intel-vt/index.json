@@ -182,8 +182,8 @@
         "7.11 Chapter artifact index",
         "7.12 Open items"
       ],
-      "bytes": 63687,
-      "sha256": "59546069eedd3309c738c1ab7b16c470b04aa0b950f2edcaeeafd6cb9d147e1f"
+      "bytes": 63833,
+      "sha256": "e490a705c0a5888d0c8486d58c34c1d5dd8f423404b1943882c86a0c3480d3ad"
     },
     {
       "path": "references/08-vmx-instructions.md",

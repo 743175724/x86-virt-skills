@@ -486,6 +486,48 @@ function lintSkill(skillName) {
     }
   }
 
+
+  // 12. cross-chapter value conflicts.
+  // Restatement is allowed - SKILL.md lets a feature chapter repeat the few
+  // encodings it cannot be read without. Contradiction is not. Pair each named
+  // field with the address it is given and fail when two chapters disagree, in
+  // either direction. Matching is on the identifier token only, never on prose,
+  // so rewording a claim cannot trip this.
+  {
+    const byName = new Map(), byValue = new Map()
+    // The value must be the one nearest the name, with no other IA32_ identifier
+    // between them - otherwise "IA32_VMX_BASIC bit 55 ... IA32_VMX_TRUE_X at 48DH"
+    // pairs the address with the wrong name.
+    const PAIR = /\b(IA32_[A-Z0-9_]{3,})\b(?:(?!IA32_)[^.]){0,40}?\b(?:0x([0-9A-Fa-f]{3,4})|([0-9A-F]{3,4})H)\b/g
+    for (const file of chapterFiles) {
+      readFileSync(join(REFS, file), 'utf8').split('\n').forEach((line, i) => {
+        if (!/^\s*-\s+\*\*Claim\.\*\*/.test(line)) return
+        const body = line.replace(/`[^`]*`/g, ' ')
+        for (const m of body.matchAll(PAIR)) {
+          const name = m[1]
+          const value = (m[2] ?? m[3]).toUpperCase().replace(/^0+(?=.)/, '')
+          const loc = `references/${file}:${i + 1}`
+          if (!byName.has(name)) byName.set(name, new Map())
+          if (!byName.get(name).has(value)) byName.get(name).set(value, [])
+          byName.get(name).get(value).push(loc)
+          if (!byValue.has(value)) byValue.set(value, new Map())
+          if (!byValue.get(value).has(name)) byValue.get(value).set(name, [])
+          byValue.get(value).get(name).push(loc)
+        }
+      })
+    }
+    for (const [name, values] of byName) {
+      if (values.size < 2) continue
+      err('cross-chapter', `${name} is given two different addresses: ` +
+        [...values].map(([v, l]) => `${v}H at ${l[0]}`).join(' vs '))
+    }
+    for (const [value, names] of byValue) {
+      if (names.size < 2) continue
+      err('cross-chapter', `address ${value}H is given two different names: ` +
+        [...names].map(([n, l]) => `${n} at ${l[0]}`).join(' vs '))
+    }
+  }
+
   return { errors, warnings, noSpec, chapters: chapterFiles.length, bib: bibIds.size, claims: claimIndex.size }
 }
 
