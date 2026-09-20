@@ -35,7 +35,7 @@ GCMD_REG bits that drove it (29 and 28) and the CAP_REG capability bit (3) are n
 marked Deprecated — see `10-vtd-dma-remapping.md` §10.5.1 and §10.5.3.
 
 - **Claim.** The remapping architecture defines Primary Fault Logging as the default fault logging method that must be supported by all implementations of the architecture.  `[VT-d 5.20 §7.2]` `[8]` `C:high` `V:durable`
-- **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is reported through the Capability Register.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
+- **Claim.** The primary method for logging non-recoverable faults is through Fault Recording Registers, whose count is reported by the **NFR (Number of Fault-recording Registers)** field of the Capability Register and whose base offset comes from **CAP_REG.FRO**; you cannot walk the fault ring without both → register layout in `10-vtd-dma-remapping.md` §10.5.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Hardware maintains an internal index referencing the Fault Recording Register in which the next non-recoverable fault will be recorded; the index resets to zero when both TES and IES are Clear in the Global Status Register, increments on each recorded fault, and wraps from N-1 to 0.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** Hardware maintains the Primary Pending Fault (PPF) field in the Fault Status Register as the logical OR of the Fault (F) fields across all Fault Recording Registers, recomputed whenever any F field is updated by hardware or software.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
 - **Claim.** If the Fault Recording Register referenced by the internal index already has its F field Set, hardware sets the Primary Fault Overflow (PFO) field in the Fault Status Register and the new fault information is not recorded.  `[VT-d 5.20 §7.2.1]` `[8]` `C:high` `V:durable`
@@ -96,6 +96,14 @@ programs the fault event registers but never clears IM will silently log faults 
 VT-d Table 30 assigns each fault condition both a mnemonic condition code and a numeric fault
 reason. The condition-code prefixes carve the space by structure: `L*` for legacy mode, `S*` for
 scalable mode, `RTA` for root-table-address programming, `HPT` for the Host Permission Table.
+
+**Read the range before the table.** The numeric space is partitioned by mode, and the range a
+reason falls in is what selects which table below applies. A decoder that skips this step will
+mislabel every scalable-mode fault as a legacy one.
+
+- **Claim.** Fault reason ranges do not overlap across modes: legacy-mode reasons occupy **1h–Eh**, interrupt-remapping **20h–2Bh**, root-table-address programming **30h–34h**, and scalable-mode **38h–A5h**.  `[VT-d 5.20 Ch.7]` `[8]` `C:high` `V:durable`
+
+Interrupt-remapping reasons (20h–2Bh) are owned by `11-vtd-interrupt-remapping.md` §11.10.
 
 ### 12.3.1 Legacy-mode fault reasons
 
@@ -406,9 +414,8 @@ remapping, raise an arbitrary interrupt vector on an arbitrary CPU.
 
 1. **"Advanced fault logging" is gone.** Rev 5.20 defines Primary Fault Logging only; the CAP_REG and
    GCMD_REG bits that once carried advanced fault logging are reserved or Deprecated.
-2. **Fault reason ranges do not overlap across modes.** Legacy-mode reasons occupy 1h–Eh,
-   interrupt-remapping 20h–2Bh, root-table-address programming 30h–34h and scalable-mode
-   38h–A5h. A decoder that ignores the range boundaries will mislabel every scalable-mode fault.
+2. **Fault reason ranges do not overlap across modes**, and the range selects the table — see
+   §12.3, where the ranges are stated before the tables they govern.
 3. **The fault type is split across two non-adjacent bits** (T1 at 126, T2 at 92) in the Fault Recording
    Register. Decoders written against very old revisions read only T1.
 4. **FECTL_REG.IM defaults to 1.** No fault interrupts arrive until software clears it.

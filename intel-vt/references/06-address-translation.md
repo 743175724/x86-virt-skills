@@ -193,6 +193,18 @@ Further misconfiguration conditions exist for feature-specific bits — for exam
 
 ### 6.4.4 Triaging the two exits in practice
 
+Two handler rules decide whether your exit-48 path is correct at all. Both are properties of the
+exit, so `05-vm-exit.md` owns their full statement — but a reader who arrives here for EPT and
+stops, as the skill's own stop rule tells them to, needs them now:
+
+- **Never advance RIP on an EPT violation.** It is fault-like: the faulting instruction must be
+  restarted after the mapping is fixed, not skipped. Advancing RIP silently corrupts the guest.
+  Full exit semantics in `05-vm-exit.md` §5.3.1.
+- **Qualification bits 3, 4 and 5 tell you whether the guest-physical address was mapped at all**
+  (they report the EPT permissions present for the access), which is what separates a demand-paging
+  miss from a permission denial. The complete qualification layout, including the corrected bits 6
+  and 7, is in `05-vm-exit.md` §5.4 — see §6.4.3 for the two corrections.
+
 A VMM handling exit 48 reads the guest-physical address field, finds the memory region it belongs to, and does one of three things: install a mapping (demand paging), emulate an access (MMIO), or run a policy hook (introspection, write tracking) and then resume. A VMM that takes exit 49 has no useful recovery path — the table it built is invalid — so the correct response is to dump the offending entry and treat it as a hypervisor bug rather than to retry.
 
 - **Claim.** Because EPT misconfiguration indicates an unsupported entry value rather than a denied access, resuming the guest without changing the entry re-raises the same exit; the only correct handling is to correct or tear down the mapping.  `[SDM 3C Ch.31]` `[1]` `C:medium` `V:durable`

@@ -340,7 +340,7 @@
     - "TDH.MEM.PAGE.AUG is SEAMCALL leaf 6"
     - "TDG.MEM.PAGE.ACCEPT is TDCALL leaf 6"
     - "the leaf number is in RAX bits 15:0 for both SEAMCALL and TDCALL, with the interface-function version in bits 23:16"
-  required_citation: "TDX-ABI §5.4.1"
+  required_citation: "TDX-ABI §5.4.81 or §5.4.24 or §5.5.3"  # was §5.4.1, which anchors the RAX convention, not the leaf numbers
   notes: "Chapter 13 sections 13.5 and 13.6. RAX bit 63 = 1 dispatches a SEAMCALL to the P-SEAMLDR instead of the TDX Module."
 
 - id: tdx-gpaw-shared-bit
@@ -961,7 +961,7 @@
     - "the direction follows from the mechanism, the magnitude does not"
     - "the mechanism is that each exit is processed twice - the hardware exits to the Windows hypervisor, which decides whether it owns the exit, and only then is an exit context returned to the user-mode VMM, one more boundary crossing than a VMM owning VMX root operation pays"
     - "the arrangement also removes the VMM's ability to program its own VM-execution controls, so optimisations that depend on a specific control are unavailable regardless of hardware support"
-  required_citation: "SDM 3C Ch.30"
+  required_citation: "Microsoft Learn or the measurement source, with page or section"  # was SDM 3C Ch.30: WHP overhead is not an Intel architectural fact
   notes: "Chapter 16 section 16.5 and chapter 17 section 17.3.4. Chapter 16 calls this the cleanest example in the chapter of a mechanism plus an explicit 'no measured figure here'."
 
 - id: wsl2-overhead-figure
@@ -973,7 +973,7 @@
     - "the mechanism can be stated: a utility VM is a Hyper-V partition, it holds memory, its virtual processors are scheduled against the host's, and its I/O crosses a synthetic-device boundary, so the cost is present whenever it is running"
     - "the dominant reported costs for this class are memory residency and cross-boundary filesystem access rather than CPU overhead, because guest compute runs in non-root operation at native speed"
     - "enabling WSL2 also makes the machine a hypervisor host, which has its own consequences for third-party VMMs"
-  required_citation: "SDM 3C Ch.31"
+  required_citation: "Microsoft Learn or the measurement source, with page or section"  # was SDM 3C Ch.31: WSL2 overhead is not an Intel architectural fact
   notes: "Chapter 16 section 16.4 and chapter 17 section 17.4.1/17.4.6."
 
 - id: vtl-transition-cost
@@ -986,7 +986,7 @@
     - "the same absence applies to hypercall cost, VMBus round-trip latency and the Windows Hypervisor Platform exit path"
   must_not_include:
     - "about 1000 cycles"
-  required_citation: "SDM 3C Ch.30"
+  required_citation: "Microsoft Learn or the measurement source, with page or section"  # was SDM 3C Ch.30: VTL transition cost is a Hyper-V property
   notes: "Chapter 16 sections 16.3.1 and 16.10.1."
 
 # ===========================================================================
@@ -1066,7 +1066,7 @@
   must_not_include:
     - "MBEC was introduced with Skylake"
   required_citation: "errata.md E01"
-  notes: "Quickref section 0.4 terminology table also records 'Kaby Lake, not Skylake'. Chapter 06 section 6.3.1 defers the generation to errata rather than asserting it."
+  notes: "Quickref section 0.4 also records 'Kaby Lake, not Skylake'. Chapter 06 section 6.3.1 now states the generation inline and cites errata E01 (fixed 2026-09-20; it previously only deferred)."
 
 - id: trap-pml-generation
   chapter: 06-address-translation.md
@@ -1154,7 +1154,7 @@
     - "TDXRay is covered by INTEL-SA-01271"
     - "Intel published INTEL-SA-01271 in response"
   required_citation: "TDX-BASE §17.3"
-  notes: "Chapter 13 section 13.21.2. The mislabel originates in link text on the TDXRay project site whose href points at the announcement. NOTE FOR MAINTAINERS: 90-dated-landscape.md currently contradicts this and must be fixed."
+  notes: "Chapter 13 section 13.21.2. The mislabel originates in link text on the TDXRay project site whose href points at the announcement. Chapter 90 agreed with chapter 13 as of 2026-09-20; an earlier contradiction there was fixed."
 
 - id: trap-vtd-current-revision
   chapter: 10-vtd-dma-remapping.md

@@ -43,6 +43,21 @@ These are the cheapest checks and the ones that fail most often during bring-up,
 
 Every control-field check in this stage produces VM-instruction error 7, "VM entry with invalid control field(s)". The error number does not say *which* control was wrong, which is exactly why the enumeration below matters.
 
+**The fix, not just the diagnosis.** Error 7 almost always means a control bit was set that the
+processor does not allow, or a default-1 bit was left clear. Do not hand-pick bits: for each
+control field, take your desired value `v` and compute
+
+```
+v_final = (v | allowed0) & allowed1
+```
+
+where `allowed0` is the low 32 bits and `allowed1` the high 32 bits of that control's capability
+MSR. This forces every default-1 bit on and every unsupported bit off in one step. **If
+IA32_VMX_BASIC bit 55 is set, use the `TRUE_*` capability MSRs instead of the originals** — the
+non-TRUE MSRs report bits as default-1 that the processor actually lets you clear, so using them
+on a capable processor needlessly constrains the VMM. The capability-MSR family and the bit-55
+rule are owned by `08-vmx-instructions.md` §8.6 and `02-vmcs.md` §2.8.
+
 - **Claim.** Failure of any check on the VMX controls produces VM-instruction error number 7, "VM entry with invalid control field(s)" (→ see `08-vmx-instructions.md` §8.4).  `[SDM 3C §27.9.5]` `[1]` `C:high` `V:durable`
 
 ### 4.3.1 Reserved-bit settings

@@ -261,6 +261,10 @@ This is the exit qualification most often reproduced incorrectly in secondary ma
 
 ## 5.6 VM exits during event delivery — the IDT-vectoring fields
 
+> **Handling rule:** read the IDT-vectoring information field on **every** VM exit, not only on
+> exits you expect to be event-related — see §5.12. An exit handler that checks it only for
+> selected reasons will silently drop events whose delivery faulted.
+
 This is the mechanism that lets a VMM re-inject an event whose delivery itself faulted, and it is the difference between a hypervisor that survives a nested fault in the guest and one that loses the event.
 
 - **Claim.** The IDT-vectoring information field is laid out as: bits 7:0 vector, bits 10:8 interruption type, bit 11 error-code valid, bits 30:13 reserved, bit 31 valid.  `[SDM 3C §27.9.3]` `[1]` `C:high` `V:durable`

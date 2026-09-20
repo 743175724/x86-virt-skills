@@ -113,8 +113,8 @@
         "4.11 Failure signatures seen in practice",
         "4.12 Cross-references"
       ],
-      "bytes": 51006,
-      "sha256": "dd6bba4a8883c3c5a416292e6c261619b54e9d485e2b1a80f534814b39318e85"
+      "bytes": 51845,
+      "sha256": "2607dcf3a60495fa3ca43e7ad0a8d707063b0b657a61896aa8c6fce10742604d"
     },
     {
       "path": "references/05-vm-exit.md",
@@ -137,8 +137,8 @@
         "5.13 Two corrections carried by this chapter",
         "5.14 Cross-references"
       ],
-      "bytes": 48607,
-      "sha256": "eac249c74600652dc0c23e1ba4fd920a7281c96ff69c941f6f847cc2456725e9"
+      "bytes": 48868,
+      "sha256": "14e26bb121ec10a146d345fcaef8615484af867729d1ae7f53d2ad5c7bfa81f8"
     },
     {
       "path": "references/06-address-translation.md",
@@ -160,8 +160,8 @@
         "6.12 Chapter artifact index",
         "6.13 Open items"
       ],
-      "bytes": 51986,
-      "sha256": "44038bcfc345a28117256e711d876a284822245a503b8bfa322b2bd7b5c158f4"
+      "bytes": 52866,
+      "sha256": "e6d285a7d0028663fc8571fd0665cbce6fd07045688c60093a90cd1a6a0a0b3e"
     },
     {
       "path": "references/07-apic-virtualization.md",
@@ -241,8 +241,8 @@
         "10.8 Special request handling in Chapter 3",
         "10.9 Pitfalls"
       ],
-      "bytes": 47511,
-      "sha256": "63c5d3681be6c366aa4dbcafe469341c6686908b2e3c2d0588aa31377ac64440"
+      "bytes": 48052,
+      "sha256": "e39f4bdca6581fe1a0c5ee2697b7b5965b782a91eec327b89a8261f7cbeaac22"
     },
     {
       "path": "references/11-vtd-interrupt-remapping.md",
@@ -263,8 +263,8 @@
         "11.11 Programming the interrupt sources",
         "11.12 Pitfalls"
       ],
-      "bytes": 35896,
-      "sha256": "6feeb845ca89136e1185e0c12ed73c0115fdbfaca1dcc4e0a7e3f30f5b3f21d5"
+      "bytes": 36039,
+      "sha256": "46d864d2533c96ce6155e2b55299b37b8284bfd459b34b23be06ffe1d0f6ec0f"
     },
     {
       "path": "references/12-vtd-faults-bios-siov.md",
@@ -282,8 +282,8 @@
         "12.8 Security considerations",
         "12.9 Pitfalls"
       ],
-      "bytes": 53558,
-      "sha256": "35b96e9b6739a72377706c02a4a905fed4f0655d556fc33c8c4b4363b48ff445"
+      "bytes": 54246,
+      "sha256": "7642e1edbd7339ae68810d33cb2f2a6f8a0c24bcd9c847b6e3a78e99127852fe"
     },
     {
       "path": "references/13-tdx.md",
@@ -362,8 +362,8 @@
         "15.13 Reading the chapter as one picture",
         "15.14 Out of scope for this chapter"
       ],
-      "bytes": 50053,
-      "sha256": "6977696e9a049f3bc87d98ab66c513aa5a29632bf5fabc8d54a97177f99a5168"
+      "bytes": 50305,
+      "sha256": "a09f5eed8cc7512ba5fb29ce4c0966ddd5877a29494d4b7652443db2a4b1d6b1"
     },
     {
       "path": "references/16-performance.md",

@@ -72,6 +72,9 @@ contributes, and the top bit of the handle stranded at address bit 2.
 
 ## 11.3 The interrupt-remapping table and interrupt_index
 
+> When an entry lookup or validation fails, the resulting fault reasons (20h–2Bh, including
+> 21h and 26h) are listed in §11.10, not here.
+
 - **Claim.** Interrupt-remapping hardware uses a memory-resident single-level table called the Interrupt Remapping Table, whose base address and size are specified through the Interrupt Remap Table Address Register.  `[VT-d 5.20 §5.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** Each entry in the interrupt remapping table is 128 bits in size and is called an Interrupt Remapping Table Entry (IRTE).  `[VT-d 5.20 §5.1.3]` `[8]` `C:high` `V:durable`
 - **Claim.** The maximum number of IRTEs in an interrupt remapping table is 64K.  `[VT-d 5.20 §5.1.3]` `[8]` `C:high` `V:durable`

@@ -10,6 +10,13 @@
 
 ## 10.1 The remapping hardware unit
 
+> **Which document this chapter tracks.** Intel Virtualization Technology for Directed I/O
+> Architecture Specification, order **D51397-019, Rev 5.20, April 2026** — the revision printed
+> on the PDF cover. The intel.com landing page for this specification is stale: it shows a
+> 2023 date and its content endpoint still serves **Rev 4.1**, so a reader who trusts the page
+> rather than the cover will work from a superseded document. Rev 5.20 also renamed
+> first-level/second-level to **first-stage/second-stage**. See `errata.md` E21.
+
 VT-d is not a device on a bus. It is one or more **remapping hardware units** in the root complex,
 each owning a 4-KByte memory-mapped register region whose location firmware reports through ACPI
 (see `12-vtd-faults-bios-siov.md` for the DMAR table). Everything a driver does to VT-d is a load or

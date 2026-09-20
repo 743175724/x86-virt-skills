@@ -144,6 +144,10 @@ Every control above is gated by a CPUID bit, and a VMM that virtualizes CPUID in
 
 ## 15.5 The CVE → mechanism → mitigation matrix
 
+> The matrix names the controls; their **interactions** are in §15.4. In particular the
+> FB_CLEAR ↔ L1D_FLUSH relationship is in §15.4.2, and applying one without understanding the
+> other is a known way to leave a gap open.
+
 | Family | CVE(s) | Architectural mechanism | Mitigation controls |
 |---|---|---|---|
 | Meltdown / RDCL | CVE-2017-5754 | speculative load past a page-fault condition reads L1D data | RDCL_NO (ARCH_CAP bit 0); OS page-table isolation |
@@ -151,7 +155,7 @@ Every control above is gated by a CPUID bit, and a VMM that virtualizes CPUID in
 | Spectre v2 / BTI | CVE-2017-5715 | indirect-branch target injection across privilege and VM boundaries | IBRS (SPEC_CTRL bit 0), eIBRS (IBRS_ALL, ARCH_CAP bit 1), STIBP (bit 1), IBPB (PRED_CMD bit 0), retpoline, RSB filling on VM exit |
 | Speculative Store Bypass | CVE-2018-3639 | load speculates past an older unresolved store | SSBD (SPEC_CTRL bit 2); SSB_NO (ARCH_CAP bit 4) |
 | L1TF / Foreshadow | CVE-2018-3615 (SGX), CVE-2018-3620 (OS/SMM), CVE-2018-3646 (VMM) | terminal fault on a non-present or reserved-bit entry lets the frame bits address L1D directly; applies to EPT entries too | PTE inversion; L1D_FLUSH (FLUSH_CMD bit 0) on VM entry; SKIP_L1DFL_VMENTRY (ARCH_CAP bit 3); RDCL_NO; SMT policy |
-| MDS — RIDL, Fallout, ZombieLoad | CVE-2018-12126 (MSBDS, store buffer), CVE-2018-12127 (MLPDS, load ports), CVE-2018-12130 (MFBDS, fill buffers), CVE-2019-11091 (MDSUM, uncacheable memory) | in-flight data sampled from internal buffers during transient execution | microcode + VERW with MD_CLEAR (CPUID.07H.00H:EDX[10]); MDS_NO (ARCH_CAP bit 5); FB_CLEAR (bit 17); SMT policy |
+| MDS — RIDL, Fallout, ZombieLoad (**INTEL-SA-00233**) | CVE-2018-12126 (MSBDS, store buffer), CVE-2018-12127 (MLPDS, load ports), CVE-2018-12130 (MFBDS, fill buffers), CVE-2019-11091 (MDSUM, uncacheable memory) | in-flight data sampled from internal buffers during transient execution | microcode + VERW with MD_CLEAR (CPUID.07H.00H:EDX[10]); MDS_NO (ARCH_CAP bit 5); FB_CLEAR (bit 17); SMT policy |
 | TAA | CVE-2019-11135 | TSX asynchronous abort re-exposes the MDS buffers | VERW buffer clearing; TSX disable via IA32_TSX_CTRL (122H) bits 0/1; TAA_NO (ARCH_CAP bit 8) |
 | SRBDS | CVE-2020-0543 | special-register staging buffer shared across cores leaks RDRAND / RDSEED / EGETKEY results | microcode overwrite of the staging buffer; opt-out RNGDS_MITG_DIS (MCU_OPT_CTRL bit 0); SRBDS_CTRL = CPUID.07H.00H:EDX[9] |
 | MMIO stale data | SBDR / SSDP / FBSDP / PSDP | stale data propagated through fill buffers on MMIO accesses | VERW/FB_CLEAR path; SBDR_SSDP_NO, FBSDP_NO, PSDP_NO (ARCH_CAP bits 13/14/15) |

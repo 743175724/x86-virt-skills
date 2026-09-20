@@ -36,6 +36,11 @@ Chapters run 300–550 lines each; the routing table below resolves to a section
    `Maps to:` line naming its Intel specification chapter, and an `Owns:` line.
    If the fact you need is listed under another chapter's `Owns:`, go there —
    cross-chapter restatement is prohibited, so the other chapter is authoritative.
+   **One deliberate exception:** a feature chapter may restate the handful of VMCS
+   encodings or capability bits it cannot be read without, so that a reader who
+   stops there is not stranded. `02-vmcs.md` and `08-vmx-instructions.md` remain
+   authoritative for the full tables; the restated values are a convenience, and
+   if they ever disagree, the owning chapter wins.
 3. **Check `errata.md` before writing anything** that touches a commonly
    circulated claim. It carries 28 entries, 22 settled corrections and 6 recorded
    open conflicts. Where it disagrees with a familiar statement, it wins.
@@ -53,16 +58,16 @@ find the owning chapter fast, then read that chapter.
 | Enabling VMX, VMXON failures, CPUID/IA32_FEATURE_CONTROL, VT-x history | `01-vmx-intro.md` |
 | VMCS layout, **field encodings**, execution/exit/entry controls, shadow VMCS fields | `02-vmcs.md` §2.5 |
 | What the guest may do, bitmaps, CR masks, MTF, unrestricted guest | `03-nonroot-operation.md` |
-| VM-entry checks, **why VM entry failed**, event injection | `04-vm-entry.md` §4.9 |
-| **Decoding a VM exit**: exit reasons, exit qualification, IDT-vectoring | `05-vm-exit.md` §5.3 |
+| VM-entry checks, **why VM entry failed**, event injection — and how to *fix* a control error | `04-vm-entry.md` §4.9 |
+| **Decoding a VM exit**: exit reasons (§5.3), exit qualification layouts (§5.4), IDT-vectoring | `05-vm-exit.md` §5.4 |
 | EPT structures, EPT violation vs misconfiguration, VPID, PML, SPP, HLAT, #VE | `06-address-translation.md` |
 | APICv, virtual-APIC page, RVI/SVI, posted interrupts, IPIv | `07-apic-virtualization.md` |
-| VMX instruction semantics, **VM-instruction error 1–28**, capability MSRs | `08-vmx-instructions.md` §8.4 |
+| VMX instruction semantics, capability MSRs, **what VM-instruction error N means** | `08-vmx-instructions.md` §8.4 |
 | SMM under VMX, dual-monitor treatment, SEAM ISA, SEAMRR | `09-smm-seam.md` |
 | VT-d DMA remapping, DMAR registers, translation structures, invalidation | `10-vtd-dma-remapping.md` |
 | Interrupt remapping, **IRTE**, interrupt posting on the VT-d side | `11-vtd-interrupt-remapping.md` |
 | **VT-d faults and fault reason codes**, ACPI DMAR, SIOV, DMA-attack surface | `12-vtd-faults-bios-siov.md` |
-| TDX: SEAMCALL/TDCALL leaves, TD lifecycle, Secure EPT, attestation, **TDX CVEs and Intel advisories, TDXRay** | `13-tdx.md` |
+| TDX: SEAMCALL/TDCALL leaves (§13.5, §13.6), TD lifecycle and legal call order, Secure EPT (§13.8), attestation (§13.13), **TDX CVEs and advisories, TDXRay (§13.21)** | `13-tdx.md` §13.7 |
 | Nested VMX, **VMCS shadowing**, vmcs02, nested EPT, nesting on a PC | `14-nested-virtualization.md` |
 | Transient-execution CVEs (L1TF/MDS/TAA/Spectre) and **mitigation MSRs**, VBS, HVCI, Credential Guard, TXT — not TDX advisories, those are `13` | `15-security.md` §15.5 |
 | Overhead numbers — VBS, utility VMs, WHP vs bare VMX, nesting, EPT | `16-performance.md` |
@@ -88,6 +93,14 @@ running nested through the Windows Hypervisor Platform. See
   chapter carries an anchor such as `[SDM 3C §27.9.1]` or `[VT-d 5.20 §7.1.3]`
   plus a `[N]` bibliography reference. Reproduce the Intel document and section
   in your answer. "According to the SDM" without a section is not a citation.
+- **Platform and measurement claims cite their own source, not Intel.** Windows
+  behaviour, hypervisor implementation and performance figures are not Intel
+  architecture and have no SDM section. For those, the citation is the Tier-2
+  source with its page or section — Microsoft Learn, the Hypervisor Top-Level
+  Functional Specification, kernel.org, or the paper. Demanding an Intel anchor
+  for "what WSL2 costs" produces either a fabricated citation or a failed
+  answer; both are worse than citing Microsoft correctly. Chapters `15`, `16`,
+  `17` and `90` are where this applies.
 - **Carry the confidence and volatility markers.** A claim tagged `C:low` is
   reported as uncertain. A claim tagged `V:dated` — everything in
   `90-dated-landscape.md` — is reported as a 2026-09-16 snapshot that the user
