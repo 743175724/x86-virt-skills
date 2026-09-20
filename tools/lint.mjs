@@ -452,6 +452,58 @@ function lintSkill(skillName) {
         }
       })
       if (count < cfg.evalExpected) warn(evalRel, `${count} questions; the protocol specifies ${cfg.evalExpected}`)
+
+      // 13: a must_include value that appears nowhere in the corpus.
+      //
+      // The key and the chapters state the same facts twice, so a correction
+      // applied to one and not the other leaves the key demanding a value the
+      // skill can no longer produce — and the run then marks the skill down for
+      // being right. That happened three times during the AMD rebuild: CR4's
+      // defined range, a CVE's firmware levels, and errata E05.
+      //
+      // Scope it honestly, because it is weaker than it looks:
+      //
+      //  - It catches NUMERIC drift only. Of the four keys the AMD run
+      //    disputed, three are invisible to it — a wrong register name, a
+      //    dropped precondition, and a value that was in the corpus but
+      //    belonged to a different CVE.
+      //  - It has a blind spot for the very corrections it exists to police.
+      //    "Present in the corpus" includes present inside a note explaining
+      //    that the value is wrong. errata E05 records "corrected from 20-24
+      //    to 20-23", so re-introducing 20-24 into the key does NOT fire this
+      //    rule, even though that is the exact regression it was written for.
+      //    Suppressing corrective context would need the same fuzzy
+      //    isCorrection heuristic the misconception rules use, and getting it
+      //    wrong here fails closed in the noisy direction, so it is left alone.
+      //
+      // It is a regression guard against silent numeric drift, not an audit,
+      // and a clean run is not evidence that the key and the corpus agree.
+      //
+      // must_not_include is excluded on purpose: those values are *supposed* to
+      // be absent, so checking them would fire on every trap question.
+      const evalNorm = (t) => t.replace(/[‐-―−]/g, '-').replace(/\s+/g, ' ')
+      const corpusText = evalNorm(
+        chapterFiles.map((f) => readFileSync(join(REFS, f), 'utf8')).join('\n'),
+      )
+      const VALUE = /\b(?:0x[0-9A-Fa-f]{2,}|[0-9A-F]{2,4}h|CVE-\d{4}-\d{4,5}|\d+\.\d+\.\d+[0-9A-F]*|bit \d{1,2}|\d{1,2}-\d{1,2}\b)/g
+      const inCorpus = (tok) => {
+        if (corpusText.includes(evalNorm(tok))) return true
+        // a chapter often writes NAME(61) where a key writes "bit 61"
+        const b = /^bit (\d{1,2})$/.exec(tok)
+        return b ? corpusText.includes(`(${b[1]})`) : false
+      }
+      let inMustInclude = false
+      lines.forEach((line, i) => {
+        const k = /^  ([a-z_]+):/.exec(line)
+        if (k) inMustInclude = k[1] === 'must_include'
+        const item = /^ {4}- "(.*)"$/.exec(line)
+        if (!item || !inMustInclude) return
+        for (const tok of new Set(item[1].match(VALUE) || [])) {
+          if (!inCorpus(tok)) {
+            err(`${evalRel}:${i + 1}`, `must_include expects "${tok}", which appears nowhere in the corpus — the key and the chapters have drifted apart`)
+          }
+        }
+      })
     }
   }
 

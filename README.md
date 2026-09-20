@@ -122,7 +122,7 @@ Any other agent with filesystem access can start from `<skill>/index.json`.
 ## Maintaining it
 
 ```bash
-node tools/lint.mjs         # 13 checks over schema, anchors, quarantine, routing
+node tools/lint.mjs         # 14 checks over schema, anchors, quarantine, routing
 node tools/build.mjs        # regenerate index.json, agents/openai.yaml, AGENTS.md
 node tools/build.mjs --check   # fail if a generated file has drifted
 ```
