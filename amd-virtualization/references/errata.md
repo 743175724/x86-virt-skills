@@ -2,7 +2,7 @@
 
 > **中文速览**：本文件收录关于 AMD 虚拟化的常见讹传及其纠正。很多讹传以中文流传，因此每条都给出中英双语表述。**动笔或回答前必查本文件**：如果你要写的内容与这里某一条相冲突，按本文件改口径。每条都附真实出处。文末 "Open conflicts" 一节列出证据相互矛盾、本次重构**不做裁决**的条目——引用这些话题时必须同时给出两种说法。
 
-**How to use.** Each entry gives the misconception in Chinese and English, the correction as a claim line with a real citation, and the chapter that owns the underlying fact. Entries `E01`–`E26` are settled. Of the open conflicts, **`O1` and `O5` were resolved during the rebuild and `O3` was reframed** — all three keep their original numbers because the wrong version still circulates — **`O2` is now half-bounded**, and `O4` and `O6` remain genuinely open: do not pick a side on those, state both.
+**How to use.** Each entry gives the misconception in Chinese and English, the correction as a claim line with a real citation, and the chapter that owns the underlying fact. Entries `E01`–`E26` are settled. Of the seven open conflicts, **`O1` and `O5` were resolved during the rebuild and `O3` was reframed** — all three keep their original numbers because the wrong version still circulates — **`O2` is half-bounded**, `O4` and `O6` remain genuinely open, and **`O7` was added after the second eval run** when a scorer found the corpus asserting one side of a contradiction in AMD's own Table 27. On the genuinely open ones: do not pick a side, state both.
 
 **Citations.** Every entry carries at least one `[N]`. Where the only available source is weak, the entry says so and carries `C:low`.
 
@@ -224,7 +224,9 @@
 - 讹传：ATTESTATION_REPORT 的 VERSION 取值是 2/3/5。
 - Misconception: "The attestation report VERSION field is 2, 3 or 5."
 
-- **Claim.** The report version has moved across firmware ABI revisions — 3h, then 5h, then 6h — and **4h never existed**, so a corpus listing 2/3/5 as the possible values is reporting a stale set rather than an enumeration.  `[SNP-ABI 1.59 Table 27]` `[10]` `C:high` `V:durable`
+- **Claim.** The report version has moved across firmware ABI revisions and **4h never existed**, so a corpus listing 2/3/5 as the possible values is reporting a stale set rather than an enumeration.  `[SNP-ABI 1.59 Table 27]` `[10]` `C:high` `V:durable`
+- **Note on the anchor.** Only the *current* value is attested by the cited table; the earlier points of the progression come from earlier ABI revisions, and **3h is attested in neither locally held revision (1.58, 1.59)**. Cite the revision you read for whichever value you quote, rather than citing one table for the whole sequence. The durable claim here is that the set moves and that 4h was never in it.
+`[10]` `C:high` `V:durable`
 - **Note.** The **current** version value is version-bearing and belongs in `90-dated-landscape.md`; what is durable is that the set is a moving progression and that 4h was never in it.
 - **Owner:** `14-sev-snp.md`
 
@@ -277,6 +279,12 @@ The entry is kept under its original number because the wrong map circulated in 
 - `034h` is `LAUNCH_UPDATE_SECRET` in Table 13 but `LAUNCH_SECRET` in the §6.6 heading.
 
 Note also that 55766 covers **SEV and SEV-ES only** — SNP firmware commands are in 56860.
+
+### O7 · `AUTHOR_KEY_DIGEST` — AMD's Table 27 contradicts itself
+
+- **Claim.** `AUTHOR_KEY_EN`, bit 0 at offset `48h`, reads "Indicates that the digest of the author key is **present** in AUTHOR_KEY_DIGEST. Set to the value of GCTX.AuthorKeyEn." The `AUTHOR_KEY_DIGEST` row at offset `110h` reads "SHA-384 digest of the Author public key that certified the ID key, if provided in … **Zeroes if AUTHOR_KEY_EN is 1**." Those cannot both be true.  `[SNP-ABI 1.59 Table 27]` `[10]` `C:high` `V:durable`
+- **Do not resolve it by picking the sensible reading.** The bit-0 description is the one that makes operational sense, and an earlier draft of `14-sev-snp.md` asserted it as settled. That is the failure this file exists to prevent: a specification contradicting itself is an open conflict, not an invitation to choose. Anything relying on this field for attestation policy should treat it as unreliable and say so.
+- **Owner:** `14-sev-snp.md` §14.11, which now states both halves.
 
 ### O6 · The five-level (LA57) two-dimensional walk figure
 

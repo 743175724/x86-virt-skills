@@ -62,6 +62,7 @@ Three traps worth knowing before you go looking:
 | `PVALIDATE` or `RMPUPDATE` returns an unexpected code | `14-sev-snp.md` §14.4 |
 | Attestation report fails to verify | `14-sev-snp.md` §14.11 |
 | Nested guest is extremely slow | `15-nested-virtualization.md` §15.5, then `18-performance.md` §18.5 |
+| Must I turn Hyper-V off to run VMware or VirtualBox? | `16-windows-platform.md` §16.6 — no; see `errata.md` E15 |
 | A firmware or microcode update **disabled a feature** that used to work | `17-security.md` §17.1 — mitigations disable features; check `errata.md` first |
 | "Is this CVE relevant to me?" | `17-security.md` §17.1 |
 | "How much does VBS cost me?" | `18-performance.md` §18.2 |
@@ -96,11 +97,12 @@ listed here wins and the other is a cross-reference.
 | Intercept vectors and bit numbers | `03-intercepts.md` §3.1 |
 | IOPM / MSRPM layout | `03-intercepts.md` §3.3, §3.4 |
 | **The EXITCODE table** | `05-exit-decoding.md` §5.1 |
-| **All `EXITINFO1` / `EXITINFO2` layouts, `EVENTINJ`, `EXITINTINFO`** | `05-exit-decoding.md` §5.2 |
+| **All `EXITINFO1` / `EXITINFO2` layouts, `EVENTINJ`, `EXITINTINFO`** | `05-exit-decoding.md` §5.2 — **except `#NPF`, which is §5.3** |
 | Nested page-table entry formats, per level | `06-nested-paging.md` §6.2 |
 | `TLB_CONTROL` values | `06-nested-paging.md` §6.8 |
 | The offset-60h virtual interrupt control word | `07-virtual-interrupts-avic.md` §7.1 |
 | AVIC backing page, APIC ID tables, AVIC exit codes | `07-virtual-interrupts-avic.md` §7.4, §7.5, §7.8 |
+| The AVIC doorbell register | `07-virtual-interrupts-avic.md` §7.6 |
 | IOMMU MMIO register map, Control and Status registers | `08-iommu-architecture.md` §8.2, §8.3 |
 | Device Table Entry — translation side | `08-iommu-architecture.md` §8.6 |
 | **Event, PPR and GA log entry formats** | `08-iommu-architecture.md` §8.8 |

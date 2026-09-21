@@ -55,10 +55,10 @@ Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 |---|---|
 | Claims checked against downloaded AMD PDFs by agents that did not write them | **2100**, of which 13 were wrong and are fixed |
 | Error rate found by that pass | **0.62%** |
-| Behavioural eval, answered blind and scored by separate agents | **497/508 (97.8%)** facts recalled |
-| Misconceptions asserted across 80 questions | **0** |
-| Citation validity | **80/80 (100%)** |
-| Routing correct on first try | **79/80 (98.75%)** |
+| Behavioural eval, answered blind and scored by separate agents | run 1 **497/508 (97.8%)**, run 2 **495/512 (96.7%)** |
+| Answer keys the scorers found wrong | run 1 **4**, run 2 **0** |
+| Misconceptions asserted, across two runs of 80 questions | **0** |
+| Citation validity | **100%** in both runs |
 
 Confidence is stated, not assumed. `intel-vt`: 2228 claims `C:high`, 423
 `C:medium`, 39 `C:low`, of 2650. `amd-virtualization`: 1913 `C:high`, 159
@@ -72,9 +72,16 @@ skill made itself.
 Five AMD entries are marked `[reversed]` because the *proposed correction* was
 itself refuted by a primary source.
 
-The AMD eval is written up in
-[`eval/amd-virtualization/results/SUMMARY-2026-09-21.md`](eval/amd-virtualization/results/SUMMARY-2026-09-21.md),
-including the four wrong keys it found and the four skill defects it exposed.
+The AMD eval was run twice: once, then again after its findings were fixed, so
+the fixes are measured rather than assumed. Both runs are written up under
+[`eval/amd-virtualization/results/`](eval/amd-virtualization/results/).
+
+The headline numbers moved *down* slightly between runs, which is not a
+regression: correcting four wrong keys raised the bar and grew the denominator,
+and both the answerers and scorers were different agents. The number that
+matters is **keys disputed, 4 → 0**. Run 1's scorers found four keys that
+contradicted the specification and would have failed a correct answer; run 2's
+scorers, with the same authority, found none.
 Every genuine miss was "the fact is present but was not found" rather than a
 content gap — routing and placement, not coverage. There was exactly one real
 content gap in 80 questions.

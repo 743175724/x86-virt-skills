@@ -1,571 +1,152 @@
-# amd-virtualization eval — trap (12 questions)
+# amd-virtualization eval — trap set (12 questions)
 
-Worked from `amd-virtualization/SKILL.md` → `references/errata.md` → the one owning
-chapter per question. No web access, no PDFs, no outside recall.
+Answered from the `amd-virtualization` skill only. Procedure followed: `SKILL.md` →
+`references/errata.md` (all twelve touch a commonly circulated claim, so step 3 applied to
+every one) → the single owning chapter named by the routing table or by the errata entry's
+`Owner:` line. No second chapter was opened for any question.
 
 ---
 
 ### trap-client-sev-cpuid
+**Premise:** incorrect — and wrong twice. The inference is wrong ("SEV is an EPYC feature" means SEV is *productised* on EPYC, which is not the same as absent from client silicon), and the value is wrong for the parts most people mean by "a desktop Ryzen". `errata.md` E12 is one of the five `[reversed]` entries: it was drafted the other way round and a primary-source check refuted the draft.
+**Routed to:** `11-memory-encryption.md` §11.2 (`Fn8000_001F` field definitions) and §11.8 "What a client part does not have" (the measured dumps) — right first time; SKILL.md's routing row and its Scope-boundaries note both point here, and errata E12's `Owner:` line agrees.
+**Answer:** No. Measured `Fn8000_001F` words from published CPUID dumps of shipping **non-PRO consumer desktop parts report `EAX[1] = 1`**:
 
-**Premise in the question:** **incorrect.** "SEV is an EPYC feature, so on a desktop Ryzen
-`Fn8000_001F EAX[1]` reads 0" is wrong — and it is wrong rather than merely imprecise.
-*Productised on EPYC* is not the same as *absent from client silicon*. Measured CPUID dumps
-from shipping non-PRO consumer desktop parts report `Fn8000_001F_EAX[1] = 1`. The premise is
-only true for Zen 4 and later client parts, and the question states it as universal.
-
-**Routed to:** `11-memory-encryption.md` §11.8 "What a client part does not have" (and
-§11.8.1) — **correct route**. `errata.md` E12 `[reversed]` names `11-memory-encryption.md`
-as the owner, SKILL.md's routing table sends `Fn8000_001F` / "what a client PC actually has"
-to chapter 11, and SKILL.md's own Scope-boundaries section states the correction inline.
-
-**Answer:**
-It depends on the generation, and on Zen+/2/3 desktop parts the bit reads **1**, not 0.
-
-Measured `Fn8000_001F` words from published CPUID dumps of shipping client parts:
-
-| Part (client, non-PRO) | EAX | EBX | ECX | EDX |
+| Part | EAX | EBX | ECX | EDX |
 |---|---|---|---|---|
 | Ryzen 5 3600X (Matisse, Zen 2) | `0001000F` | `0000016F` | `000001FD` | `00000001` |
 | Ryzen 7 5800X (Vermeer, Zen 3) | `0001780F` | `00000173` | `000001FD` | `00000001` |
 | Ryzen 7000 desktop (Raphael, Zen 4) | `00000001` | `000000B3` | `00000000` | `00000000` |
 | Ryzen 9 9950X (Granite Ridge, Zen 5) | `00000001` | `000000B3` | `00000000` | `00000000` |
 
-- Client Zen 2 and Zen 3 desktop parts report `Fn8000_001F_EAX` bits 0–3 set — `SME`, **`SEV`**,
-  `PageFlushMsr` and `SEV-ES` — with `ECX = 1FDh`, i.e. 509 simultaneously encryptable guests.
-  `[no-spec]` `[330]` (InstLatx64 CPUID dump collection, `AuthenticAMD`) `C:medium` `V:durable`
-- On **Zen 4 and Zen 5 client parts** the same register reads `00000001` — `SME` only — with
-  `ECX` and `EDX` zero. That is the only generation for which your sentence holds.
-  `[no-spec]` `[330]` `C:medium` `V:durable`
-- `Fn8000_001F_EAX[4]` (`SEV-SNP`) is **clear on every client part** in that measurement set,
-  including the Zen 2/Zen 3 parts that do report `SEV`. SEV-SNP has never been set on a client
-  part. `[no-spec]` `[330][35]` `C:medium` `V:durable`
-- The defensible client statement is about **TSME / AMD Memory Guard**, not about `EAX[1]`
-  reading 0. On Zen 4+ client silicon a guest cannot be encrypted with a per-VM key because
-  `EAX[1]` is clear there and, with `MemEncryptionModEn` = 0, the VMCB control bit for SEV is
-  ignored outright. `[APM2 §15.34.3]` `[1][330]` `C:medium` `V:durable`
-- Also recorded as `errata.md` **E12 `[reversed]`** — that entry exists because the proposed
-  correction was drafted the other way round and a primary-source check refuted it. `[35]` `C:medium`
+On Zen 2 and Zen 3 client desktop parts `EAX` bits 0–3 are set — `SME`, `SEV`, `PageFlushMsr`, `SEV-ES` — with `ECX = 1FDh`, i.e. **509** simultaneously encryptable guests. errata E12 adds the Ryzen 9 3900X and the Ryzen 7 5800X3D to that set. The generation matters: **Zen 4 and Zen 5 client parts read `EAX = 00000001`, `SME` only**, so `EAX[1]` is 0 *there* — but that is a statement about Zen 4+, not about "Ryzen". Separately, `Fn8000_001F_EAX[4]` (`SEV-SNP`) is **clear on every client part in the measurement set**, including the Zen 2 and Zen 3 parts that do report `SEV`; SEV-SNP has never been set on a client part. The defensible client statement is the one about TSME / AMD Memory Guard, not "`EAX[1]` reads 0 on Ryzen", which a Zen+/2/3 desktop disproves in one `cpuid` invocation.
 
-**Confidence:** **high** that the premise is false (two independent statements of it, and a
-single `cpuid` on a Zen 2/3 desktop disproves it). The underlying measurements themselves are
-marked **`C:medium`** in the skill and are anchored `[no-spec]` — they are machine-generated
-CPUID dumps, not an AMD specification claim. `V:durable`.
+Citations as the skill gives them: the measurements are `[no-spec]` `[330]` — InstLatx64, x86/x64 CPUID dump collection, `AuthenticAMD` directory (Matisse `0870F10`, Vermeer `0A20F12`, Raphael `0A60F12`, Granite Ridge `0B40F40`), retrieved 2026-09-21 — together with `[35]` AMD's SEV developer resources; the leaf's field definitions are `[APM3 App.E]` `[2]` (AMD64 Architecture Programmer's Manual Vol.3, pub. 24594, rev 3.38); the rule that SEV cannot be enabled when `EAX[1]` is clear is `[APM2 §15.34.3]` `[1]` (pub. 24593, rev 3.45).
+**Confidence:** high that the premise is false. The supporting measurement claims are marked **`C:medium`** in the chapter and carry `[no-spec]` — there is no AMD specification for per-part CPUID values, and AMD publishes no PPR or revision guide for client Ryzen, so the evidence is a Tier-2 dump collection.
 
 ---
 
 ### trap-x2avic-cpuid-bit
+**Premise:** incorrect. `Fn8000_000A_EDX[14]` is **Reserved**. The `EDX[14]` figure comes from a 2022 kernel patch letter that carried the wrong bit, and it propagated from there (`errata.md` E09).
+**Routed to:** `07-virtual-interrupts-avic.md` §7.7 "x2AVIC" — right first time.
+**Answer:** x2AVIC is enumerated by **`CPUID Fn8000_000A_EDX[18]`**. `[APM2 §15.29.10]` `[1]`. §15.29.7 states the same bit a second time in the AVIC CPUID subsection: `EDX[AVIC]` (bit 13) reports AVIC, and `EDX[x2AVIC]` (bit 18) additionally reports AVIC support when the guest is using the x2APIC MSR interface. `[APM2 §15.29.7]` `[1]`. Vol.3's `Fn8000_000A_EDX` table confirms it from the other side — bit 13 `AVIC`, **bit 14 Reserved**, bit 15 `VMSAVEvirt`, bit 18 `x2AVIC`. `[APM3 App.E]` `[2]`.
 
-**Premise in the question:** **incorrect.** `Fn8000_000A EDX[14]` is not x2AVIC — **bit 14 is
-Reserved**. The `EDX[14]` figure comes from a 2022 kernel patch letter that carried the wrong
-bit number, and the mistake propagated from there.
-
-**Routed to:** `07-virtual-interrupts-avic.md` §7.7 "x2AVIC" — **correct route**. SKILL.md
-routes AVIC/x2AVIC to `07-virtual-interrupts-avic.md`; `errata.md` E09 names the same owner.
-
-**Answer:**
-x2AVIC is enumerated by **`CPUID Fn8000_000A_EDX[18]`**.
-
-- x2AVIC accelerates performance-sensitive APIC accesses when the guest drives the x2APIC
-  **MSR** interface rather than the MMIO interface, and is reported by
-  `CPUID Fn8000_000A_EDX[x2AVIC]` = **bit 18**. `[APM2 §15.29.10]` `[1]` `C:high` `V:durable`
-- §15.29.7 states the same bit a second time in the AVIC CPUID subsection:
-  `Fn8000_000A_EDX[AVIC]` (**bit 13**) reports AVIC, and `Fn8000_000A_EDX[x2AVIC]` (**bit 18**)
-  additionally reports AVIC support when the guest uses the x2APIC MSR interface.
-  `[APM2 §15.29.7]` `[1]` `C:high` `V:durable`
-- Vol.3's `Fn8000_000A_EDX` table confirms it from the other side: bit 13 `AVIC`, **bit 14
-  Reserved**, bit 15 `VMSAVEvirt`, bit 18 `x2AVIC`. `[APM3 App.E]` `[2]` `C:high` `V:durable`
-- `errata.md` **E09** records the provenance of the `EDX[14]` error. `[APM3 App.E]` `[2]` `C:high`
-
-Do not confuse the CPUID bit with the *enables*: x2AVIC mode is entered by setting **both**
-AVIC Enable (bit 31) and x2AVIC Mode Enable (bit 30) in the virtual interrupt control word at
-VMCB offset 60h; setting bit 30 without bit 31 makes VMRUN fail with `VMEXIT_INVALID`.
-`[APM2 §15.29.4.1]` `[1]` `C:high` `V:durable`
-
-**Confidence:** **high.** Marked `C:high` `V:durable` in the skill, stated by two independent
-APM anchors (Vol.2 §15.29.10 / §15.29.7 and Vol.3 App.E).
+Two adjacent facts, so the enumeration bit is not confused with an enable: x2AVIC mode is entered by setting **both** AVIC Enable (bit 31) **and** x2AVIC Mode Enable (bit 30) in the virtual interrupt control word at VMCB offset 60h — setting bit 30 without bit 31 makes VMRUN fail with `VMEXIT_INVALID` `[APM2 §15.29.4.1]` `[1]` — and the separate `x2AVIC_EXT` capability is an **ECX** bit, `Fn8000_000A_ECX[6]`, not an EDX bit.
+**Confidence:** high — `C:high` `V:durable`, stated twice in Vol.2 and confirmed from Vol.3's table.
 
 ---
 
 ### trap-cmdbufrun-register
+**Premise:** incorrect — right bit name, wrong register. `CmdBufRun` is not in the Control Register, so polling MMIO 0018h for it will never show it set no matter what the IOMMU is doing. This is `errata.md` E01.
+**Routed to:** `08-iommu-architecture.md` §8.3 "Control and Status registers" (both the 0018h and the 2020h bit tables) — right first time.
+**Answer:** `CmdBufRun` is a **read-only bit 4 of the IOMMU Status Register at MMIO offset 2020h** `[IOMMU 3.11 §3.4.16]` `[7]`. The control that enables and starts command-buffer processing is a different bit in a different register: **`CmdBufEn`, bit 12 of the IOMMU Control Register at MMIO offset 0018h** `[IOMMU 3.11 §3.4.1]` `[7]`. The two are different registers and must not be conflated.
 
-**Premise in the question:** **incorrect.** `CmdBufRun` is not in the Control Register at MMIO
-0018h — it is in the **Status Register at MMIO 2020h**. You are polling the wrong register, at
-a bit position (in 0018h, bit 4 is `ComWaitIntEn`) that has nothing to do with command-buffer
-progress. `CmdBufRun` is also **read-only**, so it is not something you set; what you set is
-`CmdBufEn`.
-
-**Routed to:** `08-iommu-architecture.md` §8.3 "Control and Status registers" (IOMMU Control
-Register MMIO 0018h; IOMMU Status Register MMIO 2020h) — **correct route**. SKILL.md routes
-"IOMMU MMIO registers" to chapter 08; `errata.md` E01 names the same owner.
-
-**Answer:**
-Two different registers are being conflated.
-
-- **`CmdBufRun` is a read-only bit 4 of the IOMMU Status Register, MMIO offset 2020h.** The
-  control that starts or restarts command-buffer processing is **`CmdBufEn`, bit 12 of the
-  Control Register at MMIO 0018h**. The two must not be conflated.
-  `[IOMMU 3.11 §3.4.16]` `[7]` `C:high` `V:durable`
-- In the Control Register at 0018h, bit 12 is `CmdBufEn` and bit 0 is `IommuEn`; the Device
-  Table Base Address Register must be configured before `IommuEn` is set.
-  `[IOMMU 3.11 §3.4.1]` `[7]` `C:high` `V:durable`
-- `CmdBufRun` is **level-sensitive**: once 1 it stays 1 until command processing stops for
-  cause, and once 0 it stays 0 until software writes `CmdBufEn` = 1. `errata.md` **E01**.
-  `[IOMMU 3.11 §3.4]` `[7]` `C:high` `V:durable`
-
-So: read bit 4 of **2020h**, not 0018h; and if it reads 0, the fix is to write `CmdBufEn`
-(0018h bit 12), because the bit will not set by itself.
-
-Two further causes worth checking if you are already reading 2020h correctly:
-
-- The IOMMU **stops fetching commands** after a `COMMAND_HARDWARE_ERROR` or an
-  `ILLEGAL_COMMAND_ERROR`, and in that case the command head pointer does not advance past the
-  offending entry — though it may already have advanced past it in the fetch pipeline.
-  `[IOMMU 3.11 §2.4]` `[7]` `C:high` `V:durable`
-- Restarting any halted ring follows the same four steps: wait for the `…Run` bit to read 0,
-  clear the matching `…En` bit in 0018h, reprogram base/head/tail as needed, write 1 to the
-  overflow status bit to clear it (RW1C), then set the `…En` bit again.
-  `[IOMMU 3.11 §2.5.1]` `[7]` `C:high` `V:durable`
-
-**Confidence:** **high.** `C:high` `V:durable` throughout, with the full bit tables for both
-registers reproduced in §8.3.
+What to do about the symptom: read 2020h bit 4 rather than 0018h, and check that 0018h bit 12 (`CmdBufEn`) and bit 0 (`IommuEn`) are set, with the Device Table Base Address Register configured before `IommuEn`. `CmdBufRun` is level-sensitive — once 1 it stays 1 until command processing stops for cause, and once 0 it stays 0 until software writes `CmdBufEn = 1`. To restart a halted buffer the specification gives one four-step sequence, shared by all the ring buffers: wait for the `…Run` bit to read 0, clear the matching `…En` bit in 0018h, reprogram base/head/tail as needed, write 1 to the overflow status bit to clear it (RW1C), then set the `…En` bit again. `[IOMMU 3.11 §2.5.1]` `[7]`. Citation is AMD I/O Virtualization Technology (IOMMU) Specification, pub. 48882-PUB rev 3.11.
+**Confidence:** high — `C:high` `V:durable`; the chapter states its 0018h and 2020h tables are the complete bit assignments of those registers.
 
 ---
 
 ### trap-irte-bit0-name
+**Premise:** none stated — this one is a plain question, not a trap premise. Worth flagging anyway that the spelling `RemapEm` circulates in secondary material and appears nowhere in the specification (`errata.md` E03).
+**Routed to:** `10-iommu-interrupt-remapping.md` §10.1 "The legacy interrupt remapping table entry" — right first time.
+**Answer:** Bit 0 is **`RemapEn`**: 1 = the interrupt is remapped, 0 = the interrupt is target aborted. `[IOMMU 3.11 §2.2.5]` `[7]`. The exact field boundaries of the basic 32-bit IRTE are `Vector` 23:16, `Destination` 15:8, `GuestMode` 7, `DM` 6, `RqEoi` 5, `IntType` 4:2, `SupIOPF` 1, `RemapEn` 0, with 31:24 reserved. `[IOMMU 3.11 Table 20]` `[7]`. The specification uses the `RemapEn` spelling in **every one of the three IRTE tables** — Table 20 (basic 32-bit), Table 22 (128-bit `GuestMode=0`) and Table 23 (`GuestMode=1`), where `RemapEn` is again bit 0.
 
-**Premise in the question:** **no premise stated** — this is a plain question, and nothing in
-it is wrong. (The trap it is probing is the `RemapEm` misspelling; the question does not
-assert it.)
-
-**Routed to:** `10-iommu-interrupt-remapping.md` §10.1 "The legacy interrupt remapping table
-entry" — **correct route**. SKILL.md routes "IRTE formats" to chapter 10; `errata.md` E03
-names the same owner.
-
-**Answer:**
-Bit 0 of an interrupt remapping table entry is **`RemapEn`**.
-
-- The exact field boundaries of the basic (32-bit) IRTE are `Vector` 23:16, `Destination` 15:8,
-  `GuestMode` 7, `DM` 6, `RqEoi` 5, `IntType` 4:2, `SupIOPF` 1, **`RemapEn` 0**, with 31:24
-  reserved. `[IOMMU 3.11 Table 20]` `[7]` `C:high` `V:durable`
-- The field at bit 0 is spelled **`RemapEn`**; the misspelling that circulates in secondary
-  material (`RemapEm`) appears nowhere in the specification, which uses `RemapEn` in **every
-  one of the three IRTE tables**. `[IOMMU 3.11 §2.2.5]` `[7]` `C:high` `V:durable`
-- Semantics: `RemapEn = 1` means the interrupt is remapped; `RemapEn = 0` means it is **target
-  aborted** and reported as an `IO_PAGE_FAULT` — it is the per-vector deny, which is why a
-  correctly sized table with most entries disabled is the safe default rather than a short
-  table. `[IOMMU 3.11 Table 20]` `[IOMMU 3.11 §2.2.5.2]` `[7]` `C:high` `V:durable`
-- It keeps bit 0 in the 128-bit formats too: in the `GuestMode = 0` wide entry and in the
-  `GuestMode = 1` virtualized entry (root pointer 115:76, `Vector` 71:64, `GATag` 63:32,
-  `Destination[7:0]` 15:8, `GuestMode` 7, `IsRun` 6, `GAPPIDis` 5, reserved 4:3, `GALogIntr` 2,
-  `SupIOPF` 1, **`RemapEn` 0**). `[IOMMU 3.11 Table 22]` `[IOMMU 3.11 Table 23]` `[7]` `C:high`
-- `SupIOPF` (bit 1) is meaningful **independently** of `RemapEn`, so an entry that blocks an
-  interrupt can still be configured to log or not log the resulting fault.
-  `[IOMMU 3.11 Table 20]` `[7]` `C:high` `V:durable`
-- Recorded as `errata.md` **E03**.
-
-**Confidence:** **high.** `C:high` `V:durable`, with the spelling confirmed across all three
-IRTE tables in the specification.
+Two behaviours attached to the bit: `SupIOPF` (bit 1) is meaningful **independently** of `RemapEn`, so an entry that blocks an interrupt can still be configured to log or not log the resulting fault `[IOMMU 3.11 Table 20]`; and `RemapEn = 0` is the per-vector deny — the interrupt is target aborted and reported as an `IO_PAGE_FAULT` rather than silently dropped, which is why a correctly sized table with most entries disabled is the safe default rather than a short table. `[IOMMU 3.11 §2.2.5.2]` `[7]`.
+**Confidence:** high — `C:high` `V:durable`.
 
 ---
 
 ### trap-iommu-mmio-window-size
+**Premise:** incorrect, and "14" is not a size at all — it is a misreading of the **`BaseAddress[31:14]` field width** in the IOMMU capability block (Capability Offset 04h) taken as a KiB figure. `errata.md` E02.
+**Routed to:** `08-iommu-architecture.md` §8.2 "The MMIO register map" — right chapter, one section above the routing table's `§8.3 (registers)` pointer: the window *size* is owned by §8.2 and the per-register bit tables by §8.3. Same chapter, no second file opened.
+**Answer:** The size is **conditional, not a single number**: the IOMMU register window is **16 KBytes when `MMIO 0030h[PCSup] = 0`, and 512 KBytes when `PCSup = 1`**. Software allocates the region and aligns it itself — 16-KByte- or 512-KByte-aligned to match — and programs its base through the capability block; when `PCSup = 1`, `BaseAddress[18:14]` must be zero. `[IOMMU 3.11 §2.3]` `[7]`.
 
-**Premise in the question:** **incorrect.** 14 KiB is not a size at all — it is a misreading of
-the **`BaseAddress[31:14]` field width** in the capability block. The real size is conditional,
-and neither of its two values is 14 KiB.
-
-**Routed to:** `08-iommu-architecture.md` §8.2 "The MMIO register map" — **correct route**.
-SKILL.md routes "IOMMU MMIO registers" to chapter 08; `errata.md` E02 names the same owner.
-
-**Answer:**
-The IOMMU register window is **16 KBytes when `MMIO 0030h[PCSup]` = 0, and 512 KBytes when
-`PCSup` = 1**. There is no 14 KiB window.
-
-- The IOMMU register window is 16 Kbytes when `MMIO 0030h[PCSup]` = 0 and 512 Kbytes when
-  `PCSup` = 1; **software allocates and 16-Kbyte- or 512-Kbyte-aligns the region itself** and
-  programs its base through the capability block, and when `PCSup` = 1, `BaseAddress[18:14]`
-  must be zero. `[IOMMU 3.11 §2.3]` `[7]` `C:high` `V:durable`
-- The "14" figure is a misreading of the `BaseAddress[31:14]` field width, not a size.
-  `errata.md` **E02**. `[IOMMU 3.11 §2.3]` `[7]` `C:high` `V:durable`
-- `PCSup` is bit 9 of the Extended Feature Register at MMIO 0030h; note also that the
-  event-counter block at 4000h and above is **reserved when `EFR[PCSup]` = 0** — which is the
-  concrete reason the window is smaller in that case. `[IOMMU 3.11 §3.4]` `[7]` `C:high` `V:durable`
-- Access rules for that window: software accesses to IOMMU registers may be no wider than 64
-  bits, must be naturally aligned, must have a power-of-two size in bytes, and may be as small
-  as one byte. `[IOMMU 3.11 §3.4]` `[7]` `C:high` `V:durable`
-
-**Confidence:** **high.** `C:high` `V:durable`, stated identically in chapter 08 §8.2 and in
-`errata.md` E02, both anchored to `[IOMMU 3.11 §2.3]`.
+`PCSup` (performance-counter support) is bit 9 of the Extended Feature Register at MMIO 0030h, and the event-counter block at 4000h and above is reserved when `EFR[PCSup] = 0` `[IOMMU 3.11 §3.4]` `[7]` — which is what the larger window is for. Access rules for the window: software accesses may be no wider than 64 bits, must be naturally aligned, must have a power-of-two size in bytes, and may be as small as one byte.
+**Confidence:** high — `C:high` `V:durable`.
 
 ---
 
 ### trap-vmexit-restores
+**Premise:** **partly correct.** RIP, RSP and RAX are genuinely restored, so the three named items are right. What is wrong is "the whole list": they are three of a **fourteen-item** enumerated set, and the manual introduces that set with "**at least** the following", so the list is not even closed. `errata.md` E07 — which notes it was itself incomplete until 2026-09-21, having omitted RFLAGS and all four segment selectors and anchored to §15.6, where the enumeration does not appear.
+**Routed to:** `04-world-switch.md` §4.3 "#VMEXIT: what is restored and what is not", with the save-side enumeration in §4.1 "Step 1 — saving host state" — right chapter first time (the routing row points at §4.2; §4.3 is the section that owns it).
+**Answer:** No. What VMRUN saves is exactly what `#VMEXIT` restores, and **§15.5.1 "Saving Host State"** is where the enumeration lives — **fourteen items, not three**: **CS.SEL and NEXT_RIP · RFLAGS and RAX · SS.SEL and RSP · CR0, CR3, CR4 and EFER · IDTR and GDTR · ES.SEL and DS.SEL**. `[APM2 §15.5.1]` `[1]`. NEXT_RIP here means the rIP of the instruction *following* the VMRUN — the address at which the host resumes.
 
-**Premise in the question:** **incorrect** — the list is right as far as it goes but is badly
-incomplete. RIP, RSP and RAX are three of **fourteen** enumerated items, and even the fourteen
-are not a closed set, because the manual says "**at least** the following".
+Vol.3's pseudo-code enumerates the reload in order on the way out: GDTR, IDTR, EFER, CR0 with **`CR0.PE` forced to 1**, CR4, CR3, the host PDPEs if the host is in PAE paging mode, RFLAGS, RIP, RSP, RAX, `DR7 = "all disabled"`, `CPL = 0`, and then the ES, CS, SS and DS selectors with their descriptors reloaded from the GDT. `[APM3 §4 "VMRUN"]` `[APM2 §15.6]` `[1][2]`. `#VMEXIT` additionally forces `RFLAGS.VM = 0`.
 
-**Routed to:** `04-world-switch.md` §4.3 "#VMEXIT: what is restored and what is not" (with
-§4.1 step 1 "saving host state", since what VMRUN saves is exactly what `#VMEXIT` restores) —
-**correct route**. SKILL.md routes `#VMEXIT` to chapter 04; `errata.md` E07 names the same owner.
-
-**Answer:**
-No — that is three of fourteen, and the fourteen are themselves an open set.
-
-**The enumerated set** (VMRUN saves it, `#VMEXIT` restores it), given in **§15.5.1 "Saving Host
-State"**: **CS.SEL and NEXT_RIP · RFLAGS and RAX · SS.SEL and RSP · CR0, CR3, CR4 and EFER ·
-IDTR and GDTR · ES.SEL and DS.SEL** — fourteen items, not three.
-`[APM2 §15.5.1]` `[1]` `C:high` `V:durable`
-
-**The reload order**, as the Vol.3 pseudo-code enumerates it: GDTR, IDTR, EFER, CR0 with
-**`CR0.PE` forced to 1**, CR4, CR3, the host PDPEs if the host is in PAE paging mode, RFLAGS,
-RIP, RSP, RAX, `DR7 = "all disabled"`, `CPL = 0`, and then the ES, CS, SS and DS selectors with
-their descriptors reloaded from the GDT.
-`[APM3 §4 "VMRUN"]` `[APM2 §15.6]` `[1][2]` `C:high` `V:durable`
-
-**Three qualifiers that matter:**
-
-1. **The list is not closed.** The manual says "at least the following", in §15.5.1's host-save
-   list and again in §15.6's `#VMEXIT` description. A VMM must not treat either as closed.
-   `[APM2 §15.5.1]` `[1]` `C:high` `V:durable`
-2. **Three items are explicitly *not* restored: host CR2, host PAT and the host LDTR.** The
-   Vol.3 pseudo-code annotates "Do not reload host CR2 or PAT", and immediately after `#VMEXIT`
-   the processor still contains the **guest** value of LDTR.
-   `[APM3 §4 "VMRUN"]` `[APM2 §15.6]` `[1][2]` `C:high` `V:durable`
-   Consequence you must code for: because LDTR still holds the guest value, for CS, SS, DS and
-   ES the VMM must use only descriptors from the **GDT** until it has restored its own LDTR —
-   which is what VMSAVE/VMLOAD exist for. `[APM2 §15.6]` `[1]` `C:high` `V:durable`
-3. **`#VMEXIT` additionally forces state** rather than restoring it: `CR0.PE = 1`,
-   `RFLAGS.VM = 0`, host CPL = 0, and all breakpoints disabled in the host DR7.
-   `[APM2 §15.6]` `[1]` `C:high` `V:durable`
-
-Also part of the exit sequence, before any of the above: `#VMEXIT` clears `GIF`, writes guest
-state back to the VMCB, records `EXITCODE` (+ `EXITINFO1`/`EXITINFO2`), clears all intercepts,
-resets the ASID to 0, and clears the internal `V_IRQ`, `V_INTR_MASKING` and `TSC_OFFSET`.
-`[APM2 §15.6]` `[1]` `C:high` `V:durable`
-
-`errata.md` **E07** records this misconception, and notes that the errata entry itself was
-incomplete until 2026-09-21 (it had omitted RFLAGS and all four segment selectors and anchored
-to §15.6, where the enumeration does not appear — corrected against Rev 3.45 p.523). **Cite
-§15.5.1 for the enumeration, not §15.6.**
-
-**Confidence:** **high** for the enumeration and the three non-restores (`C:high` `V:durable`),
-with the explicit caveat that the skill flags the set as **open** — a future APM revision may
-add to it without renumbering anything.
+Three items are **explicitly excluded** from that reload: **host CR2, host PAT and the host LDTR** — the pseudo-code annotates "Do not reload host CR2 or PAT", and immediately after `#VMEXIT` the processor still contains the **guest** value of LDTR. Because of that last one, the VMM must use only global-descriptor-table descriptors for CS, SS, DS and ES until it has restored its own LDTR, which is exactly what VMSAVE and VMLOAD exist for. `[APM2 §15.6]` `[1]`.
+**Confidence:** high — `C:high` `V:durable`. The one caveat the skill itself flags: "at least the following" appears in both §15.5.1's host-save list and §15.6's restore list, so fourteen is a floor, not a closed set.
 
 ---
 
 ### trap-vmload-vmsave-ss
+**Premise:** incorrect. SS is **not** among the state VMLOAD/VMSAVE transfer, so the pair cannot be used to skip saving it. `errata.md` E08.
+**Routed to:** `04-world-switch.md` §4.4 "VMLOAD and VMSAVE" → "The exact field set" — right first time.
+**Answer:** No. The pair handles exactly this state: **FS, GS, TR and LDTR including all hidden state; `KernelGsBase`; `STAR`, `LSTAR`, `CSTAR` and `SFMASK`; and `SYSENTER_CS`, `SYSENTER_ESP` and `SYSENTER_EIP`.** SS is not among them. `[APM2 §15.5.2]` `[APM3 §4 "VMLOAD"]` `[1][2]`.
 
-**Premise in the question:** **incorrect.** VMLOAD/VMSAVE do **not** cover SS. If you skip
-saving SS on the strength of that assumption you will lose host SS state.
+You do not have to hand-save SS, though — it is covered by the *other* mechanism: **SS.SEL and RSP are in the VMRUN host-save / `#VMEXIT` restore set** (the fourteen-item list at `[APM2 §15.5.1]`), and VMRUN loads guest SS including its hidden state. So the division is: VMRUN and `#VMEXIT` swap SS; VMLOAD/VMSAVE swap the FS/GS/TR/LDTR-plus-SYSCALL/SYSENTER block that VMRUN and `#VMEXIT` do *not* touch.
 
-**Routed to:** `04-world-switch.md` §4.4 "VMLOAD and VMSAVE" → "The exact field set" —
-**correct route**. SKILL.md routes VMLOAD/VMSAVE to chapter 04; `errata.md` E08 names the
-same owner.
-
-**Answer:**
-No. **SS is not among the state VMLOAD/VMSAVE transfer.**
-
-- The pair handles exactly this state: **FS, GS, TR and LDTR including all hidden state;
-  `KernelGsBase`; `STAR`, `LSTAR`, `CSTAR` and `SFMASK`; and `SYSENTER_CS`, `SYSENTER_ESP` and
-  `SYSENTER_EIP`.** SS is **not among them** — it is handled by VMRUN and `#VMEXIT` instead.
-  `[APM2 §15.5.2]` `[APM3 §4 "VMLOAD"]` `[1][2]` `C:high` `V:durable`
-- So you are not "skipping" anything: SS.SEL and RSP are in the fourteen-item set that VMRUN
-  saves and `#VMEXIT` restores, and on `#VMEXIT` the SS selector is reloaded with its descriptor
-  from the GDT. `[APM2 §15.5.1]` `[APM2 §15.6]` `[1]` `C:high` `V:durable`
-- The Vol.3 reference pages for the two instructions list the identical field set in the
-  identical order, so the pair is exactly symmetric — VMLOAD reads what VMSAVE writes.
-  `[APM3 §4 "VMLOAD"]` `[APM3 §4 "VMSAVE"]` `[2]` `C:high` `V:durable`
-- Recorded as `errata.md` **E08**.
-
-What VMLOAD/VMSAVE **do** let you skip is the hidden FS/GS/TR/LDTR state that software cannot
-otherwise reach — that is their whole purpose, and LDTR in particular, since `#VMEXIT` leaves
-the *guest* LDTR loaded. `[APM2 §15.5.2]` `[1]` `C:high` `V:durable`
-
-One caveat on ordering: the guest-side rule is quoted by AMD — "VMLOAD would be executed as
-desired prior to executing a VMRUN, and VMSAVE at any desired point after a `#VMEXIT`"
-`[APM2 §15.5.2]` `[1]` `C:high`. The mirror-image **host-side** sequence (save host extra state,
-load guest extra state, VMRUN, then on `#VMEXIT` save guest extra state and load host extra
-state — two VMSAVE/VMLOAD pairs against two different VMCBs) is a **derivation**, not a
-quotation; the skill marks it **`C:medium`** and its §4.9 open items say AMD never writes the
-four-instruction sequence out.
-
-**Confidence:** **high** on the SS answer itself (`C:high` `V:durable`, two anchors). The
-host-side pairing advice attached above is flagged **`C:medium`** by the skill.
+Vol.3's reference pages for the two instructions list the identical field set in the identical order, so the pair is exactly symmetric — VMLOAD reads what VMSAVE writes. `[APM3 §4 "VMLOAD"]` `[APM3 §4 "VMSAVE"]` `[2]`. On ordering: with respect to the **guest's** VMCB the manual states it plainly — "VMLOAD would be executed as desired prior to executing a VMRUN, and VMSAVE at any desired point after a `#VMEXIT`" `[APM2 §15.5.2]` `[1]`; with respect to a **host** VMCB the order is the mirror image, so the full sequence is two VMSAVE/VMLOAD pairs against two different VMCBs, not one.
+**Confidence:** high on the SS answer — `C:high` `V:durable`. The host-VMCB ordering corollary is marked **`C:medium`** in the chapter: it follows from instruction semantics rather than from an explicit AMD statement.
 
 ---
 
 ### trap-two-dimensional-walk-count
+**Premise:** incorrect on both halves. The count is wrong — it is **24**, not 16 — and the question's implicit assumption that an APM section specifies it is also wrong. (The "4-reference native walk" part of the premise is fine for four-level paging.) `errata.md` E11.
+**Routed to:** `06-nested-paging.md` §6.4 "The two-dimensional walk" — right chapter first time (the routing row lists §6.5 and §6.7–§6.8 for `#NPF` and ASID work; the chapter's `Owns:` line names the two-dimensional walk and §6.4 is its section).
+**Answer:** With four-level guest paging over four-level nested paging, a TLB miss costs at worst **24 memory references**. The general form for an *n*-level guest hierarchy over an *m*-level nested hierarchy is **`nm + n + m`**, identical to `(n+1)(m+1) − 1`; the reference the second form subtracts is the fetch of the datum itself, which is the access the program actually wanted rather than a translation step. For n = m = 4 that is (4×4) + 4 + 4 = **24**. `[NP-WP §4.2.2]` `[15][56]`. The 16 in the premise is the `nm` term alone — it counts one nested walk per guest-entry fetch and drops the `n + m` terms.
 
-**Premise in the question:** **incorrect**, twice over. (a) The worst case is **24** memory
-references, not 16. (b) The implied "where is the number specified" — the APM — is also wrong:
-**neither the APM nor the Intel SDM states this figure.**
+**Where the number is specified — the load-bearing half of the question:** **neither the APM nor the Intel SDM states this figure.** Both give only per-dimension walk lengths. The first-party sources are **AMD's own *AMD-V Nested Paging* white paper, Rev 1.0, 2008-07 `[15]`** (§4.2.2 — the skill's anchor form is `[NP-WP §4.2.2]`), and the AMD-authored ASPLOS XIII 2008 paper **Bhargava, Serebrin, Spadini and Manne, "Accelerating Two-Dimensional Page Walks for Virtualized Systems" `[56]`**, which introduced the general form. An anchor of the form `[APM2 §15.25.x]` on this number is a **fabrication** — the skill says so in both §6.4's sourcing rule and errata E11.
 
-**Routed to:** `06-nested-paging.md` §6.4 "The two-dimensional walk" → "The cost, and where
-the number actually comes from" — **correct route**. SKILL.md routes "the two-dimensional walk"
-to chapter 06; `errata.md` E11 names the same owner.
-
-**Answer:**
-With four-level guest paging over four-level nested paging, a TLB miss costs at worst
-**24 memory references**, not 16.
-
-- **Claim.** With four-level guest paging and four-level nested paging, a TLB miss costs at
-  worst **24 memory references**. `[NP-WP §4.2.2]` `[15]` `C:high` `V:durable`
-- **General form.** For an *n*-level guest hierarchy over an *m*-level nested hierarchy the
-  count is **`nm + n + m`**, identical to `(n+1)(m+1) − 1`; the reference subtracted by the
-  second form is the fetch of the datum itself, which is the access the program wanted rather
-  than a translation step. `[NP-WP §4.2.2]` `[56]` `C:high` `V:durable`
-
-Where the 24 comes from, term by term (4 guest levels, 4 nested levels):
-
-- `nm` = 4×4 = 16 — for **each** of the *n* guest page-table entries the walker must read, a
-  full *m*-reference nested walk to turn that entry's guest physical address into a system
-  physical address. **This is the 16 in your note** — it is one term of three, not the total.
-- `n` = 4 — the guest page-table entry fetches themselves.
-- `m` = 4 — the final nested walk translating the guest physical address the guest walk produced.
-- Total 16 + 4 + 4 = **24**.
-
-**Where the number is specified — and where it is not:**
-
-> **Sourcing rule.** The worst-case reference count **is not stated in the APM**, which gives
-> only the per-dimension walk lengths. Its first-party source is AMD's own nested-paging white
-> paper and the AMD-authored ASPLOS paper that introduced the general form. **An anchor of the
-> form `[APM2 §15.25.x]` on this number is a fabrication.**
-
-Cite instead:
-- `[NP-WP §4.2.2]` — **AMD, "AMD-V™ Nested Paging", white paper Rev 1.0, 2008-07** `[15]`
-- `[56]` — **Bhargava, Serebrin, Spadini, Manne (AMD), "Accelerating Two-Dimensional Page Walks
-  for Virtualized Systems", ASPLOS XIII, 2008**
-
-`errata.md` **E11** states the same sourcing rule.
-
-**What it costs:** the 24 references are the worst case on a TLB miss. The APM does describe
-the mechanism — each guest PTE's guest physical address is translated through the nested tables,
-and nested-level faults, **including write faults from setting Accessed and Dirty bits in the
-guest tables**, can occur on those accesses `[APM2 §15.25.5]` `[1]` `C:high`. Hardware mitigates
-it with table-walk caching structures kept coherent by INVLPG, moves to CR3 and changes to the
-paging control bits in CR0/CR4 `[APM2 §5.5.3]` `[1]` `C:high`. The three-tier organisation often
-quoted for this (TLB + nested TLB + page-walk caches) is a **microarchitectural** description of
-the 2008 Opteron published by the AMD authors of the ASPLOS paper — not an architectural
-guarantee; no AMD specification requires any particular structure. `[no-spec]` `[56]` `C:medium`.
-
-For LA57: `nm + n + m` gives **35** for five levels both ways and **29** for the mixed
-four/five-level cases, but these are **derivations, not figures quoted by any published
-source** — `errata.md` **O6** keeps that open. `C:medium`. Do not quote them as AMD figures.
-
-**Confidence:** **high** for 24 and for the sourcing rule (`C:high` `V:durable`). The LA57
-derivations and the microarchitectural three-tier description are **`C:medium`**.
+Two qualifiers on "what does that cost": the three-tier mitigation usually quoted alongside it — a conventional TLB, a nested TLB caching guest-physical-to-system-physical translations, and page-walk caches for the upper levels — is a description of the **2008 Opteron design** published by the AMD authors of the ASPLOS paper. It is microarchitectural, not an architectural guarantee, and no AMD specification requires any particular structure (`[no-spec]` `[56]` `C:medium`). And the five-level (LA57) figures sometimes quoted — 35 when both dimensions use five levels, 29 for the mixed four/five-level cases — are **derivations from `nm + n + m` that no published source states**; `errata.md` O6 keeps that open, `C:medium`. Relatedly, `errata.md` O4 records that no modern measurement in this corpus supports the circulating "NPT is 15–30% faster than shadow paging" range, so it may not be stated as a present-tense fact.
+**Confidence:** high for 24 and for the sourcing rule — `C:high` `V:durable`. The microarchitectural and LA57 asides are **`C:medium`** and flagged as such above.
 
 ---
 
 ### trap-branch-type-confusion-cve
+**Premise:** **partly correct — right about the observation, wrong about the conclusion.** You are not misreading the bulletin: AMD-SB-1037 does literally write the pairing as "CVE-2022-29900 (RETbleed) (aka CVE-2022-23816)", which is exactly how the dead number keeps circulating. But **CVE-2022-23816 is REJECTED at NVD** — `vulnStatus: Rejected`, whose only description reads "DO NOT USE THIS CANDIDATE NUMBER. ConsultIDs: none. Reason: This candidate is unused by its CNA", with no description, no score and no references. It is not citable. The question also silently merges two distinct vulnerabilities with its slash. `errata.md` E26.
+**Routed to:** `17-security.md` §17.1.3 "Transient execution — client parts included" (the CVE table and the claims beneath it) — right first time.
+**Answer:** Cite **CVE-2022-29900** for **RETbleed** on AMD, and **CVE-2022-23825** for **Branch Type Confusion**. They are two different CVEs disclosed in the same bulletin, and which one you want depends on which mechanism you mean:
 
-**Premise in the question:** **incorrect in its operative part, though understandable.** AMD's
-bulletin does literally print that number — AMD-SB-1037 writes the pairing as "CVE-2022-29900
-(RETbleed) (aka CVE-2022-23816)", which is exactly how the dead number keeps circulating — but
-**CVE-2022-23816 is REJECTED at NVD** and must not be cited. So "AMD's bulletin shows
-CVE-2022-23816" is true as an observation and wrong as a citation decision.
+| CVE | Name | Bulletin | Mechanism |
+|---|---|---|---|
+| CVE-2022-23825 | Branch Type Confusion | AMD-SB-1037, 2022-07-12 | branch-predictor aliasing causes the wrong *branch type* to be predicted |
+| CVE-2022-29900 | RETbleed | AMD-SB-1037, 2022-07-12 | mistrained return predictions give arbitrary speculative execution |
 
-**Routed to:** `17-security.md` §17.1.3 "Transient execution — client parts included" (the CVE
-table and the claims immediately following it) — **correct route**. SKILL.md routes "CVEs and
-their mitigations, transient execution" to chapter 17; `errata.md` E26 names the same owner.
+Affected parts for both rows: Athlon X4, Ryzen 2000–5000 desktop/mobile, Threadripper, and 1st/2nd Gen EPYC. AMD's remediation guidance is its "Technical Guidance for Mitigating Branch Type Confusion". AMD frames both halves as follow-ups to CVE-2017-5715 (Spectre variant 2), credits CVE-2022-29900 to Kaveh Razavi and Johannes Wikner of ETH Zurich, and states that CVE-2022-23825 was "found internally by AMD employees".
 
-**Answer:**
-Cite **CVE-2022-29900** for RETbleed on AMD, and **CVE-2022-23825** for Branch Type Confusion.
-Do not cite CVE-2022-23816 at all.
-
-AMD-SB-1037 (published **2022-07-12**, last updated 2022-07-14, AMD severity **Medium**) covers
-**two** CVEs, and your question runs them together:
-
-| CVE | Name | Bulletin | Affected | Mechanism |
-|---|---|---|---|---|
-| **CVE-2022-23825** | **Branch Type Confusion** | AMD-SB-1037, 2022-07-12 | Athlon X4, Ryzen 2000–5000 desktop/mobile, Threadripper, 1st/2nd Gen EPYC | branch-predictor aliasing causes the wrong *branch type* to be predicted |
-| **CVE-2022-29900** | **RETbleed** | AMD-SB-1037, 2022-07-12 | same | mistrained return predictions give arbitrary speculative execution |
-
-`[AMD-SB-1037]` `[505]` `C:high` `V:durable`
-
-- **Claim.** AMD's Branch Type Confusion bulletin covers two CVEs and states the identity
-  explicitly as "CVE-2022-29900 (RETbleed) (aka CVE-2022-23816)"; **NVD has since REJECTED
-  CVE-2022-23816** with the note "This candidate is unused by its CNA", so the citable
-  identifier for the AMD RETbleed variant is **CVE-2022-29900**.
-  `[AMD-SB-1037]` `[505][520]` `C:high` `V:durable`
-- The NVD record's `vulnStatus` is `Rejected`, and its only description reads "DO NOT USE THIS
-  CANDIDATE NUMBER. ConsultIDs: none. Reason: This candidate is unused by its CNA." No
-  description, no score, no references. `errata.md` **E26**. `[55]` `[520]` `C:high` `V:durable`
-- Attribution, if you need it: both halves of AMD-SB-1037 are framed by AMD as follow-ups to
-  CVE-2017-5715 (Spectre v2); AMD credits **CVE-2022-29900 to Kaveh Razavi and Johannes Wikner
-  of ETH Zurich**, and states **CVE-2022-23825 was "found internally by AMD employees"**.
-  `[AMD-SB-1037]` `[505]` `C:high` `V:durable`
-- Mitigation ownership: Branch Type Confusion is fixed by AMD via microcode or a hardware
-  revision, with AMD's "Technical Guidance for Mitigating Branch Type Confusion" as the
-  software-workaround document. `[AMD-SB-1037]` `[505]` `C:high` `V:durable`
-
-Citation form note: per SKILL.md, CVE facts cite **NVD / the AMD security bulletin**, not the
-APM — there is no APM section for a CVE.
-
-**Confidence:** **high.** `C:high` `V:durable`, with the REJECTED status confirmed directly
-from the NVD record `[520]` and the bulletin's own wording quoted `[505]`.
+Sources exactly as the skill gives them — these are CVE facts, so the citation is the AMD bulletin and NVD, not the APM: **`[AMD-SB-1037]` `[505]`** (AMD, "AMD CPU Branch Type Confusion", severity **Medium**, published 2022-07-12, last updated 2022-07-14) and **`[520]`** (NVD record for CVE-2022-23816, REJECTED) / `[55]` NVD.
+**Confidence:** high — `C:high` `V:durable`.
 
 ---
 
 ### trap-hyperv-image-name
+**Premise:** none stated — a plain question. The circulating error it guards against is "Hyper-V loads `hvix64.exe` on AMD hosts" (`errata.md` E10).
+**Routed to:** `16-windows-platform.md` §16.2 "The Hyper-V components on an AMD host" — right first time.
+**Answer:** On an AMD host the image is **`Hvax64.exe`**. Hyper-V ships a per-architecture hypervisor binary and picks one at boot: `Hvix64.exe` on Intel, **`Hvax64.exe` on AMD**, `Hvaa64.exe` on ARM64. The loader is **`Hvloader.dll`**, invoked from the Windows boot loader, and it is what selects and starts the correct image.
 
-**Premise in the question:** **no premise stated** — a plain question, nothing asserted to be
-wrong. (The trap it probes is the widely repeated `hvix64.exe`; the question does not claim it.)
+**Where it is documented — the second half of the question, and the part that usually goes wrong:** ***Windows Internals, Part 2*, 7th edition** (Yosifovich, Russinovich, Solomon, Ionescu; Microsoft Press, 2021) `[46]`. It is **not** on learn.microsoft.com, so **no product-documentation citation for it exists** — do not manufacture a Microsoft Learn URL for this fact. What *is* on Microsoft Learn is the adjacent boot-configuration fact: the `hypervisorlaunchtype` BCD option, values `Off` and `Auto`, in Microsoft's boot-option reference `[474]`.
 
-**Routed to:** `16-windows-platform.md` §16.2 "The Hyper-V components on an AMD host" —
-**correct route**. SKILL.md routes "Hyper-V on AMD, VBS, HVCI, WSL2" to chapter 16; `errata.md`
-E10 names the same owner.
-
-**Answer:**
-On a Ryzen desktop Hyper-V loads **`Hvax64.exe`**.
-
-- **Claim.** Hyper-V ships a **per-architecture** hypervisor binary and picks one at boot: on
-  Intel systems the image is `Hvix64.exe`, on **AMD systems it is `Hvax64.exe`**, and on ARM64
-  it is `Hvaa64.exe`. `[46]` `C:high` `V:durable`
-- **Where it is documented — and where it is not.** This is documented in ***Windows Internals,
-  Part 2*, 7th edition** (Yosifovich, Russinovich, Solomon, Ionescu; Microsoft Press, 2021)
-  `[46]`. It is **not** on learn.microsoft.com, **so no product-documentation citation for it
-  exists.** Do not manufacture a Microsoft Learn URL for this fact.
-- Recorded as `errata.md` **E10** — the misconception being that Hyper-V loads `hvix64.exe` on
-  AMD hosts.
-
-Per SKILL.md's output standards, Windows behaviour is a Tier-2 citation with its source, not an
-APM anchor — here the source is a book, and the skill says so explicitly rather than
-substituting a plausible-looking Microsoft Learn link.
-
-Adjacent, and flagged as a **gap** rather than answered: the skill's §16 open items record that
-the pre-rebuild corpus placed an **`hvboot.sys`** stage between `hvloader.dll` and the
-hypervisor image; **no first-party source in this corpus documents it** for a current Windows
-release, and *Windows Internals* describes the loader as `Hvloader.dll`. The skill records the
-stage as **unverified** rather than repeating it.
-
-**Confidence:** **high** for the binary name (`C:high` `V:durable`). Note that the source is
-**Tier-2** (a book, not a specification), and that the boot-chain stage below it is explicitly
-**unresolved** in the skill.
+One diagnostic caveat: **both x64 images are present in `%SystemRoot%\System32` on every x64 Windows installation**, because the selection is made at boot and not at install time. Finding the Intel-build image on an AMD machine is therefore not evidence of anything, and is a common source of false "Hyper-V is misconfigured" reports.
+**Confidence:** high for the image name and its sourcing — `C:high` `V:durable`. The System32 and `Hvloader.dll` details are **`C:medium`**. The chapter's open items also record that an `hvboot.sys` stage named by the pre-rebuild corpus has **no first-party source** in this corpus and is unverified — it should not be included in the boot chain.
 
 ---
 
 ### trap-enlightened-vmcb
+**Premise:** incorrect as stated. Its narrow half is true — Hyper-V's *enlightened VMCS* is an Intel-side construction with no AMD analogue, because a VMCS-shaped structure in guest physical memory exists to replace VMREAD, VMWRITE and VMPTRLD, and the VMCB is *already* ordinary memory that L1 edits with loads and stores, so a memory-shaped replacement for it would replace nothing. But "**no counterpart at all**" is false: AMD has a Hyper-V enlightenment interface. This is the skill's own worked example of a plausible-reading false negative (SKILL.md, Output standards: "A negative claim needs the same evidence as a positive one").
+**Routed to:** `15-nested-virtualization.md` §15.5.4 "No enlightened VMCS — but there *is* an enlightened VMCB field block" — right first time; SKILL.md names this section by number as the worked example.
+**Answer:** AMD "has reserved space in the VMCB for hypervisor use, as well as an associated clean bit — **the reserved bytes are in the control section, offset 0x3E0-3FF, of the VMCB**" and "**the clean bit is bit 31**", which "must be invalidated whenever the hypervisor modifies the enlightenments area". Hyper-V uses that region through a structure named **`HV_SVM_ENLIGHTENED_VMCB_FIELDS`**, and the specification speaks throughout of "the enlightened VMCS / VMCB fields" as a **matched pair**. Source: Microsoft, *Hypervisor Top-Level Functional Specification — Nested Virtualization*, Microsoft Learn `[464]`. This is a platform fact, so it is `[no-spec]`: there is no APM anchor for it, and demanding one would produce a fabricated citation.
 
-**Premise in the question:** **incorrect** — and SKILL.md names this exact case as its worked
-example of a plausible-reading false negative. The correct statement has two halves, and
-"AMD has no counterpart at all" collapses them into one wrong one. AMD has **no enlightened
-VMCS** equivalent, but there **is** an enlightened **VMCB** field block, defined by Microsoft's
-TLFS.
+Linux corroborates the layout independently: its definition of the SVM control area overlays a 32-byte Hyper-V enlightenment structure onto the software-reserved region at control-area offset `3E0h`, as a union with `u8 reserved_sw[32]` `[433]`. So the real architectural difference from Intel is not absence but shape — AMD's interface **extends the existing VMCB** rather than adding a second structure to keep coherent.
 
-**Routed to:** `15-nested-virtualization.md` §15.5.4 "No enlightened VMCS — but there *is* an
-enlightened VMCB field block" — **correct route**. SKILL.md routes "what AMD has instead of
-VMCS shadowing" to chapter 15 and explicitly names §15.5.4 as the worked example for negative
-claims.
-
-**Answer:**
-No. The accurate statement is two-sided.
-
-**The negative half (true, and narrow).** Hyper-V's **enlightened VMCS** is an Intel-side
-construction — a full VMCS-shaped structure in guest physical memory that an aware L1 edits with
-ordinary memory instructions instead of VMREAD, VMWRITE and VMPTRLD — and it has **no AMD
-counterpart, because the VMCB is already ordinary memory** that L1 accesses with loads and
-stores, so a memory-shaped replacement for it would replace nothing.
-`[no-spec]` `[464]` `C:high` `V:durable`
-
-**The positive half (which the premise erases).**
-
-- **That does not mean AMD has no enlightenment interface, and the negative form of this
-  statement is a trap.** The **Hypervisor Top-Level Functional Specification** says AMD "has
-  reserved space in the VMCB for hypervisor use, as well as an associated clean bit — the
-  reserved bytes are in the control section, **offset 0x3E0–0x3FF**, of the VMCB" and that "the
-  **clean bit is bit 31**", which "must be invalidated whenever the hypervisor modifies the
-  enlightenments area". Hyper-V uses that region through a structure named
-  **`HV_SVM_ENLIGHTENED_VMCB_FIELDS`**, and the specification speaks throughout of "the
-  enlightened VMCS / VMCB fields" as a **matched pair**.
-  `[no-spec]` `[464]` (Microsoft, *Hypervisor Top-Level Functional Specification — Nested
-  Virtualization*, Microsoft Learn) `C:high` `V:durable`
-- **Linux corroborates the layout independently**: its definition of the SVM control area
-  overlays a **32-byte** Hyper-V enlightenment structure onto the software-reserved region at
-  control-area offset `3E0h`, as a union with `u8 reserved_sw[32]`. So the interface is an
-  **extension of the existing VMCB** rather than a second structure to keep coherent — which is
-  the real architectural difference from Intel's enlightened VMCS, and a sharper statement than
-  "AMD has nothing here". `[no-spec]` `[433]` `C:high` `V:durable`
-- One named AMD enlightenment, with a counter-intuitive direction: setting **`EnlightenedNptTlb`**
-  in `HV_SVM_ENLIGHTENED_VMCB_FIELDS` means **ASID flushes no longer affect TLB entries derived
-  from the nested page tables**, and L1 must invalidate those with hypercalls instead. Opting in
-  therefore *narrows* what an ASID flush covers, in exchange for not flushing NPT-derived
-  entries on every ASID operation. `[no-spec]` `[464]` **`C:medium`** `V:durable`
-
-**What AMD actually defines for nesting acceleration** (the other half of "instead of VMCS
-shadowing"): APM §15.33 defines exactly **two** features — **VLS (Virtualized VMLOAD/VMSAVE)**
-and **vGIF**. There is no "VMCB shadowing"; do not go looking for one.
-
-Note the citation shape: these are `[no-spec]` claims — Microsoft's TLFS and the Linux header,
-not the APM — because an enlightenment interface is not AMD architecture and has no APM section.
-
-**Confidence:** **high** that the premise is false and on the existence, offset (`3E0h–3FFh`)
-and clean bit (31) of the block. Two caveats the skill carries: the `EnlightenedNptTlb`
-semantics are **`C:medium`**, and §15.7 open items record that **the enlightenment block's
-contents were described from the Linux structure definition and have not been checked against
-Microsoft's TLFS in this pass**, which is why that part is `C:medium`.
+One named enlightenment, with a counter-intuitive direction worth stating: setting **`EnlightenedNptTlb`** in `HV_SVM_ENLIGHTENED_VMCB_FIELDS` means that **ASID flushes no longer affect TLB entries derived from the nested page tables**, and L1 must invalidate those entries with hypercalls instead — opting in therefore *narrows* what an ASID flush covers, in exchange for not flushing NPT-derived entries on every ASID operation.
+**Confidence:** high for the existence, the offset range and the clean bit — `C:high` `V:durable`. The `EnlightenedNptTlb` semantics are **`C:medium`**. All of it carries `[no-spec]` — Microsoft Learn and Linux sourcing, not AMD architecture.
 
 ---
 
 ### trap-vmgexit-encoding
+**Premise:** incorrect. The `F2` form is not a transcription error — both prefixes are architectural, and AMD's instruction page prints them together. `errata.md` E22 is one of the five `[reversed]` entries: it was originally drafted as "`F3` only" and a primary-source check refuted the draft, so a secondary source asserting the `F3`-only form is the thing that is wrong.
+**Routed to:** `13-sev-es-ghcb.md` §13.6.1 "VMGEXIT" — right first time.
+**Answer:** VMGEXIT's opcode is **`F2/F3 0F 01 D9`**. AMD's instruction page prints both prefixes and both are architectural; do not drop the `F2`. `[APM3 §4 "VMGEXIT"]` `[2]` (AMD64 Architecture Programmer's Manual Vol.3, pub. 24594 rev 3.38 — Vol.3 Chapter 4 is ordered alphabetically and carries page numbers rather than subsection numbers, so the mnemonic form is the correct citation). The chapter reproduces the two adjacent rows of the page: *Mnemonic VMMCALL — Opcode `0F 01 D9`; Mnemonic VMGEXIT — Opcode `F2/F3 0F 01 D9`.*
 
-**Premise in the question:** **incorrect.** The `F2` form is **not** a transcription error —
-both prefixes are architectural, and AMD's instruction page prints them as one encoding.
-
-**Routed to:** `13-sev-es-ghcb.md` §13.6.1 "VMGEXIT" — **correct route**. SKILL.md routes
-"SEV-ES … VMGEXIT" to chapter 13; `errata.md` E22 names the same owner.
-
-**Answer:**
-No. VMGEXIT's opcode is **`F2/F3 0F 01 D9`** — both prefixes.
-
-- **Claim.** VMGEXIT's opcode is **`F2/F3 0F 01 D9`** — AMD's instruction page prints both
-  prefixes, and **both are architectural**. The unprefixed **`0F 01 D9` on the same page is
-  VMMCALL**. `[APM3 §4 "VMGEXIT"]` `[2]` `C:high` `V:durable`
-  > As printed: Mnemonic VMMCALL — Opcode `0F 01 D9`; Mnemonic VMGEXIT — Opcode `F2/F3 0F 01 D9`.
-- This is `errata.md` **E22 `[reversed]`** — one of the five entries that exist *because the
-  proposed correction was itself wrong*. The draft asserted exactly your premise ("`F3` only,
-  `F2` is an error") and a primary-source check refuted it. **If you find a secondary source
-  asserting the `F3`-only version, it is the secondary source that is wrong.**
-
-Related facts from the same section, since removing `F2` is usually a decoder-table edit:
-
-- Support is indicated by CPUID `Fn8000_001F_EAX[SEV-ES] = 1`, and the VMGEXIT encoding is
-  **interpreted as VMMCALL** on processors that do not support it — including legacy processors
-  — or when it is not executed by an SEV-ES guest. `[APM3 §4 "VMGEXIT"]` `[2]` `C:high` `V:durable`
-- VMGEXIT is **always intercepted** and unconditionally causes a `#VMEXIT`; **there is no
-  intercept bit for it**, and it behaves like a **trap**, so a subsequent VMRUN resumes
-  execution after the VMGEXIT. `[APM2 §15.35.6]` `[1][2]` `C:high` `V:durable`
-- It is allowed in **all modes and at all privilege levels**, and raises `#UD` if
-  `EFER.SVME = 0` or `Fn8000_0001_ECX[SVM] = 0`. `[APM3 §4 "VMGEXIT"]` `[2]` `C:high` `V:durable`
-
-Citation-form note: APM Vol.3 Chapter 4 is ordered alphabetically and carries page numbers, not
-subsection numbers — hence `[APM3 §4 "VMGEXIT"]`. A form like `[APM3 §4.7.x VMGEXIT]` would be
-a fabrication.
-
-**Confidence:** **high.** `C:high` `V:durable`, and the entry is specifically hardened against
-the `F3`-only reading by a primary-source check during the rebuild.
-
----
-
-## Routing summary
-
-| # | Question | Routed to | Right? |
-|---|---|---|---|
-| 1 | trap-client-sev-cpuid | `11-memory-encryption.md` §11.8 / §11.8.1 | correct |
-| 2 | trap-x2avic-cpuid-bit | `07-virtual-interrupts-avic.md` §7.7 | correct |
-| 3 | trap-cmdbufrun-register | `08-iommu-architecture.md` §8.3 | correct |
-| 4 | trap-irte-bit0-name | `10-iommu-interrupt-remapping.md` §10.1 | correct |
-| 5 | trap-iommu-mmio-window-size | `08-iommu-architecture.md` §8.2 | correct |
-| 6 | trap-vmexit-restores | `04-world-switch.md` §4.3 (+ §4.1) | correct |
-| 7 | trap-vmload-vmsave-ss | `04-world-switch.md` §4.4 | correct |
-| 8 | trap-two-dimensional-walk-count | `06-nested-paging.md` §6.4 | correct |
-| 9 | trap-branch-type-confusion-cve | `17-security.md` §17.1.3 | correct |
-| 10 | trap-hyperv-image-name | `16-windows-platform.md` §16.2 | correct |
-| 11 | trap-enlightened-vmcb | `15-nested-virtualization.md` §15.5.4 | correct |
-| 12 | trap-vmgexit-encoding | `13-sev-es-ghcb.md` §13.6.1 | correct |
-
-**Premises judged incorrect: 10 of 12.** Q4 (`trap-irte-bit0-name`) and Q10
-(`trap-hyperv-image-name`) state no premise — they are plain questions, and both were answered
-without contradicting anything the user said.
+Two consequences: the **unprefixed** `0F 01 D9` on the same page is **VMMCALL**, and the VMGEXIT encoding is **interpreted as VMMCALL** on processors that do not support it — including legacy processors — or when it is not executed by an SEV-ES guest. Support for VMGEXIT is indicated by `CPUID Fn8000_001F_EAX[SEV-ES] = 1`. `[APM3 §4 "VMGEXIT"]` `[2]`.
+**Confidence:** high — `C:high` `V:durable`.

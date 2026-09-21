@@ -18,8 +18,8 @@
         "0.5 Windows PC: the questions that come up most",
         "0.6 Reading order for someone new to SVM"
       ],
-      "bytes": 11476,
-      "sha256": "ab1ea652a21374ef91c617905ef734240d3a61fe6d0d90ca5b39145cf02e8715"
+      "bytes": 11704,
+      "sha256": "3a7bb47c7653fed4d92eb48fa0fbce611f869e567c25bcdfa38429c42c629197"
     },
     {
       "path": "references/01-svm-intro.md",
@@ -286,8 +286,8 @@
         "14.13 VCEK, VLEK and the key distribution service",
         "14.14 Open items"
       ],
-      "bytes": 80159,
-      "sha256": "14e65efb6728fc2290aa5c16dee3353005afcaf8479ad91d55230d3b8a01f0f3"
+      "bytes": 80626,
+      "sha256": "8cd3371e3d1dd4030311f2db44a944f2ed6463813e607cd9672b6ff39ac27cc8"
     },
     {
       "path": "references/15-nested-virtualization.md",
@@ -445,8 +445,8 @@
         "Settled corrections",
         "Open conflicts"
       ],
-      "bytes": 23676,
-      "sha256": "85ffbf838727e7a87a962084970872718204239056ae8e3cc31ffda694220c97"
+      "bytes": 25231,
+      "sha256": "ac0f49091729b7048778329855441daaba6e707ae0140daffcd70c504e189d18"
     }
   ]
 }

@@ -1,441 +1,445 @@
-# amd-virtualization eval — lookup + mechanism — scored by Claude Opus 5 — 2026-09-21
+# amd-virtualization eval — lookup + mechanism — scored by an independent agent — 2026-09-21
 
-Skill commit: `5f2b73c` (taken from the session's git snapshot; no git command was run, per the
-scoring instructions). Working tree was dirty: `references/errata.md`, `index.json`,
-`questions.yaml` and `README.md` all carry uncommitted edits, which matters for one of the
-disputed keys below.
-Scored categories: `answers/lookup.md` (24) and `answers/mechanism.md` (24). Key:
-`questions.yaml`, matched by question `id`.
-Scorer did not write the answers and did not write the skill.
+Scored against `eval/amd-virtualization/questions.yaml`, matched by question `id`, under
+the contract in `eval/RUNNER.md`. The scorer did not write the answers, the questions or
+the skill. Load-bearing values were re-verified against the corpus
+(`amd-virtualization/references/`) and, for AMD architectural facts, against the
+specifications themselves — reading the rendered PDF pages by coordinate wherever a value
+comes from one of AMD's wide tables, because `pdftotext` mis-associates their columns.
 
-| Category | Questions | `must_include` | `must_not_include` violations | Citations valid | Routing right first try |
+The archived `run-1/` results and answers were not read.
+
+| Category | Questions | `must_include` | `must_not_include` violations | Citations valid | Routing (self-reported) |
 |---|---|---|---|---|---|
-| lookup | 24 | **147 / 152 (96.7%)** | **0** | 24 / 24 (100%) | 24 / 24 |
-| mechanism | 24 | **170 / 170 (100%)** | **0** | 24 / 24 (100%) | 24 / 24 |
-| **combined** | **48** | **317 / 322 (98.4%)** | **0** | **48 / 48 (100%)** | **48 / 48** |
+| lookup | 24 | **145 / 152 (95.4%)** | **0** (9 named, all refuted) | **24 / 24 (100%)** | 24/24 right chapter; 20 "right first time", 4 "landed short" |
+| mechanism | 24 | **171 / 172 (99.4%)** | **0** (2 named, both refuted) | **24 / 24 (100%)** | 24/24 right chapter; 8 anchors exact, 15 "landed short", 1 needed a second (named) chapter |
+| **combined** | **48** | **316 / 324 (97.5%)** | **0** | **48 / 48 (100%)** | — |
 
-`key-disputed` items: **2**, both in `mechanism` and both excluded from its denominator
-(172 raw items → 170 scorable). Both are cases where the answer states the
-specification-correct form and the key states something the APM contradicts — exactly the
-failure mode the dispute clause exists for. If they were counted as misses anyway,
-mechanism would be 170 / 172 = 98.8% and combined 317 / 324 = 97.8% — still over the bar.
+**Verdict: PASS.** `must_include` 97.5% ≥ 90%; violations 0; citations 100% ≥ 95%.
+Each category also clears the bar on its own.
 
-**Verdict: PASS.** `must_include` 98.4% ≥ 90%; `must_not_include` violations 0; citation
-validity 100% ≥ 95%.
-
-Independent verification: every load-bearing value quoted below was checked against the
-local PDFs at `C:/Users/Administrator/AppData/Local/Temp/amd-spec/`, not against the corpus
-alone — including the two wide tables (`APM2 Table B-1`, `Table B-2`) read with
-`pdftotext -layout` and column-realigned by hand, because the plain text extraction shifts
-the offset column by one row. No shared key/answer error survived that check.
+`key-disputed` items: **none.** Every value checked held against the specification. See
+*Key audit* below for the two items that were interrogated hardest and survived, and for
+one **question-design** defect that is not a key error but drives most of the lookup loss.
 
 ---
 
-## Category: lookup (24 questions)
+## Scoring convention used
 
-| # | id | `must_include` | trap | citation | route |
-|---|---|---|---|---|---|
-| 1 | amd-document-set | 8/8 | — | `00-quickref.md §0.1` ✓ | ✓ |
-| 2 | vm-cr-msr-layout | 7/7 | — | `[APM2 Figure 15-27]` ✓ | ✓ |
-| 3 | vm-hsave-pa-rules | 6/6 | — | `[APM2 §15.30.4]` ✓ | ✓ |
-| 4 | fn8000-0001-ecx-bit2-scope | 5/5 | — | `[APM3 App.E]` ✓ | ✓ |
-| 5 | vmcb-clean-bit-map | **7/8** | — | `[APM2 Figure 15-4]` ✓ | ✓ |
-| 6 | int-ctl-60h-layout | 6/6 | — | `[APM2 Table B-1]` ✓ | ✓ (see note R1) |
-| 7 | vmcb-state-save-offsets | 8/8 | — | `[APM2 Table B-2]` ✓ | ✓ |
-| 8 | intercept-vector-4-and-5 | 5/5 | refuted ×2 | `[APM2 Table B-1]` ✓ | ✓ |
-| 9 | msrpm-ranges-and-encoding | 5/5 | — | `[APM2 Table 15-8]` ✓ | ✓ |
-| 10 | exit-codes-60h-61h-band | **7/8** | — | `[APM2 App.C]` ✓ | ✓ |
-| 11 | npf-exitinfo1-bits | 7/7 | refuted ×3 | `[APM2 §15.36.10]` ✓ | ✓ |
-| 12 | tlb-control-values | 7/7 | — | `[APM2 Table 15-9]` ✓ | ✓ |
-| 13 | avic-id-table-entries | 6/6 | — | `[APM2 Table 15-23]` ✓ | ✓ |
-| 14 | avic-doorbell-msr | 4/4 | — | `[APM2 Figure 15-22]` ✓ | ✓ |
-| 15 | iommu-control-register-bits | **5/7** | — | `[IOMMU 3.11 §3.4.1]` ✓ | ✓ |
-| 16 | iommu-event-codes | 5/5 | — | `[IOMMU 3.11 §2.5]` ✓ | ✓ |
-| 17 | dte-translation-fields | 8/8 | — | `[IOMMU 3.11 Figure 7]` ✓ | ✓ |
-| 18 | irte-guest-mode-format | 6/6 | refuted | `[IOMMU 3.11 Table 23]` ✓ | ✓ |
-| 19 | fn8000-001f-fields | 5/5 | — | `[APM3 App.E]` ✓ | ✓ |
-| 20 | sev-status-bit-map | 6/6 | refuted | `[APM2 §15.34.10]` ✓ | ✓ |
-| 21 | sev-firmware-error-codes | 5/5 | — | `[SEV-API 3.24 Table 14]` ✓ | ✓ |
-| 22 | ghcb-layout-offsets | **6/7** | not asserted | `[GHCB 2.04 Table 3]` ✓ | ✓ |
-| 23 | snp-instructions-and-return-codes | 8/8 | — | `[APM3 §4 "RMPUPDATE"]` ✓ | ✓ |
-| 24 | attestation-report-fields | 5/5 | refuted | `[SNP-ABI 1.59 Table 27]` ✓ | ✓ |
+`must_include` items are scored **as written, one item = one unit**. Several items bundle
+a run of named values (`"bit 13 PPRLogEn, bit 14 PprIntEn, bit 15 PPREn, bit 16 GTEn,
+bit 17 GAEn"`). Such an item is credited only when every named value appears. Where an
+answer supplied some but not all, the failure entry says exactly which were present, so
+the reader can recompute under a laxer rule. Under a "majority of the bundle counts"
+rule, lookup would be 147/152 (96.7%) — the verdict does not change either way.
 
-**Totals: 147 / 152 (96.7%), 0 trap violations, 24 / 24 citations valid.**
-
-## Category: mechanism (24 questions)
-
-| # | id | `must_include` | trap | citation | route |
-|---|---|---|---|---|---|
-| 1 | clean-bits-mechanism | 8/8 | — | `[APM2 §15.15.2]` ✓ | ✓ |
-| 2 | intercept-priority-ordering | 7/7 | — | `[APM2 §15.7]` ✓ | ✓ |
-| 3 | tsc-offset-and-ratio-composition | 6/6 | — | `[APM2 §15.30.5]` ✓ | ✓ |
-| 4 | vmrun-ordering | 8/8 | — | `[APM2 §15.5.1]` ✓ | ✓ |
-| 5 | vmrun-consistency-checks | 5/5 **+1 key-disputed** | refuted ×2 | `[APM2 §15.5]` ✓ | ✓ |
-| 6 | gif-stgi-clgi-vgif | 7/7 | — | `[APM2 §15.17]` ✓ | ✓ (2nd chapter, predicted) |
-| 7 | event-injection-and-reinjection | 8/8 | — | `[APM2 §15.20]` ✓ | ✓ |
-| 8 | nested-permission-combining | 8/8 | — | `[APM2 §15.25.7]` ✓ | ✓ |
-| 9 | memory-type-combining | 7/7 | — | `[APM2 §15.25.8]` ✓ | ✓ |
-| 10 | npf-check-ordering | 6/6 | — | `[APM2 §15.25.6]` ✓ | ✓ (2nd chapter, predicted) |
-| 11 | asid-allocation-and-exhaustion | 7/7 | — | `[APM2 §15.16.1]` ✓ | ✓ |
-| 12 | gmet-mechanism | 6/6 | — | `[APM2 §15.25.13]` ✓ | ✓ |
-| 13 | avic-ipi-delivery-path | 7/7 | — | `[APM2 §15.29.6.1]` ✓ | ✓ |
-| 14 | vnmi-virtualization | 7/7 **+1 key-disputed** | — | `[APM2 §15.21.10]` ✓ | ✓ |
-| 15 | io-page-table-walk | 7/7 | — | `[IOMMU 3.11 §2.2.3]` ✓ | ✓ |
-| 16 | gcr3-pasid-translation | 7/7 | — | `[IOMMU 3.11 §2.2.6.3]` ✓ | ✓ |
-| 17 | msi-remapping-end-to-end | 7/7 | — | `[IOMMU 3.11 §2.2.5.2]` ✓ | ✓ |
-| 18 | ga-log-and-gappi | 7/7 | — | `[IOMMU 3.11 §2.2.5.4]` ✓ | ✓ |
-| 19 | c-bit-mechanics | 7/7 | — | `[APM2 §7.10.4]` ✓ | ✓ |
-| 20 | ghcb-establishment | 7/7 | — | `[GHCB 2.04 §2.3.1]` ✓ | ✓ |
-| 21 | rmp-page-states | 8/8 | — | `[SNP-ABI 1.59 Table 14]` ✓ | ✓ |
-| 22 | vmpl-and-rmpadjust | 8/8 | — | `[APM2 §15.36.7]` ✓ | ✓ |
-| 23 | vmcb02-construction | 8/8 | — | `[APM2 App.B]` ✓ | ✓ |
-| 24 | vmcb-versus-vmcs | 7/7 | — | `[APM2 App.B]` + `[SDM 3C §27.2]` ✓ | ✓ |
-
-**Totals: 170 / 170 (100%) scorable, 2 key-disputed excluded, 0 trap violations,
-24 / 24 citations valid.**
+A restatement of a fact already given is not double-charged: `exit-codes-60h-61h-band`
+item 7 (`"they are intercept vector 3 at 0x60 + bit, so 60h is vector 3 bit 0 …"`) is
+credited because the answer states the encoding rule and the vector-3 band explicitly;
+the `so` clause is the same fact arithmetically restated, not a second value.
 
 ---
 
-## Failures
+## LOOKUP — 24 questions
 
-### lookup · vmcb-clean-bit-map
+`must_include` **145 / 152 (95.4%)** · violations **0** · citations **24 / 24**
 
-**Asked:** "Give me the VMCB clean-bit map: where the field is, what each bit covers, and what
-bit 31 is for."
+Per-question hits: `amd-document-set` 8/8 · `vm-cr-msr-layout` 7/7 ·
+`vm-hsave-pa-rules` 6/6 · `fn8000-0001-ecx-bit2-scope` 5/5 · **`vmcb-clean-bit-map` 7/8** ·
+`int-ctl-60h-layout` 6/6 · `vmcb-state-save-offsets` 8/8 · `intercept-vector-4-and-5` 5/5 ·
+`msrpm-ranges-and-encoding` 5/5 · `exit-codes-60h-61h-band` 8/8 · `npf-exitinfo1-bits` 7/7 ·
+`tlb-control-values` 7/7 · `avic-id-table-entries` 6/6 · `avic-doorbell-msr` 4/4 ·
+**`iommu-control-register-bits` 3/7** · `iommu-event-codes` 5/5 ·
+**`dte-translation-fields` 7/8** · `irte-guest-mode-format` 6/6 · `fn8000-001f-fields` 5/5 ·
+`sev-status-bit-map` 6/6 · `sev-firmware-error-codes` 5/5 · **`ghcb-layout-offsets` 6/7** ·
+`snp-instructions-and-return-codes` 8/8 · `attestation-report-fields` 5/5.
 
-**Missing:** `must_include` item 1, in the clause "…with bits 63:32 reserved SBZ".
+### Failures
 
-**Answered (verbatim, the whole of what the answer says about the field's extent):**
+#### vmcb-clean-bit-map — 7/8
+**Asked:** "Give me the VMCB clean-bit map: where the field is, what each bit covers, and what bit 31 is for."
+**Missing:** `"the VMCB Clean Bits field is at control-area offset 0C0h, bits 31:0, with bits 63:32 reserved SBZ"`
+**Answered (verbatim, the whole of what the answer says about the field's location):**
+> **Answer:** The VMCB Clean field is at **control-area offset 0C0h**. Support is indicated by `CPUID Fn8000_000A_EDX[VmcbClean]` (bit 5). `[APM2 §15.15]` `[1]`
 
-> The VMCB Clean field is at **control-area offset 0C0h**; support is enumerated by
-> `CPUID Fn8000_000A_EDX[VmcbClean]` = bit 5 `[APM2 §15.15]` `[1]`.
+The bit range is never given. The answer's own map table opens with `| 31:13 | — | Reserved |`,
+and later says a clean hypervisor "may write `FFFF_FFFFh` to the whole field", which implies
+32 bits — but `bits 31:0` and `bits 63:32 RESERVED, SBZ` are not stated.
+**Trap hit:** none.
+**Diagnosis: fact present but not found.** It lives in `02-vmcb.md` **§2.2.4**, line 158 —
+`| 0C0h | 31:0 | VMCB Clean Bits; 63:32 RESERVED, SBZ |` — restated as a claim at line 183.
+Verified against APM Vol.2 Table B-1 p.768 and §15.15.1 ("The VMCB Clean field (VMCB offset
+0C0h, bits 31:0)"): the key is correct. **The routing row named the section.** SKILL.md's
+row for VMCB field offsets reads `02-vmcb.md §2.2 (control area) · §2.3 (save area) ·
+§2.5 (clean bits)`; the answer opened only §2.5 and self-reported "right first time".
 
-and, in the map, the last row:
+#### iommu-control-register-bits — 3/7
+**Asked:** "Which bits of the IOMMU Control Register do I need to bring up translation, command processing and the event log?"
+**Missing (4 items):**
+- `"bit 1 HtTunEn, bit 2 EventLogEn, bit 3 EventIntEn, bit 4 ComWaitIntEn"` — bits 2, 3 and 4 given; **`HtTunEn` (bit 1) absent.**
+- `"bits 7:5 InvTimeOut, bit 8 PassPW, bit 9 ResPassPW, bit 10 Coherent, bit 11 Isoc"` — only `InvTimeOut[7:5]` given; **`PassPW`, `ResPassPW`, `Coherent`, `Isoc` absent.**
+- `"bit 13 PPRLogEn, bit 14 PprIntEn, bit 15 PPREn, bit 16 GTEn, bit 17 GAEn"` — 13, 15, 16, 17 given; **`PprIntEn` (bit 14) absent.**
+- `"bit 28 GALogEn and bit 29 GAIntEn"` — 28 given; **`GAIntEn` (bit 29) absent.**
 
-> | 31:13 | — | Reserved |
+**Answered (verbatim, the whole of the answer's coverage of the rest of the register):**
+> The full 0018h bit assignment is in §8.3; other bits of note for a passthrough bring-up are `GTEn`(16), `GAEn`(17), `PPREn`(15), `PPRLogEn`(13), `GALogEn`(28), `XTEn`(50) and `InvTimeOut[7:5]`.
 
-The offset (`0C0h`) and the implicit 31:0 extent are there; the qualifier that the upper half
-of the quadword, bits 63:32, is RESERVED SBZ is not stated anywhere in the answer. All other
-seven items hit, including the bit-31 host-reserved rule.
+**Trap hit:** none. The `CmdBufEn`(12)/`CmdBufRun` distinction the trap set depends on is
+answered correctly and at length.
+**Diagnosis: fact present but not found.** The complete map is in
+`08-iommu-architecture.md` **§8.3**, the very section the answer opened and named — lines
+129–147 give `1 HtTunEn`, `8 PassPW`, `9 ResPassPW`, `10 Coherent`, `11 Isoc`,
+`14 PprIntEn`, `29 GAIntEn`. Verified against the IOMMU 3.11 spec: all seven field names
+exist and §3.4.1 defines them; the key is correct. The answer read the section and chose
+to print a subset. **See the question-design note below — the question is narrower than
+the key, which is the real root cause.**
 
-**Verified against the specification:** `APM2 Rev 3.45 Table B-1` (p.768, read from the PDF and
-column-realigned) prints `0C0h | 31:0 | VMCB Clean Bits.` immediately followed by
-`63:32 | RESERVED, SBZ`. The key item is correct.
+#### dte-translation-fields — 7/8
+**Asked:** "How big is a Device Table Entry, how is it indexed, and where are `V`, `TV`, `Mode`, the page-table root pointer and `DomainID`?"
+**Missing:** `"bit 61 IR and bit 62 IW"`
+**Answered (verbatim — every mention of IR/IW in the answer, none of which gives a bit position):**
+> **`Mode[11:9]`** gives the depth of the host page tables and therefore the reachable GPA width: 000b translation disabled (SPA = GPA, access still gated by IR/IW) …
 
-**Diagnosis: the fact is present but was not found.** It lives in the same chapter the answer
-routed to but in a different section: `02-vmcb.md` §2.2.4 "Virtualization enables, decode assist
-and pointers, 0B8h–17Fh", line 158 (`| 0C0h | 31:0 | VMCB Clean Bits; 63:32 RESERVED, SBZ |`) and
-again as a claim at line 183. The answer read §2.5 "Clean bits and VMCB state caching", which
-carries the per-bit map and the caching contract but never restates the field's width. A reader
-routed to the clean-bit *semantics* section is never shown the field's *extent*.
+> `TV` validates the **translation** fields specifically — IW, IR, the page table root pointer, Mode and GV.
 
-### lookup · exit-codes-60h-61h-band
+The field table lists only `V`(0), `TV`(1), `Mode[2:0]`(11:9), Host Page Table Root
+Pointer(51:12) and `DomainID[15:0]`(79:64).
+**Trap hit:** none.
+**Diagnosis: fact present but not found.** `08-iommu-architecture.md` §8.6 line 280–281
+carries `| 189:188 | IntCtl | 62 | IW |` and `| 187 | HPTMode | 61 | IR |`. IOMMU 3.11
+defines both (§2.2.2, "IW: I/O write permission", "IR: I/O read permission"); the key is
+correct. Same section the answer opened and named.
 
-**Asked:** "I have exit codes `60h` and `61h` in a trace. What are they, and what else is in that
-band?"
+#### ghcb-layout-offsets — 6/7
+**Asked:** "Give me the GHCB layout: the fields a `#VC` handler fills in, the valid bitmap, and the version and usage words."
+**Missing:** `"the GHCB is a 4096-byte page the guest must map decrypted, and its format is defined by software rather than by hardware - hardware never accesses it directly"`
+**Answered (verbatim — the answer's entire preamble before the offset table):**
+> **Answer:** Full layout, from GHCB spec pub **56421 rev 2.04**:
 
-**Missing:** `must_include` item 8 — "when an external or virtual interrupt is intercepted the
-interrupt is left pending rather than consumed".
+Nothing in the section says "decrypted", "4096", "shared", "software-defined" or
+"hardware never accesses it". The table happens to run to `0x0ffc + 4 = 0x1000`, but the
+property is never stated.
+**Trap hit:** none — `"the valid bitmap is at offset 0xFF0"` is **refuted**, not asserted:
+> | `0x0ff0` | `0x0a` | RESERVED | — |
 
-**Answered (verbatim, the closing paragraph — the only place the answer discusses the band's
-semantics rather than its contents):**
+**Diagnosis: fact present but not found.** It is a single claim line in
+`13-sev-es-ghcb.md` **§13.3** (line 112): *"The GHCB is a 4,096-byte page that the guest
+must map decrypted so that guest and hypervisor can both reach it; hardware never accesses
+the GHCB directly, and consequently its format is defined by software rather than fixed by
+hardware. `[APM2 §15.35.7]`"*. The answer opened only §13.4 and self-reported "right first
+time". **The routing row named §13.3** (`13-sev-es-ghcb.md §13.3 (establishing it) · §13.4
+(layout) · §13.5 (MSR protocol)`). Notably the **same answerer quotes this sentence almost
+verbatim** in the mechanism answer `ghcb-establishment`, so this is a coverage miss inside
+one question, not a corpus gap. Worth flagging to the key's owner: the `notes` field on
+this question says "Chapter 13 sections 13.4 and 13.4.1", which is where the item is *not*.
 
-> Surrounding bands, for orientation: 00h–0Fh CR reads, 10h–1Fh CR writes, 20h–2Fh DR reads,
-> 30h–3Fh DR writes, 40h–5Fh `VMEXIT_EXCP[0-31]` (exception exit code = 40h + vector), 80h–9Fh
-> vector 4, A0h–BFh vector 5. Outside the rule: `400h` `VMEXIT_NPF`, `401h`
-> `AVIC_INCOMPLETE_IPI`, `402h` `AVIC_NOACCEL`, `403h` `VMEXIT_VMGEXIT`, `407h`
-> `VMEXIT_PML_FULL`, `F000_0000h` reserved for host use, and the negatives `−1`
-> `VMEXIT_INVALID`, `−2` `VMEXIT_BUSY`, `−3` `VMEXIT_IDLE_REQUIRED`, `−4`
-> `VMEXIT_INVALID_PMC`.
+### `must_not_include` — lookup
 
-The answer names every code in the band correctly and derives the band from `32 × vector + bit`,
-but never says what happens to the interrupt itself. The other seven items hit.
+Nine banned strings across six questions. **Zero asserted. Nine refuted**, each with the
+correcting sentence:
 
-**Diagnosis: the chapter lacks the fact.** The rule is in the corpus — `03-intercepts.md` §3.2,
-line 110: *"When an external or virtual interrupt is intercepted, the interrupt is **left
-pending** rather than consumed. `[APM2 §15.7]`"* — but it appears **nowhere in
-`05-exit-decoding.md`**, which is the chapter this question's key names and the chapter SKILL.md
-routes exit-code questions to. A grep for `pending` across `05-exit-decoding.md` returns only the
-`VMEXIT_IDLE_HLT` row, an AVIC index note, and the `EXITINTINFO` acknowledge-cycle claim. The same
-agent *did* produce this fact in `mechanism/intercept-priority-ordering`, which routes to `03`.
-The fix is a cross-reference or a one-line restatement in `05` §5.1, where 60h/61h are defined:
-knowing an `INTR` exit leaves the interrupt pending is the first thing a person decoding a `60h`
-needs, and it is currently only reachable from the intercept chapter.
+| Question | Banned string | Verdict | Refuting sentence (verbatim) |
+|---|---|---|---|
+| intercept-vector-4-and-5 | "vector 4 bits 16 to 31 intercept writes of CR0 through CR15" | refuted | "Rev 3.30 defined bit 15 as "intercept writes of EFER" and bits **16–31** as "intercept writes of CR0–15", whereas Rev 3.45 defines only **16 (CR0), 19 (CR3) and 20 (CR4)** and reserves 17, 18 and 21–31." |
+| intercept-vector-4-and-5 | "there is no sixth intercept vector" | refuted | "A corpus that says SVM has five intercept vectors is reporting the pre-2020 layout." |
+| npf-exitinfo1-bits | "bit 33 is the encryption mismatch" / "bit 34 is the page-size mismatch" / "bit 35 is the VMPL violation" | refuted (all three) | "**A numbering that places the encryption mismatch at 33, the size mismatch at 34 and the VMPL violation at 35 is off by one from bit 34 upward.** AMD prints "Bit 34 (ENC)", "Bit 35 (SIZEM)", "Bit 36 (VMPL)", "Bit 37 (SSS)"." |
+| irte-guest-mode-format | "bit 0 is `RemapEm`" | refuted | "Spelling: bit 0 is **`RemapEn`** — `RemapEm` appears nowhere in the specification" |
+| sev-status-bit-map | "bit 7 is Debug Swap" | refuted | "AMD's name for bit 7 is **`DebugVirtualization`**. "Debug Swap" is the Linux-side name and appears nowhere in AMD's documentation" |
+| ghcb-layout-offsets | "the valid bitmap is at offset 0xFF0" | refuted | "`0x0ff0` \| `0x0a` \| RESERVED" (and `VALID_BITMAP` placed at `0x03f0`) |
+| attestation-report-fields | "the VERSION field takes the values 2, 3 or 5" | refuted | "A corpus listing 2/3/5 as the possible values is reporting a stale set rather than an enumeration (`errata.md` E25)." |
 
-### lookup · iommu-control-register-bits (two items)
+### Citations — lookup
 
-**Asked:** "Which bits of the IOMMU Control Register do I need to bring up translation, command
-processing and the event log?"
+24/24 valid. Every answer names the required vendor document and the section, table or
+figure: `[APM2 Figure 15-27]`, `[APM2 §15.30.4]`, `[APM3 App.E]`, `[APM2 Figure 15-4]`,
+`[APM2 Table B-1]`, `[APM2 Table B-2]`, `[APM2 Table 15-8]`, `[APM2 App.C]`,
+`[APM2 §15.36.10]`, `[APM2 Table 15-9]`, `[APM2 Table 15-23]`, `[APM2 Figure 15-22]`,
+`[IOMMU 3.11 §3.4.1]`, `[IOMMU 3.11 §2.5]`, `[IOMMU 3.11 Figure 7]`,
+`[IOMMU 3.11 Table 23]`, `[APM2 §15.34.10]`, `[SEV-API 3.24 Table 14]`,
+`[GHCB 2.04 Table 3]`, `[APM3 §4 "RMPUPDATE"]`, `[SNP-ABI 1.59 Table 27]`. The
+non-vendor case, `amd-document-set`, correctly names `00-quickref.md §0.1`, which is what
+that question's key asks for. No bare "per the manual" anywhere.
 
-**Missing:**
-- item 3 — "bit 1 `HtTunEn`, bit 2 `EventLogEn`, bit 3 `EventIntEn`, bit 4 `ComWaitIntEn`"
-  (partial: `EventLogEn` 2, `EventIntEn` 3 and `ComWaitIntEn` 4 are all present; only
-  `HtTunEn` at bit 1 is absent — scored as a miss because the item is one listed fact)
-- item 4 — "bits 7:5 `InvTimeOut`, bit 8 `PassPW`, bit 9 `ResPassPW`, bit 10 `Coherent`,
-  bit 11 `Isoc`" (absent entirely)
-
-**Answered (verbatim, the only enumeration of neighbouring bits, and the closing line):**
-
-> Neighbours in the same register: `PPRLogEn` (13), `PprIntEn` (14), `PPREn` (15), `GTEn` (16),
-> `GAEn` (17), `GALogEn` (28), `GAIntEn` (29), `ComWaitIntEn` (4).
-
-> The chapter carries the complete 0018h bit assignment (bit 0 `IommuEn` through 63:61
-> `SNPAVICEn`) if you need the rest.
-
-**Verified against the specification:** `IOMMU 3.11 §3.4.1` defines `HtTunEn` as
-"HyperTransport™ tunnel translation enable. RW. Reset 0b." adjacent to `IommuEn` in the register's
-bit list, and `Isoc`/`Coherent`/`ResPassPW`/`PassPW` in the 11:8 block with `InvTimeOut` at 7:5.
-The key items are correct.
-
-**Diagnosis: the fact is present but was not found — and the answer knew it.** The complete
-0018h assignment is in the chapter and section the answer routed to,
-`08-iommu-architecture.md` §8.3 "IOMMU Control Register, MMIO 0018h", lines 132–140 (a two-column
-table containing `| 41 | BlkStopMrkEn | 1 | HtTunEn |`, `| 47:46 | HADUpdate | 7:5 | InvTimeOut |`,
-`| 48 | GDUpdateDis | 8 | PassPW |`, etc.) with claim lines at 152 and 160. The answer saw the
-table, said so, and chose to answer the question as asked — the three bring-up tasks — rather
-than reproduce the register. This is the one failure in the set that is a *key scope* problem as
-much as a skill problem: the question asks for the bits needed to bring up translation, command
-processing and the event log, and `HtTunEn`, `InvTimeOut`, `PassPW`, `ResPassPW`, `Coherent` and
-`Isoc` are needed for none of the three. I did not mark it `key-disputed` — every listed value is
-factually right and lives in the named chapter — but a key that demands the whole register should
-be attached to a question that asks for the whole register.
-
-### lookup · ghcb-layout-offsets
-
-**Asked:** "Give me the GHCB layout: the fields a `#VC` handler fills in, the valid bitmap, and
-the version and usage words."
-
-**Missing:** `must_include` item 1 — "the GHCB is a 4096-byte page the guest must map decrypted,
-and its format is defined by software rather than by hardware - hardware never accesses it
-directly".
-
-**Answered (verbatim, the opening — the answer goes straight to the offset table and never
-characterises the page):**
-
-> **Answer:** `[GHCB 2.04 Table 3]` `[9]`:
->
-> | Offset | Size | Contents | Versions |
-> |---|---|---|---|
-> | `0x0000` | `0xcb` | RESERVED | — |
-> | `0x00cb` | `0x01` | `CPL` | All |
-
-The table runs to `0x0ffc`/`0x04`, so a 4096-byte page is implied arithmetically, but "must map
-decrypted", "format defined by software" and "hardware never accesses it directly" appear nowhere
-in the answer. The other six items hit, including the 126-qword bitmap rule and all fourteen
-offsets, every one of which I confirmed against `GHCB 2.04 Table 3` in the PDF
-(`0x03f0 | 0x10 | VALID_BITMAP | Bitmap to indicate valid qwords in the save state area starting
-from offset 0x000 through offset 0x3ef (126 qwords)`).
-
-**Diagnosis: the fact is present but was not found.** It is in the same chapter, one section
-earlier: `13-sev-es-ghcb.md` §13.3 "Establishing the GHCB", line 112 —
-*"The GHCB is a 4,096-byte page that the guest must map decrypted so that guest and hypervisor
-can both reach it; hardware never accesses the GHCB directly, and consequently its format is
-defined by software rather than fixed by hardware. `[APM2 §15.35.7]`"*. The answer routed to §13.4
-"The GHCB layout", exactly where SKILL.md's row sends "the GHCB layout", and §13.4 opens with the
-table. The *what it is* sentence sits in the *how you establish it* section; the *where the fields
-are* section assumes you already read it. The same agent reproduced the sentence verbatim in
-`mechanism/ghcb-establishment`, which routes to §13.3 — so this is a section-boundary artefact,
-not a content gap.
+Two citation-hygiene positives worth recording: `snp-instructions-and-return-codes` cites
+APM Vol.3 Chapter 4 **by mnemonic** (`[APM3 §4 "RMPUPDATE"]`), which is the form the
+document set's own trap list demands; and no answer invents an `[IOMMU 3.11 App.x]`.
 
 ---
 
-## `key-disputed` items
+## MECHANISM — 24 questions
 
-### KD1 · mechanism · vmrun-consistency-checks — CR4 bit 24
+`must_include` **171 / 172 (99.4%)** · violations **0** · citations **24 / 24**
 
-**Key says (must_include item 4):**
+Per-question hits: `clean-bits-mechanism` 8/8 · `intercept-priority-ordering` 7/7 ·
+`tsc-offset-and-ratio-composition` 6/6 · `vmrun-ordering` 8/8 ·
+`vmrun-consistency-checks` 6/6 · `gif-stgi-clgi-vgif` 7/7 ·
+`event-injection-and-reinjection` 8/8 · `nested-permission-combining` 8/8 ·
+`memory-type-combining` 7/7 · `npf-check-ordering` 6/6 ·
+`asid-allocation-and-exhaustion` 7/7 · `gmet-mechanism` 6/6 ·
+`avic-ipi-delivery-path` 7/7 · `vnmi-virtualization` 8/8 · `io-page-table-walk` 7/7 ·
+`gcr3-pasid-translation` 7/7 · `msi-remapping-end-to-end` 7/7 · `ga-log-and-gappi` 7/7 ·
+`c-bit-mechanics` 7/7 · `ghcb-establishment` 7/7 · `rmp-page-states` 8/8 ·
+`vmpl-and-rmpadjust` 8/8 · **`vmcb02-construction` 7/8** · `vmcb-versus-vmcs` 7/7.
 
-> "CR4 bits 11, 12, 16-18 and **20-24** and EFER bits 15, 17, 18 and 21 are architecturally
-> defined today, so the old masks would reject a legal guest state"
+### Failures
 
-**Answer says (verbatim):**
+#### vmcb02-construction — 7/8
+**Asked:** "When L1 asks to run L2 on AMD, what does L0 have to build, and how are the two hypervisors' intercepts combined?"
+**Missing:** `"ASIDs are a hardware-wide namespace L1 does not own, so the ASID L1 wrote into vmcb12 is a virtual number L0 must map onto a real one"`
+**Answered (verbatim — every occurrence of "ASID" in the answer; neither states the namespace rule or the mapping obligation):**
+> 1. L2 executes something intercepted. Hardware takes `#VMEXIT` into vmcb02, **clears all intercepts, clears the GIF, resets the current ASID to 0** and returns control to L0 at the instruction after its `VMRUN` `[APM2 §15.6]`.
 
-> **CR4 bits 11, 12, 16–18 and 20–23 and EFER bits 15, 17, 18 and 21 are architecturally defined
-> today**, so a validator using the fixed masks would **reject legal guest state**
-> `[APM2 §15.5]` `[1]`. `errata.md` **E05** records the same correction (its wording gives the CR4
-> range as 20–24; the chapter gives 20–23 — take the chapter's, and in either case implement it as
-> "consult the current MBZ definition", not as a literal constant).
+> Because **the caching identity is the VMCB's physical address and explicitly not the ASID**, L0 must keep **one stable vmcb02 page per (L1 virtual CPU, vmcb12) pair** rather than recycling a scratch page …
 
-**What the specification says:** `APM2 Rev 3.45 §3.1.3, Figure 3-7 "CR4 Register"` (p.48) prints
-the field row `Bits 63:24` with mnemonic `Reserved` and access type `MBZ`. The highest
-architecturally defined CR4 bit is **23 (CET)** — "Control-flow Enforcement Technology (CET).
-Bit 23." — followed directly by "CR1 and CR5-CR7 Registers…". There is no CR4 bit 24 on AMD64;
-Intel's PKS at bit 24 has no AMD counterpart. The answer's `20–23` is exactly right and the key's
-`20–24` is wrong. (The EFER half of both is right: Figure 3-9 defines 15 `TCE`, 17 `MCOMMIT`,
-18 `INTWB`, 21 `AIBRSE` — and also 20 `UAIE` and 24 `EnhancedTlbi`, which neither side lists.)
+The answer's "Fields that must be re-derived rather than copied" paragraph lists
+`IOPM_BASE_PA`, `MSRPM_BASE_PA`, `N_CR3` and the AVIC pointers, but never the ASID.
+**Trap hit:** none.
+**Diagnosis: fact present but not found — and the one place a short routing anchor
+plausibly cost an item.** The fact is a single claim in `15-nested-virtualization.md`
+**§15.4.3 "Faults, ASIDs and invalidation"**: *"ASIDs are a hardware-wide namespace L1 does
+not own… so the ASID L1 wrote into vmcb12 is a virtual number that L0 must map onto a real
+one, distinct from L1's own. `[APM2 §15.25.1]` `[APM2 §15.5.1]`"*. SKILL.md's routing row
+for chapter 15 anchors **§15.5 only**; the answer recovered §15.2 and §15.3 from the
+chapter's own `Owns:` line and never reached §15.4.3. The key's own `notes` name
+"sections 15.1.2, 15.2.3, 15.2.4 and 15.3.1" — it does not name §15.4.3 either, so no
+navigation aid in the repository, including the key, points at the only home of this item.
 
-**Which is right:** the answer. **The key is stale, and the corpus already knows it.** The
-uncommitted `references/errata.md` in the working tree now reads "CR4 bits 11, 12, 16–18 and
-20–23" with an explicit note: *"The range itself was corrected from 20–24 to 20–23 on 2026-09-21 —
-Figure 3-7 prints CR4 bits 63:24 as Reserved, MBZ."* `04-world-switch.md` §4.2 line 98 says 20–23
-too. Only `questions.yaml` still carries the pre-correction number. The answer's parenthetical
-("its wording gives the CR4 range as 20–24") describes the *pre-correction* errata text, so the
-answer was written against the older errata and reached the correct value anyway.
+### `must_not_include` — mechanism
 
-**Action for the key:** change `20-24` to `20-23` in `questions.yaml`. Not counted against the
-answer. This item would have failed a specification-correct answer, which is precisely the case
-the dispute clause is for.
+Two banned strings, on `vmrun-consistency-checks`. **Zero asserted. Both refuted** in one
+sentence:
 
-### KD2 · mechanism · vnmi-virtualization — the virtual-NMI delivery condition
+> The fixed-mask forms `CR4[63:11]` and `EFER[63:15]` come from the 2005-era SVM manual, are superseded, and appear nowhere in Rev 3.45 — **CR4 bits 11, 12, 16–18 and 20–23 and EFER bits 15, 17, 18 and 21 are architecturally defined today**, so the fixed masks would reject legal guest state `[APM2 §15.5]`.
 
-**Key says (must_include item 5):**
+### Citations — mechanism
 
-> "a virtual NMI is taken when `V_NMI` is set, virtual NMIs are unmasked, and there is no
-> interrupt shadow"
+24/24 valid. `[APM2 §15.15.2]`, `[APM2 §15.7]`, `[APM2 §15.30.5]`, `[APM2 §15.5.1]`,
+`[APM2 §15.5]`, `[APM2 §15.17]`, `[APM2 §15.20]`, `[APM2 §15.25.7]`, `[APM2 §15.25.8]`,
+`[APM2 §15.25.6]`, `[APM2 §15.16.1]`, `[APM2 §15.25.13]`, `[APM2 §15.29.6.1]`,
+`[APM2 §15.21.10]`, `[IOMMU 3.11 §2.2.3]`, `[IOMMU 3.11 §2.2.6.3]`,
+`[IOMMU 3.11 §2.2.5.2]`, `[IOMMU 3.11 §2.2.5.4]`, `[APM2 §7.10.4]`, `[GHCB 2.04 §2.3.1]`,
+`[SNP-ABI 1.59 Table 14]`, `[APM2 §15.36.7]`, `[APM2 App.B]` (twice) all appear where
+required.
 
-**Answer says (verbatim):**
-
-> **The delivery condition — three terms, and note what is *not* in the list.** The processor
-> takes a virtual NMI when: **virtual NMIs are not masked**, **virtual interrupts are enabled with
-> `VGIF`**, and **the processor is not in an interrupt shadow** `[APM2 §15.21.10]` `[1]`. There is
-> no `EFLAGS.IF` term and no `V_TPR` priority comparison
-
-**What the specification says:** `APM2 Rev 3.45 §15.21.10 "NMI Virtualization"` (p.557),
-verbatim:
-
-> The processor takes a virtual NMI if:
->  - virtual NMIs are not masked,
->  - virtual interrupts are enabled with VGIF, and
->  - the processor is not in an interrupt shadow.
-
-The answer reproduces AMD's enumerated list term for term. The key substitutes "`V_NMI` is set"
-for the `VGIF` term. `V_NMI` being set is not one of AMD's three conditions — it is the separate
-pending indicator ("V_NMI: Indicates whether a virtual NMI is pending in the guest") — and the
-`VGIF` term, which the key drops, is the genuinely surprising and load-bearing one, since it is
-what couples virtual-NMI delivery to vGIF rather than to the real GIF.
-
-**Which is right:** the answer. The corpus agrees with it too —
-`07-virtual-interrupts-avic.md` line 101 states the three conditions in AMD's words. The key is
-the only outlier.
-
-**Action for the key:** restate item 5 as AMD does, or split it into "virtual NMIs are not
-masked", "virtual interrupts are enabled with `VGIF`" and "no interrupt shadow". Not counted
-against the answer. As written, this key penalises an answer that quotes the manual and rewards
-one that paraphrases it wrongly.
+`vmcb-versus-vmcs` is the one question whose Intel half is necessarily non-AMD; the answer
+cites Intel SDM sections (`[SDM 3C §27.2]`, `[SDM 3D App.A]`) rather than stretching an APM
+anchor over them, which is what the key's `notes` ask for. `vmcb02-construction` correctly
+marks the union rule and the three-block naming `[no-spec]` and cites the kernel/Turtles
+references for them instead of manufacturing an APM section.
 
 ---
 
-## `must_not_include` audit
+## Key audit
 
-Eleven banned strings across seven questions. **Zero asserted.** Every one that appears at all
-appears inside a correction:
+**No `key-disputed` items.** Every value that the score turns on was checked against the
+specification independently of the answer, using coordinate-correct extraction from the
+rendered PDFs for anything that comes out of a wide AMD table. Nothing was contradicted.
+The checks that mattered most:
 
-| Question | Banned string | Disposition |
-|---|---|---|
-| intercept-vector-4-and-5 | "vector 4 bits 16 to 31 intercept writes of CR0 through CR15" | **refuted, not asserted** — *"Rev 3.30 had bit 15 = EFER writes and bits 16–31 = writes of CR0–15, whereas Rev 3.45 defines only 16 (CR0), 19 (CR3) and 20 (CR4) and reserves 17, 18 and 21–31"* |
-| intercept-vector-4-and-5 | "there is no sixth intercept vector" | **refuted, not asserted** — *"a corpus that says SVM has five vectors is reporting the pre-2020 layout"* |
-| npf-exitinfo1-bits | bit 33 encryption / 34 page-size / 35 VMPL | **refuted, not asserted** — *"a numbering that places the encryption mismatch at 33, the size mismatch at 34 and the VMPL violation at 35 is **off by one from bit 34 upward**"* |
-| irte-guest-mode-format | "bit 0 is `RemapEm`" | **refuted, not asserted** — *"Bit 0 is **`RemapEn`** — the spelling `RemapEm` appears nowhere in the specification"* |
-| sev-status-bit-map | "bit 7 is Debug Swap" | **refuted, not asserted** — *"bit 7 is **`DebugVirtualization`** in AMD's table; 'Debug Swap' is the Linux name and appears nowhere in AMD's documentation"* |
-| ghcb-layout-offsets | "the valid bitmap is at offset 0xFF0" | **not asserted at all** — the answer's table gives `0x0ff0 \| 0x0a \| RESERVED` and `VALID_BITMAP` at `0x03f0` |
-| attestation-report-fields | "the VERSION field takes the values 2, 3 or 5" | **refuted, not asserted** — *"a source listing 2/3/5 is reporting a stale set (`errata.md` E25)"* |
-| vmrun-consistency-checks | "`CR4[63:11]` non-zero" / "`EFER[63:15]` non-zero" | **refuted, not asserted** — *"come from the **2005-era SVM manual**, are superseded, and appear nowhere in Rev 3.45"* |
+- **VMCB Clean field, offset and width** — Table B-1 p.768 gives `0C0h | 31:0 | VMCB Clean
+  Bits` and `0C0h | 63:32 | RESERVED, SBZ`; §15.15.1 repeats it. Key correct, answer
+  incomplete. (Worth recording for a future key revision: Figure 15-4's own row for bits
+  31:13 is plain "Reserved" — the host-reservation of bit 31 comes only from §15.15.3's
+  prose, exactly as the key's `notes` say.)
+- **Offset-060h bit 10** — genuinely absent. The reserved spans in Table B-1 are 15:13,
+  23:21, 29:27 and 63:40; verified at word-coordinate level that no row was dropped in
+  extraction (rows at uniform 16 pt spacing, bit 9 → bit 11). The answer's "bit 10 is a
+  genuine gap" is right, and the key's decision not to require it is right.
+- **Intercept vector 5 at 014h** — all seven bits and `31:7 RESERVED, SBZ` confirmed in
+  rev 3.45; the rev 3.30 text confirmed to carry the single row `014h–03Bh | RESERVED,
+  SBZ`. The answer's history is accurate. (One naming nuance neither side is charged for:
+  the literal string "IdleHlt" does not appear in Table B-1 — bit 6 reads "Intercept HLT
+  instruction if a virtual interrupt is not pending". The name is AMD's, from Vol.3's
+  `IdleHltIntercept` CPUID bit.)
+- **Vector 4 write traps** — 14 RDPRU, 15 EFER-write trap, 16 CR0, `18:17 RESERVED`,
+  19 CR3, 20 CR4, `31:21 RESERVED`. Confirmed; the answer's Appendix C corroboration
+  (8Fh/90h/93h/94h and nothing for CR1–2 or CR5–15) is sound.
+- **State-save offsets** — all twelve confirmed, including `CPL` as a byte at `0CBh` and
+  `CR2` at `240h`, plus the "offsets are relative to the state-save area, which starts at
+  VMCB 400h when SEV-ES is not enabled" convention. The 140h gap the answer flags is real
+  in Table B-2, not an extraction artifact.
+- **`TLB_CONTROL`** — `058h` bits 39:32 above the 32-bit ASID at 31:0, the four encodings,
+  and Table 15-9's "All other encodings are reserved" note. `FlushByAsid` is
+  `Fn8000_000A_EDX[6]`, confirmed directly in Vol.3 Appendix E.
+- **CPUID `Fn8000_000A_EDX` bit numbers used across both sets** — read directly from
+  Vol.3 Appendix E: `NRIPS` 3, `TscRateMsr` 4, `VmcbClean` 5, `FlushByAsid` 6,
+  `AVIC` 13, `VMSAVEvirt` 15, `VGIF` 16, `GMET` 17, `x2AVIC` 18, `ROGPT` 21,
+  `TlbiCtl` 24, `VNMI` 25. Every use in both answer files matches.
+- **MSRPM** — four 16-Kbit vectors in two contiguous pages, 8K MSRs each, lsb read /
+  msb write, and Table 15-8's fourth row `1800h–1FFFh | Reserved`. One nuance the key
+  already encodes and the answer preserves: the auto-intercept rule is **conditional on
+  `MSR_PROT`** ("*If the MSR_PROT intercept is active*, any attempt to read or write an
+  MSR not covered by the MSRPM will automatically cause an intercept"). Both are correct.
+- **`VM_CR` / `VM_HSAVE_PA` / Doorbell** — Figure 15-27's bit order (63 Reserved-MBZ,
+  4 SVMDIS, 3 LOCK, 2 DIS_A20M, 1 R_INIT, 0 DPD) confirmed by coordinate; §15.30.4's two
+  `#GP` conditions confirmed verbatim; Figure 15-22's `63:8 Reserved, MBZ` /
+  `7:0 Physical APIC ID` and "Any attempt to read from this register results in a #GP"
+  confirmed.
+- **IOMMU Control Register** — the full assignment was read off the rendered register
+  figure in §3.4.1 (printed pp. 217–222): `0 IommuEn, 1 HtTunEn, 2 EventLogEn,
+  3 EventIntEn, 4 ComWaitIntEn, 7:5 InvTimeOut, 8 PassPW, 9 ResPassPW, 10 Coherent,
+  11 Isoc, 12 CmdBufEn, 13 PPRLogEn, 14 PprIntEn, 15 PPREn, 16 GTEn, 17 GAEn,
+  28 GALogEn, 29 GAIntEn`. Every position the key gives is correct, and matches the
+  corpus's §8.3 table. `pdftotext` scrambles this figure into an unordered list of field
+  names, which is why it was read from the rendered page.
+- **DTE `IR`(61) / `IW`(62)** — confirmed against Figure 7 and Table 7, and in the corpus
+  table. Also confirmed: 256-bit entries indexed by the 16-bit DeviceID, 65,536 possible
+  entries, `V` 0, `TV` 1, `Mode[2:0]` 11:9, root pointer 51:12, `DomainID[15:0]` 79:64.
+- **IOMMU event codes** — §2.5.2 through §2.5.15 enumerate exactly the fourteen events the
+  key names, in the key's order, each confirmed from its own figure/table rather than from
+  the summary. The "decode from the per-event figures, not from Table 42" warning is a
+  real and *compound* defect in AMD's own document: Table 42 prints `1001b` for
+  `EVENT_COUNTER_ZERO` as well as for `INVALID_PPR_REQUEST` (Table 68 says `1010b`), and
+  its last row declares `1010b–1111b` reserved, so it never lists `GUEST_EVENT_FAULT`,
+  `VIOMMU_HARDWARE_ERROR`, `RMP_PAGE_FAULT` or `RMP_HARDWARE_ERROR` at all. A third,
+  smaller typo sits in Table 72, whose bits-31:28 row reads "1110b. Specifies an
+  **RMP_PAGE_FAULT** entry" under a figure and title that both say
+  `RMP_HARDWARE_ERROR` — that one is not in the corpus and would be a reasonable
+  addition to `errata.md`.
+- **`GuestMode = 1` IRTE** — Figure 18 / Table 23 confirm every field boundary the key
+  gives. `"RemapEm"` occurs **zero** times in the document and `RemapEn` twenty-two times,
+  so errata E03 is well founded. The chapter's recorded open item is also real: Table 23
+  names the field `Vector[8:0]` inside an 8-bit slot at 71:64.
+- **`Fn8000_001F`** — Vol.3 §E.4.17 confirms EAX bits 0–6 and 21 and the EBX packing
+  (`CbitPosition` 5:0, `PhysAddrReduction` 11:6, `NumVMPL` 15:12), ECX
+  `NumEncryptedGuests`, EDX `MinSevNoEsAsid`.
+- **`SEV_STATUS`** — §15.34.10 (section number confirmed, against Appendix A's bad
+  cross-reference to §15.35.10), `C001_0131`, read-only, "accesses … cannot be intercepted
+  by the hypervisor", and every bit the key lists. AMD's Table 15-32 really does print
+  `63:24 Reserved` / `23 IbpbOnEntry_Active` / `22-18 Reserved` / `18 SecureAVIC_Active` /
+  `17 SmtProtection_Active` in that order — the key's item and the answer's handling of it
+  are both correct.
+- **GHCB Table 3 and SEV status codes** — every offset confirmed, `0x0ff0 | 0x0a |
+  RESERVED` confirmed, and `HWERROR_PLATFORM` / `HWERROR_UNSAFE` differ in exactly the one
+  clause the key names ("It is safe to re-allocate parameter buffers" vs "Re-allocating
+  parameter buffers is not safe").
+- **SNP opcodes and return codes** — all six opcodes confirmed from their Mnemonic/Opcode
+  rows; value 5 appears in no return-code table and the only `FAIL_*` names in the volume
+  are the six the key lists. Nuance the answer already reflects: rev 3.38 has no single
+  consolidated return-code table, only per-instruction ones.
+- **Attestation report VERSION** — rev 1.59's Table 27 says "Set to **6h** for this
+  specification"; the archived rev **1.58** in the same source set says "Set to **5h**".
+  That is direct evidence for the key's durable claim that the value is a moving
+  progression, and against the banned `2, 3 or 5` enumeration. Every offset the key lists
+  is confirmed, including `SIGNATURE` at `2A0h–49Fh` described as "Signature of bytes 0h
+  to 29Fh inclusive of this report".
+- **RMP page states** — HV-fixed, Pre-Guest, Guest-Invalid, Pre-Swap and Guest-Valid all
+  present in SNP-ABI 1.59, along with "The RMPUPDATE instruction cannot create HV-fixed
+  pages… software should use SNP_PAGE_SET_STATE or SNP_INIT_EX", "RMPUPDATE can invalidate
+  a page but cannot validate a page", and "Pre-Guest and Pre-Swap pages have their
+  RMP.Immutable flags equal to 1, which prevents the guest from transitioning them".
+- **GHCB MSR / `G_PAT` / `EVENTINJ`** — `C001_0130`, saved and restored through VMCB
+  `0A0h`, guest-mode-only with `#GP` in host mode; `G_PAT` at save-area `268h`;
+  Figure 15-5's encoding matching `EXITINTINFO` and the unconditional-before-first-guest-
+  instruction rule. All confirmed.
 
-The banned-string-in-a-correction pattern fired eight times and was correct eight times, which is
-the behaviour RUNNER.md §"Scoring honestly" predicts. A substring lint rule over these answers
-would report eight false positives.
+### Not a key error, but a question-design defect worth fixing
+
+`iommu-control-register-bits` supplies **four of the seven lookup misses on its own**, and
+the cause is a mismatch between the question and its key, not a wrong value.
+
+The question asks: *"Which bits of the IOMMU Control Register do I need to bring up
+translation, command processing and the event log?"* — three named subsystems. The key
+then requires the **whole register map**, including `HtTunEn`, `PassPW`, `ResPassPW`,
+`Coherent`, `Isoc`, `PprIntEn` and `GAIntEn`, none of which is needed to bring up
+translation, command processing or the event log. An answer that answered exactly the
+question asked — which this one did, correctly, plus the `CmdBufEn`/`CmdBufRun` trap — is
+scored at 3/7.
+
+This is **not** marked `key-disputed`, because the rule for that is a key item that
+contradicts the specification, and these items are all accurate. But it should be repaired
+in one of two ways before the next run: either widen the question ("give me the full 0018h
+bit assignment, and say which bits bring up translation, command processing and the event
+log"), or trim the key to the bits the question asks about and move the rest to `notes`.
+Left as it is, this question measures answer verbosity rather than skill coverage.
+Excluded from the denominator entirely, lookup would be **142/145 = 97.9%**; scored with
+the four bundles credited, **149/152 = 98.0%**. It is left in and scored as written,
+because the rule for excluding an item is that the key contradicts the specification, and
+here it does not.
 
 ---
 
-## Routing
+## Did the short routing anchors cost `must_include` items?
 
-**First-try chapter correctness: 48 / 48.** Every question reached a chapter that actually
-holds the fact, and no answer reported being sent somewhere the answer was not.
+The mechanism answerer reports 15 of 24 anchors "landed short (in-chapter)" and says
+`00-quickref.md` §0.3 could not rescue them because it indexes tables while those were
+prose sections. Scored against outcomes, the honest answer is:
 
-Two mechanism questions needed a second chapter, and both are splits SKILL.md predicts in
-advance rather than routing failures:
+**Yes — but exactly once, out of 172 mechanism items (0.6%).**
 
-- `gif-stgi-clgi-vgif` — `04-world-switch.md` §4.6 for GIF/STGI/CLGI, then
-  `07-virtual-interrupts-avic.md` §7.3 for vGIF. `04`'s section says "Where the mechanism side
-  lives" and `07`'s `Owns:` line claims "vGIF on the mechanism side"; the question asks both.
-- `npf-check-ordering` — `06-nested-paging.md` §6.5 for the ordering, `05-exit-decoding.md` §5.3
-  for the `EXITINFO1` bits. SKILL.md names this exact case ("decoding an `#NPF`, for example,
-  needs `05` for the bit layout and `06` for the semantics").
+- **`vmcb02-construction`, the ASID-namespace item, is a real loss to the anchor.**
+  SKILL.md's chapter-15 row anchors **§15.5** alone. The fact lives in **§15.4.3**. The
+  answerer reached §15.2 and §15.3 from the chapter's `Owns:` line and stopped there;
+  neither the routing row, nor §0.3, nor the key's own `notes` names §15.4.3. This one is
+  the anchor's fault, and the fix is a routing-table edit, not a content edit.
+- **The other 14 "landed short" answers lost nothing.** Every one of them recovered the
+  owning section from the chapter's heading list or `Owns:` line and scored 6/6, 7/7 or
+  8/8. For those, a short anchor cost a second look, not a fact.
 
-**Note R1 — the key's `chapter:` and SKILL.md's routing table disagree for
-`int-ctl-60h-layout`.** The key names `02-vmcb.md` (notes point at §2.2.2); the answer routed to
-`07-virtual-interrupts-avic.md` §7.1.1 because SKILL.md's row reads
-*"Virtual interrupts, **the offset-60h control word**, vGIF, AVIC, x2AVIC, the doorbell →
-`07-virtual-interrupts-avic.md` §7.2"*. Both chapters carry the layout and the answer scored 6/6,
-so this is not a failure — but SKILL.md has two rows that both claim offset 60h ("VMCB field
-offsets, control area…" → `02`, and "the offset-60h control word" → `07`), and the eval key has
-silently picked the other one. Worth reconciling so the routing measurement means something.
+The more interesting finding runs the other way, and it is in the **lookup** set:
+
+**Two lookup items were lost in sections the routing row explicitly named, on answers that
+self-reported "right first time".**
+
+- `vmcb-clean-bit-map`: the row names `§2.2 · §2.3 · §2.5`; the answer opened §2.5 only;
+  the missing item is in §2.2.4.
+- `ghcb-layout-offsets`: the row names `§13.3 · §13.4 · §13.5`; the answer opened §13.4
+  only; the missing item is in §13.3 — and the *same answerer* quotes that sentence
+  correctly in the mechanism answer `ghcb-establishment`.
+
+So the routing table is not the dominant failure mode here. **A short anchor cost one item;
+not following a multi-section anchor that was already correct cost two.** Both lookup cases
+were additionally invisible in the self-report — an answer that opens one of three named
+sections and calls it "right first time" is over-reporting its own routing accuracy, which
+is the metric a future run would trust. That self-report gap is worth more attention than
+the anchor length.
 
 ---
 
 ## Notes
 
-### The real skill defect this pass exposes: the routing table's section anchors are entry
-### points, not owning sections
-
-Ten of the twenty-four lookup answers recorded that SKILL.md's routing row named a section that
-does **not** own the fact, and that they had to fall back to `00-quickref.md` §0.3 "Where the
-tables live" to find the owning section. Verbatim from the answers:
-
-| Question | What the answer recorded |
-|---|---|
-| vm-cr-msr-layout | "SKILL.md's row points at §1.5; `00-quickref.md` §0.3 gives the SVM-MSR table as §1.4" |
-| vmcb-clean-bit-map | "SKILL.md's row says §2.2; `00-quickref.md` §0.3 gives clean bits as §2.5" |
-| int-ctl-60h-layout | "SKILL.md's row says §7.2; `00-quickref.md` §0.3 gives §7.1" |
-| msrpm-ranges-and-encoding | "SKILL.md's row says §3.1; `00-quickref.md` §0.3 gives IOPM/MSRPM as §3.3/§3.4" |
-| exit-codes-60h-61h-band | "SKILL.md's row points at §5.2 but names §5.1 for the EXITCODE table" |
-| tlb-control-values | "SKILL.md's row says §6.5; `00-quickref.md` §0.3 gives `TLB_CONTROL` values as §6.8" |
-| iommu-control-register-bits | "SKILL.md's row says §8.6; `00-quickref.md` §0.3 gives the Control and Status registers as §8.2/§8.3" |
-| irte-guest-mode-format | "SKILL.md's row says §10.4; `00-quickref.md` §0.3 gives the three IRTE formats as §10.1–§10.3" |
-| sev-firmware-error-codes | "SKILL.md's row says §12.6; `00-quickref.md` §0.3 gives the SEV firmware commands as §12.8/§12.9" |
-| snp-instructions-and-return-codes | "SKILL.md's row says §14.1; `00-quickref.md` §0.3 gives the SNP instructions as §14.1–§14.4" |
-
-Nothing failed because of it — every chapter was the right chapter, and `00-quickref.md` §0.3
-caught every case — but the routing table is currently load-bearing on a second lookup that is
-not documented as mandatory. Either make the `§n.m` suffixes point at owning sections, or drop
-them and let §0.3 be the section-level index it already is. Right now they read as precise and
-are not.
-
-### Failure taxonomy for this pass
-
-| Diagnosis | Count | Which |
-|---|---|---|
-| routing sent it to the wrong chapter | **0** | — |
-| the chapter lacks the fact | **1** | exit-codes-60h-61h-band (the fact is in the corpus, in `03-intercepts.md` §3.2, but not in `05-exit-decoding.md`) |
-| **the fact is present but was not found** | **4** | vmcb-clean-bit-map (§2.2.4 vs §2.5), iommu-control-register-bits ×2 (§8.3, seen and deliberately not reproduced), ghcb-layout-offsets (§13.3 vs §13.4) |
-| citation missing | **0** | — |
-| `key-disputed` | **2** | KD1, KD2 above |
-
-Four of the five genuine misses are "present but not found", matching the pattern the trap +
-diagnosis pass reported. Three of those four are **section-boundary** misses inside the correct
-chapter: the fact a question needs sits one section away from the section that owns the table the
-question asks about. The recurring shape is *characterisation in one section, layout in the
-next* — what the clean field's extent is (§2.2.4) versus what its bits mean (§2.5); what the GHCB
-*is* (§13.3) versus where its fields are (§13.4). A promotion to `00-quickref.md`, as RUNNER.md's
-"Fix" column suggests, would work, but a cheaper fix for these two is a single orienting sentence
-at the head of the layout section.
-
-The one true content gap is the interrupt-left-pending rule's absence from `05-exit-decoding.md`.
-
-### Verification performed
-
-Independently checked against `C:/Users/Administrator/AppData/Local/Temp/amd-spec/`, so that a
-shared key/answer error could not pass: document revisions for all six normative publications
-(24593 Rev 3.45 Jul 2026 · 24594 Rev 3.38 Jul 2026 · 48882 Rev 3.11 Apr 2026 · 56860 Rev 1.59
-Aug 2026 · 56421 Rev 2.04 Jan 2025 · 55766 Rev 3.24 Apr 2020 — all correct);
-`VM_CR` `C001_0114h` and all five bits plus the `LOCK`/`SVM_KEY`/`SVMDIS` rules (Figure 15-27);
-`VM_HSAVE_PA` `C001_0117h` and both `#GP` conditions (§15.30.4); the TSC composition formula,
-8.32 format and read-side-only rule (§15.30.5); the MSRPM geometry, range table and check order
-(§15.11, Table 15-8); `TLB_CONTROL` encodings, the reserved note and `FlushByAsid` gating
-(Table 15-9); the clean-field bit map (Figure 15-4) and the `FFFF_FFFFh`/`0h` guidance (§15.15.3);
-the whole offset-60h field list including the bit-10 gap and the x2AVIC-below-AVIC ordering;
-the `#NPF` `EXITINFO1` bits 0–4/6/32/33/37 (§15.25.6) and 31/34/35/36/37 (§15.36.10) — confirming
-`errata.md` E04; the four-step `#NPF` fault ordering (§15.25.6); the nested permission-combining
-rules (§15.25.7); the vector-4 and vector-5 intercept function lists (Table B-1); the VMCB
-control-area offsets `050h`/`058h`/`0C0h`/`0C8h`/`0E0h`/`0F0h`/`0F8h`/`098h` (Table B-1, read from
-the PDF and realigned); the state-save offsets `0CBh` CPL, `0D0h` EFER, `148h` CR4, `150h` CR3,
-`158h` CR0, `160h` DR7, `168h` DR6, `170h` RFLAGS, `178h` RIP, `1D8h` RSP, `1F8h` RAX, `240h` CR2,
-`268h` G_PAT and the missing `140h` row (Table B-2, likewise);
-`Fn8000_000A_EDX` bit 16 `VGIF` and bit 25 `VNMI`; the doorbell MSR `C001_011Bh`, its `#GP`-on-read
-rule and relaxed `WRMSR` serialization (Figure 15-22, §15.29.8.2); `SEV_STATUS` `C001_0131`
-read-only and un-interceptable (§15.34.10); all six SNP instruction opcodes (APM3 Ch.4);
-the GHCB tail of Table 3 including `VALID_BITMAP` at `0x03f0` and the 126-qword note;
-the attestation report's `2A0h-49Fh SIGNATURE` and "Signature of bytes 0h to 29Fh inclusive";
-IOMMU `HtTunEn`/`CmdBufEn`/`EventLogEn` definitions (§3.4.1) and the fourteen event sections
-§2.5.2–§2.5.15. Every one matched the answers. The only two mismatches found anywhere were
-between the **key** and the specification, and both are recorded above as `key-disputed`.
+- **Routing, as self-reported.** Lookup: 24/24 correct chapter; 20 "right first time",
+  4 "landed short" (`fn8000-0001-ecx-bit2-scope` → §1.2 not §1.4/§1.5; `npf-exitinfo1-bits`
+  → §5.3 not §5.2; `avic-id-table-entries` → §7.4/§7.5 not §7.1/§7.8; `avic-doorbell-msr`
+  → §7.6, an anchor neither SKILL.md nor §0.3 supplies). None of those four lost an item —
+  all scored full marks. Mechanism: 24/24 correct chapter, 8 anchors exact, 15 short,
+  1 (`gif-stgi-clgi-vgif`) needing a second chapter that SKILL.md already names. The
+  self-report is accurate as far as it goes, but see above — it does not catch a
+  multi-section row only partly followed.
+- **Skill defects the scoring exposed.**
+  1. **`SKILL.md` routing row for chapter 15 anchors §15.5 only.** §15.5 is "what AMD has
+     instead of VMCS shadowing"; a question about building vmcb02 needs §15.2, §15.3 and
+     §15.4.3. This cost a real item. Add those anchors.
+  2. **Two specific facts are buried where a single-section reader will not meet them,**
+     and both were missed: the Clean field's `31:0` / `63:32 SBZ` width lives in §2.2.4
+     while every clean-bit *discussion* is in §2.5, and the GHCB's
+     "4,096-byte / decrypted / software-defined" contract lives in §13.3 while the layout
+     is in §13.4. Per RUNNER.md's failure table these are "the chapter buries it; promote
+     to `00-quickref.md`" — or, cheaper, repeat the one-line property at the head of §2.5
+     and §13.4.
+  3. **`00-quickref.md` §0.3 indexes tables, not prose sections.** The mechanism answerer's
+     diagnosis of this is correct and it is a genuine structural limit — but on this
+     evidence it is a *latency* cost, not an accuracy cost. Worth fixing on ergonomics
+     grounds, not because it is losing facts.
+  4. **`IR`(61)/`IW`(62) are in `08-iommu-architecture.md` §8.6's wide two-column table**
+     and were skipped by a reader that reproduced the same table's other rows. If the DTE
+     permission bits are load-bearing (they are — they gate every access with `Mode` = 000b),
+     they deserve a line of prose, not just a table cell.
+  5. **One AMD document defect found during verification is not yet in `errata.md`:**
+     IOMMU 3.11 Table 72 (`RMP_HARDWARE_ERROR` fields) has a copy-paste error in its
+     bits-31:28 row — "1110b. Specifies an **RMP_PAGE_FAULT** entry" — under a figure and
+     title that both say `RMP_HARDWARE_ERROR`. The corpus already records Table 42's two
+     larger defects; this is a third in the same family and belongs with them. No answer
+     was charged for it.
+- **Answer quality beyond the key.** Both files consistently distinguish what AMD states
+  from what the chapter derives (`msrpm-ranges-and-encoding` says outright that AMD "does
+  not print" the index arithmetic; `vmcb02-construction` marks the union rule `[no-spec]`),
+  carry confidence and volatility markers, and report AMD's own documentation defects
+  (Table 42's stale codes, the `22-18 Reserved` row above the bit-18 definition,
+  `EXITINFO1` bit 37's double definition, offset-140h's missing row, bit 10's missing row)
+  rather than silently correcting them. The trap discipline is strong: all eleven banned
+  strings across the two sets appear only inside corrections, and seven of them are
+  corrected explicitly by name.
+- **Scope of this run.** lookup and mechanism only. `diagnosis` (20) and `trap` (12) were
+  not scored here. The archived `run-1/` material was not read, so these numbers are
+  independent of it.
