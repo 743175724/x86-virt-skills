@@ -309,7 +309,7 @@
     {
       "path": "references/16-windows-platform.md",
       "title": "16. AMD Virtualization on Windows",
-      "summary_zh": "本章只写 **AMD delta**——Windows 虚拟化栈里与厂商相关的那部分。厂商无关的 Windows 深度（分区模型、hypercall ABI、synthetic MSR 全表、VMBus 环、调度器、WHP 的完整 API 面）在 `intel-vt/17-windows-platform.md`，本章交叉引用而不复述；但本章对自己必须回答的问题保持自足，不跳转也能给出可用答案。核心一条：**一旦 VBS / 内存完整性 / WSL2 / Windows 沙盒 / Docker Desktop / Hyper-V 角色中的任何一个被启用，Windows hypervisor 就持有 `EFER.SVME`，Windows 内核自己以 VTL0 guest 身份运行**，第三方 VMM 只能经 WHP 嵌套运行——\"为什么我的 VMM / 驱动 / 调试器用不了 AMD-V\"几乎总是归结到这里。其余覆盖：`Hvax64.exe` 与启动链、VBS/HVCI/Credential Guard 的 AMD 硬件前提（AMD-V + RVI + IOMMU，HVCI 侧的 GMET）、Kernel DMA Protection 走 AMD-Vi 与 IVRS、AMD 上的嵌套与 Hyper-V 的 **enlightened VMCB fields**、WHP 共存、AM4/AM5 固件项、DDA 与 GPU 分区、hypervisor 存在性检测、Windows 侧诊断命令。**产品版本状态与默认值在 `90-dated-landscape.md`，开销数字在 `18-performance.md`。**",
+      "summary_zh": "本章只写 **AMD delta**——Windows 虚拟化栈里与厂商相关的那部分。厂商无关的 Windows 深度（分区模型、hypercall ABI、synthetic MSR 全表、VMBus 环、调度器、WHP 的完整 API 面）在 `intel-vt/references/17-windows-platform.md`，本章交叉引用而不复述；但本章对自己必须回答的问题保持自足，不跳转也能给出可用答案。核心一条：**一旦 VBS / 内存完整性 / WSL2 / Windows 沙盒 / Docker Desktop / Hyper-V 角色中的任何一个被启用，Windows hypervisor 就持有 `EFER.SVME`，Windows 内核自己以 VTL0 guest 身份运行**，第三方 VMM 只能经 WHP 嵌套运行——\"为什么我的 VMM / 驱动 / 调试器用不了 AMD-V\"几乎总是归结到这里。其余覆盖：`Hvax64.exe` 与启动链、VBS/HVCI/Credential Guard 的 AMD 硬件前提（AMD-V + RVI + IOMMU，HVCI 侧的 GMET）、Kernel DMA Protection 走 AMD-Vi 与 IVRS、AMD 上的嵌套与 Hyper-V 的 **enlightened VMCB fields**、WHP 共存、AM4/AM5 固件项、DDA 与 GPU 分区、hypervisor 存在性检测、Windows 侧诊断命令。**产品版本状态与默认值在 `90-dated-landscape.md`，开销数字在 `18-performance.md`。**",
       "maps_to": "Microsoft Learn + the Hypervisor Top-Level Functional Specification (Tier-2: authoritative for Windows behaviour, and **not** an AMD specification — no APM anchor belongs on a claim in this chapter)",
       "headings": [
         "16.1 Who owns SVM once VBS is on",
@@ -325,8 +325,8 @@
         "16.11 Linux-only: the VFIO path",
         "16.12 Open items"
       ],
-      "bytes": 49402,
-      "sha256": "be1ae71b1d87279e6ac42f8cd1626ab1b28674735889ceaa2ce055f435e62322"
+      "bytes": 49501,
+      "sha256": "8d40ce4d3c1f84776285b6b1a3bf88192e00c505bb1ff0c4a152c67f96bbe1ea"
     },
     {
       "path": "references/17-security.md",
@@ -368,7 +368,7 @@
     {
       "path": "references/19-comparison-intel-arm-riscv.md",
       "title": "19. AMD versus Intel, ARM and RISC-V",
-      "summary_zh": "本章给 AMD 侧的对照视角，与 `intel-vt/18-comparison-amd-arm-riscv.md` 互为镜像。**规则是：哪家的规范定义了这条事实，就归哪个技能**——本章陈述 AMD 侧并链接过去，不复述 Intel 侧的位级细节；反过来，Intel 事实一律锚到 Intel 文档，**永远不锚 APM**。覆盖 VMCB vs VMCS、NPT vs EPT、ASID vs PCID+VPID、AVIC vs APICv、GIF（Intel 无对应物）、**AMD 无 VMCS shadowing 对应物**（owner 是 `15-nested-virtualization.md`）、AMD 的 IOMMU vs VT-d、SEV-SNP vs TDX 的信任模型、ARM 两阶段翻译与 RISC-V H 扩展的对位。两处术语碰撞必须消歧：`SNP`（AMD 的 Secure Nested Paging vs VT-d 页表项里的 Snoop 位）与 `RVI`（AMD 营销名 Rapid Virtualization Indexing vs Intel APICv 的 Requesting Virtual Interrupt）。**本章按 lint 豁免使用 Intel 自己的术语描述 Intel**（\"VM exit\"、\"host-physical address\"），描述 AMD 时仍用 `#VMEXIT` 与 sPA。市场份额、GA 日期、产品状态见 `90-dated-landscape.md`。",
+      "summary_zh": "本章给 AMD 侧的对照视角，与 `intel-vt/references/18-comparison-amd-arm-riscv.md` 互为镜像。**规则是：哪家的规范定义了这条事实，就归哪个技能**——本章陈述 AMD 侧并链接过去，不复述 Intel 侧的位级细节；反过来，Intel 事实一律锚到 Intel 文档，**永远不锚 APM**。覆盖 VMCB vs VMCS、NPT vs EPT、ASID vs PCID+VPID、AVIC vs APICv、GIF（Intel 无对应物）、**AMD 无 VMCS shadowing 对应物**（owner 是 `15-nested-virtualization.md`）、AMD 的 IOMMU vs VT-d、SEV-SNP vs TDX 的信任模型、ARM 两阶段翻译与 RISC-V H 扩展的对位。两处术语碰撞必须消歧：`SNP`（AMD 的 Secure Nested Paging vs VT-d 页表项里的 Snoop 位）与 `RVI`（AMD 营销名 Rapid Virtualization Indexing vs Intel APICv 的 Requesting Virtual Interrupt）。**本章按 lint 豁免使用 Intel 自己的术语描述 Intel**（\"VM exit\"、\"host-physical address\"），描述 AMD 时仍用 `#VMEXIT` 与 sPA。市场份额、GA 日期、产品状态见 `90-dated-landscape.md`。",
       "maps_to": "Intel SDM Vol.3C and Vol.3A / Intel VT-d specification / Arm Architecture Reference Manual for A-profile, the GIC and SMMU architecture specifications / RISC-V privileged architecture \"H\" extension — all Tier-2 here and all primary for their own side",
       "headings": [
         "19.1 How to read this chapter",
@@ -385,8 +385,8 @@
         "19.12 What a client PC actually has",
         "19.13 Open items"
       ],
-      "bytes": 46907,
-      "sha256": "8a11cc7a57391e1c98aa525b6e56d77fae6ad5f6ea0cd961ff9a5d54b588de6a"
+      "bytes": 46929,
+      "sha256": "89dbe40a97dbdcf26c1275a7bee77828352af127f5ebeff73dc6a28a057a88d8"
     },
     {
       "path": "references/90-dated-landscape.md",

@@ -60,14 +60,15 @@ Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 | Citation validity | **80/80 (100%)** |
 | Routing correct on first try | **79/80 (98.75%)** |
 
-Confidence is stated, not assumed. `intel-vt`: 2014 claims `C:high`, 494
-`C:medium`, 48 `C:low`. `amd-virtualization`: 1911 `C:high`, 159 `C:medium`,
-10 `C:low`. Where sources genuinely disagree — VBS overhead, SEV-SNP versus TDX
+Confidence is stated, not assumed. `intel-vt`: 2228 claims `C:high`, 423
+`C:medium`, 39 `C:low`, of 2650. `amd-virtualization`: 1913 `C:high`, 159
+`C:medium`, 10 `C:low`, of 2065. Where sources genuinely disagree — VBS overhead, SEV-SNP versus TDX
 memory overhead, TDX memory-encryption key length — the skills present both and
 refuse to average them.
 
-Each skill has an `errata.md`: 28 corrections on the Intel side, 26 on the AMD
-side, several of them to claims the earlier version of that skill made itself.
+Each skill has an `errata.md`: Intel has 22 settled corrections and 6 open
+conflicts, AMD has 26 and 6. Several correct claims the earlier version of that
+skill made itself.
 Five AMD entries are marked `[reversed]` because the *proposed correction* was
 itself refuted by a primary source.
 
@@ -128,7 +129,7 @@ Any other agent with filesystem access can start from `<skill>/index.json`.
 ## Maintaining it
 
 ```bash
-node tools/lint.mjs         # 14 checks over schema, anchors, quarantine, routing
+node tools/lint.mjs         # schema, anchors, quarantine, routing, and more
 node tools/build.mjs        # regenerate index.json, agents/openai.yaml, AGENTS.md
 node tools/build.mjs --check   # fail if a generated file has drifted
 ```

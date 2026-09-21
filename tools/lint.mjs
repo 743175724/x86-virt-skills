@@ -400,6 +400,23 @@ function lintSkill(skillName) {
     if (!bibUsed.has(id) && id >= cfg.orphanExemptBelow) warn('references/bibliography.md', `entry [${id}] is never cited`)
   }
 
+  // ------------------------------------------- 14: cross-skill pointers resolve
+  //
+  // A chapter that defers to the sibling skill writes `intel-vt/references/…`.
+  // Rule 8 below only validates pointers within this skill, and rule 9's
+  // ownership escape only looks for a bare `NN-name.md`, so a cross-skill
+  // pointer was checked by nothing at all. Eleven of them in the AMD corpus
+  // omitted the `references/` segment and pointed at paths that do not exist;
+  // both skills read fine in isolation, so nothing surfaced it.
+  for (const f of chapterFiles) {
+    const body = readFileSync(join(REFS, f), 'utf8')
+    for (const m of body.matchAll(/`((?:intel-vt|amd-virtualization)\/[A-Za-z0-9/_-]+\.md)`/g)) {
+      if (!existsSync(join(ROOT, m[1]))) {
+        err(`${skillName}/references/${f}`, `cross-skill pointer \`${m[1]}\` does not resolve — sibling chapters live under <skill>/references/`)
+      }
+    }
+  }
+
   // ----------------------------------------------------- 8: routing integrity
 
   if (skillText) {
