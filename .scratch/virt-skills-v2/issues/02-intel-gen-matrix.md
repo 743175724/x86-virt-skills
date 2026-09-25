@@ -1,7 +1,7 @@
 # 02 Intel 10 代 → Core Ultra 300：虚拟化相关的世代差异与勘误源
 
 Type: research
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question

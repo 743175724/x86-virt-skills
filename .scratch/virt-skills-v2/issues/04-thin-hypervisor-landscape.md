@@ -1,7 +1,7 @@
 # 04 开源 thin hypervisor 参考实现现状调研
 
 Type: research
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question

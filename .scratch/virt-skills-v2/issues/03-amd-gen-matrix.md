@@ -1,7 +1,7 @@
 # 03 AMD Zen 1 → Zen 5 客户端：虚拟化相关的世代差异与勘误源
 
 Type: research
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question
