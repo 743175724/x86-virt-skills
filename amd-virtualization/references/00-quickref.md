@@ -34,9 +34,11 @@ Three traps worth knowing before you go looking:
   numbers.** Cite an instruction by mnemonic. `[APM3 §4.7.2 VMRUN]` is invented.
 - **The IOMMU specification has five chapters and no appendices.**
   `[IOMMU 3.11 App.x]` is always wrong. IVRS is §5.2.
-- **There is no public PPR or revision guide for client Ryzen.** If a claim about
-  a client part needs one, the claim says so instead of citing a document that
-  does not exist.
+- **Client PPRs and a client-covering revision guide do exist — cite them.**
+  PPR 56569 (Cezanne), 57019 (Phoenix), 57930 (Strix Halo); Revision Guide 55449
+  Rev 1.21 covers Family 17h client parts and holds `erratum 1235`. The real gap
+  is narrow: no public revision guide for a Family 19h/1Ah *client* model range.
+  Scope a gap statement to that, never to "AMD publishes nothing for client".
 
 ## 0.2 Symptom → chapter
 

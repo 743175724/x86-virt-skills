@@ -77,7 +77,7 @@ the stray `~/.hermes` and re-run.
 
 ```bash
 node tools/install.mjs          # prints one line per host and path
-node tools/lint.mjs             # 14 checks; must print "lint clean" for both skills
+node tools/lint.mjs             # must print "lint clean" for both skills
 node tools/build.mjs --check    # generated files must not have drifted
 ```
 

@@ -240,6 +240,23 @@
 - **Claim.** **CVE-2022-23816 is REJECTED at NVD.** The record's `vulnStatus` is `Rejected` and its only description reads "DO NOT USE THIS CANDIDATE NUMBER. ConsultIDs: none. Reason: This candidate is unused by its CNA." The citable identifier is **CVE-2022-29900**. AMD-SB-1037 itself writes the pairing as "CVE-2022-29900 (RETbleed) (aka CVE-2022-23816)", which is how the dead number keeps circulating.  `[55]` `C:high` `V:durable`
 - **Owner:** `17-security.md`
 
+### E27 · "AMD publishes no errata channel for client parts" — **this skill's own claim, false in all three clauses**
+
+- 讥传：AMD 不为客户端部件发布勘误；修订指南只覆盖 EPYC；客户端 Ryzen 既无公开修订指南也无公开 PPR。
+- Misconception: "AMD publishes no errata channel for client parts. Revision guides exist for EPYC families only; client Ryzen has no public revision guide and no public PPR."
+
+This was **not** a claim the corpus inherited from elsewhere. It was written here, and it stood in **eight** places — `SKILL.md`, `00-quickref.md`, `06-nested-paging.md` twice, `07-virtual-interrupts-avic.md`, `17-security.md`, this file's `O2`, and a `$comment` in `lint.config.json`. It is the **third fabricated negative** in this corpus; the first two are recorded in `README.md` and are what put "a negative claim needs the same evidence as a positive one" into the work contract. The contract did not prevent a third.
+
+- **Claim.** Revision Guide 55449 covers client parts: its applicable packages include AM4, and its Table 12 cross-references errata to *AMD Ryzen Processors*, *2nd Generation AMD Ryzen Processors* and *AMD Ryzen Threadripper* segments. Erratum 1235 at p.87 is a first-party, numbered, client-scoped virtualization erratum.  `[RevGuide 55449 erratum 1235]` `[29]` `C:high` `V:durable`
+- **Claim.** Client Processor Programming References are published first-party and marked `[AMD Public Use]` — Cezanne 56569, Phoenix 57019, Strix Halo 57930, plus Dali 55772-A1, Castle Peak 55803 and Renoir 55922-A1, with OSRR 56255 for Family 17h Models 00h–2Fh.  `[no-spec]` `[31][32][33]` `[660]` `[661]` `C:high` `V:durable`
+- **Claim.** `AMD-SB-4xxx` is a numbered client bulletin series running parallel to the `AMD-SB-3xxx` server series, and AMD-SB-4013 points readers at "the corresponding Client Revision Guide of the product" for errata #1165, #1166 and #1526.  `[AMD-SB-4013]` `[662]` `C:high` `V:durable`
+
+**How it survived:** the refutation was already inside the skill. `bibliography.md` lists the Cezanne, Phoenix and Strix Halo client PPRs as T1 entries `[31]`–`[33]`, **three lines below** a note asserting that Phoenix and Strix had no public PPR. This is the same shape as the earlier defect recorded in `README.md`, where a chapter held the corroborating definition in its own citation and drew the opposite conclusion from it.
+
+**What replaces it** — a negative scoped to documents and a date, per the work contract: as of **2026-09-26**, no public revision guide covers a Family 19h or 1Ah *client* model range; four client PPRs (56176, 56214, 56713, 57254) have no retrievable first-party copy; and client bulletins give an AGESA/PI version rather than a microcode patch level.
+
+- **Owner:** `17-security.md`
+
 ## Open conflicts
 
 These are recorded, not resolved. When a chapter touches one, it must present both readings and say the question is open.
@@ -251,13 +268,14 @@ This asked for a first-party source naming **both** the generation and the count
 - **Claim.** AMD states **15 keys for EPYC 7001, 509 for EPYC 7002, and 1006 for "8004 & 9004"**. The encryption mode moves with it: **128-bit AES XEX on 7001**, and **256-bit AES-XTS from the 8004/9004 row** — which resolves the `E19` entanglement too. The table's `rowspan` makes 8005 and 9005 share the 8004/9004 capability cell.  `[35]` `C:high` `V:durable`
 - **Owner:** `12-sev.md`. Generation-to-product availability stays in `90-dated-landscape.md`; the key-slot count is a shipped hardware property and is durable.
 
-### O2 · AVIC erratum #1235's disclosure year — **bounded, still open**
+### O2 · AVIC erratum #1235's disclosure year — **settled 2026-09-26, number kept**
 
-The erratum is described both as the reason AVIC stayed off by default "for about eight years" and as a 2025–2026 item. One half is now settled:
+The erratum was described both as the reason AVIC stayed off by default "for about eight years" and as a 2025–2026 item. Both halves are now settled; the entry keeps its `O` number because the 2025–2026 framing still circulates.
 
 - **Claim.** Erratum #1235 is named in `arch/x86/kvm/svm/avic.c` from **Linux 5.17**, and is absent at 5.16. A 2025–2026 disclosure is therefore ruled out; whatever carries those later dates is not the erratum's first appearance.  `[57]` `C:high` `V:durable`
+- **Claim.** AMD's own publication is **Revision Guide 55449, Family 17h Models 00h–0Fh**, where erratum 1235 sits at p.87 and first enters the document's revision history at **rev 1.17, 2019-07**. The "about eight years" framing is therefore the accurate one. The same text also appears at `[RevGuide 56323 p.39]`.  `[RevGuide 55449 erratum 1235]` `[29]` `[30]` `C:high` `V:durable`
 
-**Still unresolved:** AMD's own publication date. The erratum is in neither locally available Revision Guide (57095 Rev 1.05, 58251 Rev 1.30), so it most likely belongs to a Family 17h guide. **There is no public revision guide for client Ryzen**, so the AMD-side date may not be resolvable from primary sources at all. Do not assert one.
+**What blocked this for so long was a false premise, not a missing document.** The prior text reasoned that the erratum "most likely belongs to a Family 17h guide" — which was correct — and then concluded it might never be resolvable because "there is no public revision guide for client Ryzen". That second clause was false: 55449 is public, first-party, and covers client parts. The hypothesis was right and was abandoned on a fabricated negative. See `E27`.
 
 ### O3 · SEV-SNP versus TDX memory overhead — **reframed 2026-09-21**
 

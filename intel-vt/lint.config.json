@@ -22,6 +22,18 @@
     ]
   },
 
+  "$comment_unscopedNegative": "Three fabricated negatives have reached this repository's corpora. README records the first two; amd-virtualization/references/errata.md E27 records the third, which stood in eight places and was refuted by that skill's own bibliography three lines below the assertion. The work contract already said a negative claim needs the same evidence as a positive one, and it did not prevent a third - so the rule is mechanical rather than advisory. A blanket 'no such document exists' must name a publication number, carry an as-of date, or live in 90-dated-landscape.md where it is re-checked. Applied to both skills because the defect class is not vendor-specific. Proved non-vacuous by injection before being committed.",
+  "unscopedNegative": {
+    "patterns": {
+      "re": "(there (?:is|are) no public |\\b(?:AMD|Intel|Microsoft|the vendor) publishes no \\b|\\b(?:AMD|Intel|Microsoft) has no public \\b|\\bno public [a-z\\- ]{0,40}(?:guide|reference|PPR|document|documentation|specification|erratum|errata|copy|source) )",
+      "flags": "i"
+    },
+    "scopeEvidence": {
+      "re": "(\\b\\d{5}\\b|\\b20\\d{2}-\\d{2}(?:-\\d{2})?\\b|\\bas of\\b|\\bRev\\.? ?\\d|\\bin (?:this|the) corpus\\b|\\bsearched\\b|\\bmodel range\\b|\\brev(?:ision)? 09[0-9]\\b)",
+      "flags": "i"
+    },
+    "message": "a negative claim needs the same evidence as a positive one, scoped to a document and a date (see amd-virtualization errata.md E27)"
+  },
   "$comment_offSpec": "Subjects that appear nowhere in the Intel SDM. A claim about one of these whose ONLY anchor is an SDM section is citation filler: the section number resolves, but to an unrelated subject. This defect reached 44 claims in chapter 15 before a PDF check caught it.",
   "offSpec": {
     "subjects": { "re": "\\b(HVCI|VBS|VTL[0-9]?|trustlet|Credential Guard|securekernel|Kerberos|BitLocker|Hyper-V|WSL2?|WHPX?|Windows Sandbox|Defender|ZombieLoad|Downfall|Retbleed|retpoline|L1TF|Foreshadow|RIDL|Fallout|VENOM|CVE-\\d{4}-\\d+)\\b", "flags": "i" },

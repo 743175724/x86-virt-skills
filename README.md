@@ -67,7 +67,7 @@ memory overhead, TDX memory-encryption key length — the skills present both an
 refuse to average them.
 
 Each skill has an `errata.md`: Intel has 22 settled corrections and 6 open
-conflicts, AMD has 26 and 6. Several correct claims the earlier version of that
+conflicts, AMD has 27 and 7. Several correct claims the earlier version of that
 skill made itself.
 Five AMD entries are marked `[reversed]` because the *proposed correction* was
 itself refuted by a primary source.
@@ -202,9 +202,16 @@ must be done by different agents.
   Windows claims were verified through a text proxy. That proxy drops HTML
   headings, which caused one of the errors above — re-fetch with HTML preserved
   before trusting a negative statement about a Microsoft page.
-- AMD publishes **no errata channel for client parts**: no public revision guide
-  and no public PPR for client Ryzen. Client errata claims say so rather than
-  cite a document that does not exist.
+- AMD's client errata channel **does** exist, and this README said otherwise
+  until 2026-09-26. Client PPRs are published first-party, Revision Guide 55449
+  covers Family 17h client parts, and `AMD-SB-4xxx` is a numbered client
+  bulletin series. Three narrower things are genuinely missing: a public
+  revision guide for any Family 19h or 1Ah *client* model range, first-party
+  copies of four client PPRs, and a microcode patch level in the client
+  bulletins, which give an AGESA/PI version instead. The superseded claim is
+  written up as `E27` — **the third fabricated negative in this corpus**, and
+  the first one the work contract failed to prevent. Its refutation was sitting
+  in the skill's own bibliography three lines from the assertion.
 - There is **no public cycle-level AMD VMRUN/#VMEXIT measurement** on any part,
   and exactly one figure in `18-performance.md` was measured on a client part.
 

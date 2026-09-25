@@ -21,7 +21,7 @@ Blocked by: —
 4. **`docs/DEPLOYMENT.md:17` 的 `git clone git@github.com:743175724/x86-virt-skills.git`
    和 `:150` 的 `git pull`**——从本树执行都会失败。
    需要确认：这个远程仓库还存在吗？如果存在，本树与它的关系是什么？
-5. **`docs/DEPLOYMENT.md:80` 声称 lint 有 "14 checks"**——工具不打印分项、无 `--help`，
+5. ~~**`docs/DEPLOYMENT.md:80` 声称 lint 有 "14 checks"**~~ —— **已在 ticket 12 中处理**：删掉了该数字而非改成 15，因为工具不打印分项，任何数字都不可验证。原文如下——工具不打印分项、无 `--help`，
    这个数字无法从工具本身验证。
 6. **5 个孤儿 PNG，379 KB，每次安装都发货**：
    `amd-virtualization/references/images/` 下 5 个文件，

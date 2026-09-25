@@ -77,6 +77,11 @@ function loadConfig(skillDir) {
     offSpecPrimary: rx(raw.offSpec?.primaryAnchor, w('offSpec.primaryAnchor')),
     offSpecHints: rx(raw.offSpec?.sourceHints, w('offSpec.sourceHints')),
     offSpecMessage: raw.offSpec?.message ?? 'the primary specification does not document it',
+    negPatterns: rx(raw.unscopedNegative?.patterns, w('unscopedNegative.patterns')),
+    negScope: rx(raw.unscopedNegative?.scopeEvidence, w('unscopedNegative.scopeEvidence')),
+    negMessage:
+      raw.unscopedNegative?.message ??
+      'a negative claim needs the same evidence as a positive one, scoped to a document and a date',
     deadTitles: raw.deadTitles ?? [],
     bannedHosts: raw.bannedHosts?.hosts ?? [],
     bannedMode: raw.bannedHosts?.mode ?? 'literal',
@@ -359,6 +364,22 @@ function lintSkill(skillName) {
           const subject = cfg.offSpecSubjects.exec(body)[0]
           err(`${rel}:${n}`, `claim about "${subject}" is anchored only to \`[${primary[0]}]\` — ${cfg.offSpecMessage}. Cite the advisory, vendor documentation or kernel.org instead, or drop the anchor and mark C:low`)
         }
+      }
+
+      // 4c. unscoped negative: a blanket "no such document exists" assertion
+      //     with nothing to check it against. Three fabricated negatives have
+      //     reached this corpus - README records the first two, errata.md E27
+      //     the third, which stood in eight places and was refuted by this
+      //     skill's own bibliography three lines from the assertion. The work
+      //     contract already forbade this and did not prevent it, so the rule
+      //     is mechanical: a negative must name a document number or carry an
+      //     as-of date, or live in the dated file where it gets re-checked.
+      if (cfg.negPatterns?.test(body) && !cfg.negScope?.test(body) && !isDated) {
+        const phrase = cfg.negPatterns.exec(body)[0]
+        err(
+          `${rel}:${n}`,
+          `unscoped negative "${phrase.trim()}" — ${cfg.negMessage}. Name the publication number or an as-of date, narrow it to the model range actually checked, or move it to \`${cfg.datedFile}\``,
+        )
       }
 
       // 4. architectural claims need a Tier-1 anchor.

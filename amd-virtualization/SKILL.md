@@ -161,10 +161,19 @@ report everything as healthy and still not tell you who owns the CPU.
   part, and exactly one measurement in `18-performance.md` was taken on a client
   part. There is no public AMD nested-virtualization measurement and no
   WHP-versus-bare-SVM measurement. The chapter says so rather than extrapolating.
-- **AMD publishes no errata channel for client parts.** Revision guides exist
-  for EPYC families only; client Ryzen has no public revision guide and no
-  public PPR, so client errata claims say that rather than citing a document
-  that does not exist.
+- **AMD's client errata channel exists; what is missing is narrower than it
+  looks.** Client PPRs are published and first-party — Cezanne 56569, Phoenix
+  57019, Strix Halo 57930 — and Revision Guide 55449 Rev 1.21 covers Family 17h
+  client parts, its Table 12 splitting errata across Ryzen and Threadripper
+  segments, with a virtualization erratum at `[RevGuide 55449 erratum 1235]`.
+  Current client errata ship through the `AMD-SB-4xxx` bulletin series. Three
+  things are genuinely absent: a public revision guide for any Family 19h or
+  1Ah *client* model range, first-party copies of four client PPRs (56176,
+  56214, 56713, 57254), and a microcode patch level in the client bulletins,
+  which give an AGESA/PI version instead. Scope a client-errata gap to those
+  three. **Do not write that AMD publishes nothing for client parts** — that
+  claim stood here through eight sites and was false in all three of its
+  clauses, refuted by this skill's own bibliography.
 - **TSME has no normative source.** The APM does not contain the term. The only
   substantive description is AMD's memory-encryption white paper, pub 70363,
   which is non-normative and cited as such.

@@ -18,8 +18,8 @@
         "0.5 Windows PC: the questions that come up most",
         "0.6 Reading order for someone new to SVM"
       ],
-      "bytes": 11704,
-      "sha256": "3a7bb47c7653fed4d92eb48fa0fbce611f869e567c25bcdfa38429c42c629197"
+      "bytes": 11925,
+      "sha256": "7bdc90171c8f04c2c24d072348690491f98e00e8bef5eaa4e47d1d04f0be9322"
     },
     {
       "path": "references/01-svm-intro.md",
@@ -130,8 +130,8 @@
         "6.10 Shadow paging without nested paging",
         "6.11 Open items"
       ],
-      "bytes": 50470,
-      "sha256": "fed35ef3d61db6e008849e6d7d06d1a93957a289c0c11eb81c62418d8d31ff23"
+      "bytes": 50864,
+      "sha256": "2898ea235bec6a425d117616c73b8d3dfcc0c752db735386d1d4a95e501b7f69"
     },
     {
       "path": "references/07-virtual-interrupts-avic.md",
@@ -149,8 +149,8 @@
         "7.8 AVIC exits and their payloads",
         "7.9 Open items"
       ],
-      "bytes": 49082,
-      "sha256": "44ee2bb3fea76f5835dbcfe366aa1d514945e765aaa5501e4242c45ef7746d28"
+      "bytes": 50534,
+      "sha256": "7b143c5822466e252b6880f0294f89beff72165e0c3680992bf4e0353de780ac"
     },
     {
       "path": "references/08-iommu-architecture.md",
@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 59863,
-      "sha256": "383a46711874e9d0428813f9563875a89100f4b7fd1a3881f637fd92e70cbd25"
+      "bytes": 61626,
+      "sha256": "947862f8a364fa7e3a2201e249cb4df553d457eef1d6572e4f69e7d825530c10"
     },
     {
       "path": "references/18-performance.md",
@@ -362,8 +362,8 @@
         "18.8 Conflicting measurements",
         "18.9 Open items"
       ],
-      "bytes": 48320,
-      "sha256": "852ddad64ee8d20398226f1215bc5cf2654e61b8ac65e9b491a97eed86a5ccad"
+      "bytes": 48470,
+      "sha256": "de1ddfc03e9d3d694aa479fd7217211e3c062d4b0acdbce1253d382daea429ef"
     },
     {
       "path": "references/19-comparison-intel-arm-riscv.md",
@@ -403,8 +403,8 @@
         "90.7 Roadmap",
         "90.8 Open items"
       ],
-      "bytes": 53278,
-      "sha256": "b30148e254632b05ffae118cf6a620f23c1d1008f8d3eb8df440e1d547536dd7"
+      "bytes": 54867,
+      "sha256": "6b4c699f9f74a053085716cf65018d8e3e1a1fe7e863a059c5195bd381471d53"
     },
     {
       "path": "references/bibliography.md",
@@ -431,10 +431,11 @@
         "500-549 · 章节引用",
         "550-579 · 章节引用",
         "580-609 · 章节引用",
-        "610-659 · 章节引用"
+        "610-659 · 章节引用",
+        "660-679 · 客户端勘误通道（2026-09-26 新增）"
       ],
-      "bytes": 45888,
-      "sha256": "ebb46239c2736c57b67630de423efd1dcb8144cbdff7d47f4364ead121cb4679"
+      "bytes": 48643,
+      "sha256": "cacd04cee13ca8a1fcbb910b414fea41e0a4d71408a59884fe5194c7a3cf281e"
     },
     {
       "path": "references/errata.md",
@@ -445,8 +446,8 @@
         "Settled corrections",
         "Open conflicts"
       ],
-      "bytes": 25231,
-      "sha256": "ac0f49091729b7048778329855441daaba6e707ae0140daffcd70c504e189d18"
+      "bytes": 28635,
+      "sha256": "e797529a54ce5d32510f354df9133143eb191237c26fe8a1f316d031347b3bdb"
     }
   ]
 }

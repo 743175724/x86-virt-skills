@@ -66,10 +66,22 @@
         "re": "^AMD-SB-[0-9]{4}$"
       }
     ],
-    "$comment_revguide": "AMD Revision Guides are the only public AMD errata documents and are Tier-1, but the anchor table originally had no shape for them at all - a ch07 author found two real AVIC errata and correctly refused to cite them rather than invent a shape. The first version of this rule allowed section and chapter forms; that was a mistake and it immediately produced a fabricated [RevGuide 57095 section 2.1]. These documents have NO numbered sections and NO numbered chapters: the bookmark tree is Overview / Conventions / Product Errata / cross-reference tables, by title, with errata identified by number. So the only legal forms are 'erratum <n>' and 'p.<n>'. Client Ryzen still has no public revision guide - do not fabricate one.",
+    "$comment_revguide": "AMD Revision Guides are the only public AMD errata documents and are Tier-1, but the anchor table originally had no shape for them at all - a ch07 author found two real AVIC errata and correctly refused to cite them rather than invent a shape. The first version of this rule allowed section and chapter forms; that was a mistake and it immediately produced a fabricated [RevGuide 57095 section 2.1]. These documents have NO numbered sections and NO numbered chapters: the bookmark tree is Overview / Conventions / Product Errata / cross-reference tables, by title, with errata identified by number. So the only legal forms are 'erratum <n>' and 'p.<n>'. Corrected 2026-09-26: the Family 17h guides 55449 and 56323 DO cover client parts - 55449's applicable packages include AM4 and its Table 12 splits errata across Ryzen and Threadripper segments, with erratum 1235 at p.87 - so a client revision-guide citation is legal and expected. What does not exist publicly is a guide for a Family 19h or 1Ah client model range; scope a gap to that, never to 'client Ryzen has no revision guide'. See errata.md E27.",
     "$comment_memwp": "AMD memory-encryption white paper, pub 70363 (Kaplan/Powell/Woller). Added 2026-09-21: the APM does not contain the string TSME anywhere, so this paper is the only substantive source for it, and 8 of chapter 11's [no-spec] claims existed purely because no anchor shape could cite it. Second time the grammar table was found incomplete (RevGuide was the first) - a Tier-1/2 source with no citable form is a rule that cannot be satisfied honestly. Non-normative: cite by page, and never let it outrank the APM."
   },
   "$comment_offSpec": "Subjects the AMD manuals do not document. A Windows or CVE claim anchored only to the APM is citation filler — the section resolves, but to an unrelated subject.",
+  "$comment_unscopedNegative": "Three fabricated negatives have reached this corpus. README records the first two; errata.md E27 records the third, which asserted that AMD publishes no errata channel for client parts, stood in eight places, and was refuted by this skill's own bibliography three lines below the assertion. The work contract already said a negative claim needs the same evidence as a positive one, and it did not prevent a third - so the rule is mechanical here rather than advisory. A blanket 'no such document exists' must name a publication number, carry an as-of date, or live in 90-dated-landscape.md where it is re-checked. Proved non-vacuous by injection before being committed, per README's rule that a silent rule and a broken rule look identical from the outside.",
+  "unscopedNegative": {
+    "patterns": {
+      "re": "(there (?:is|are) no public |\\b(?:AMD|Intel|Microsoft|the vendor) publishes no \\b|\\b(?:AMD|Intel|Microsoft) has no public \\b|\\bno public [a-z\\- ]{0,40}(?:guide|reference|PPR|document|documentation|specification|erratum|errata|copy|source) )",
+      "flags": "i"
+    },
+    "scopeEvidence": {
+      "re": "(\\b\\d{5}\\b|\\b20\\d{2}-\\d{2}(?:-\\d{2})?\\b|\\bas of\\b|\\bRev\\.? ?\\d|\\bFamily 1[79A]h\\b|\\bin (?:this|the) corpus\\b|\\bsearched\\b|\\bmodel range\\b)",
+      "flags": "i"
+    },
+    "message": "a negative claim needs the same evidence as a positive one, scoped to a document and a date (errata.md E27)"
+  },
   "offSpec": {
     "subjects": {
       "re": "\\b(HVCI|VBS|VTL[0-9]?|Credential Guard|securekernel|BitLocker|Hyper-V|hvax64|hvix64|WSL2?|WHPX?|Windows Sandbox|Defender|Kernel DMA Protection|DDA|GPU-P|CVE-\\d{4}-\\d+)\\b",

@@ -44,9 +44,14 @@
 [26] AMD. Revision Guide for AMD Family 1Ah Models 10h–1Fh Processors. Pub. 58730, Rev 1.30. — T1
 [27] AMD. Revision Guide for AMD Family 19h Models 10h–1Fh Processors. Pub. 57095, Rev 1.05. 2025-11. — T1
 [28] AMD. Revision Guide for AMD Family 19h Models A0h–AFh Processors. Pub. 57926, Rev 1.05. — T1
-[29] AMD. Revision Guide for AMD Family 17h Models 00h–0Fh Processors. Pub. 55449. — T1
-[30] AMD. Revision Guide for AMD Family 17h Models 30h–3Fh Processors. Pub. 56323. — T1
-      注：**公开的修订指南全部是 EPYC/服务器件**。客户端 Ryzen（Vermeer 19h/21h、Raphael 19h/61h、Phoenix、Strix）**没有公开修订指南，也没有公开 PPR**。第三方流传的 PPR 56713 不在 AMD 公开索引内，**不得引用**。
+[29] AMD. Revision Guide for AMD Family 17h Models 00h–0Fh Processors. Pub. 55449, Rev 1.21. 2023-08. — T1
+[30] AMD. Revision Guide for AMD Family 17h Models 30h–3Fh Processors. Pub. 56323, Rev 1.03. 2026-02. — T1
+      注（2026-09-26 订正，取代此前"公开修订指南全部是 EPYC/服务器件、客户端无 PPR"的说法——**那条说法是假的，且本页 `[31]`–`[33]` 自己就是反证**）：
+      **55449 覆盖客户端。** 其适用 package 含 **AM4**，Table 12 "Cross-Reference of Errata to Processor Segments" 按 *AMD Ryzen Processors* / *2nd Generation AMD Ryzen Processors* / *AMD Ryzen Threadripper* 分列；**p.87 的 erratum 1235 是一条虚拟化勘误**（同文亦见 56323 p.39）。
+      **客户端 PPR 是公开的**：见 `[31]` Cezanne、`[32]` Phoenix、`[33]` Strix Halo，以及 `[660]` Dali / Castle Peak / Renoir、`[661]` OSRR 56255。
+      **真实缺口比原说法窄得多**：(1) 未找到 Family 19h/1Ah **客户端 model 段**的公开 Revision Guide——AMD 在 `[662]` AMD-SB-4013 里点名引用 "Client Revision Guide" 并给出 errata #1165/#1166/#1526，但该文档本身与这三个编号未找到公开副本；(2) 未取得 56176 (Matisse) / 56214 (Vermeer) / 56713 (Raphael) / 57254 (Strix Point) 四份客户端 PPR 的第一方副本；(3) 客户端安全公告只给 AGESA/PI 版本串，不给可验证的微码 patch level。
+      第三方流传的 PPR 56713 仍不在 AMD 公开索引内，**不得引用**。
+      ⚠️ 检索日期 2026-09-26。此三条缺口是**限定到文档与日期的负面声明**，不得再泛化成"客户端没有勘误通道"。
 [31] AMD. Processor Programming Reference (PPR) for AMD Family 19h Model 51h Rev A1 (Cezanne). Pub. 56569, Rev 3.03 (.zip). — T1
 [32] AMD. Processor Programming Reference (PPR) for AMD Family 19h Model 70h Rev A0 (Phoenix). Pub. 57019, Rev 3.00 (.zip). — T1
 [33] AMD. Processor Programming Reference (PPR) for AMD Family 1Ah Model 70h Rev A0. Pub. 57930, Rev 3.00 (.zip). — T1
@@ -282,3 +287,18 @@
 [657] AMD. New AMD EPYC 8005 Server CPUs: Big Performance, Low Power. AMD blog, 2026-05-19. https://www.amd.com/en/blogs/2026/new-amd-epyc-8005-server-cpus-big-performance-low-power.html — T3
 [658] AMD. AMD EPYC 9006 Series Server CPUs product page (SP7 / SP8 sockets; "AMD EPYC™ 'Venice' 9996 (512 total cores)"; "Preliminary performance estimates ... as of July 22, 2026 and subject to change"). Retrieved 2026-09-21. https://www.amd.com/en/products/processors/server/epyc/9006-series.html — T2
 [659] Confidential Containers (CNCF). confidential-containers/operator, archived 2026-02-01, with the README directing deployment to the Helm chart at oci://ghcr.io/confidential-containers/charts/confidential-containers. Retrieved 2026-09-21. https://github.com/confidential-containers/operator — T2
+
+## 660-679 · 客户端勘误通道（2026-09-26 新增）
+
+  这一段是为订正「AMD 客户端无勘误通道」而补录的第一方来源。该声明曾在本技能 8 处出现，
+  经检索全部三个分句均为假；订正见 `errata.md` 的对应条目与 `[30]` 下的注。
+
+[660] AMD. 客户端 Processor Programming Reference 三种，封面均标 `[AMD Public Use]`：
+      PPR for AMD Family 17h Model 20h Rev A1（Dali / Pollock；package FT5 / FP5 / **AM4**）Pub. 55772-A1, Rev 3.08, 2021-04-14；
+      PPR for AMD Family 17h Model 31h（Castle Peak）Pub. 55803；
+      PPR for AMD Family 17h Model 60h Rev A1（Renoir）Pub. 55922-A1。 — T1
+[661] AMD. Open-Source Register Reference (OSRR) for AMD Family 17h Models 00h–2Fh Processors. Pub. 56255. — T1
+[662] AMD. Client 安全公告序列 `AMD-SB-4xxx`（4001 / 4002 / 4004 / 4008 / 4012 / 4013 / 4017；2022-05 至 2026-05），与 Server/EPYC 的 `AMD-SB-3xxx` 序列并列。AMD-SB-4013 (2026-02) 脚注逐字： "Refer to Errata #1165, #1166 and #1526 on the corresponding **Client Revision Guide** of the product." https://www.amd.com/en/resources/product-security/bulletin/amd-sb-4013.html — T1
+      注：该脚注是 AMD 自己承认存在 "Client Revision Guide" 这一文档类别的第一方证据。
+      **但该文档本身及 errata #1165 / #1166 / #1526 未找到公开副本**——这三个编号不在已核对的
+      55449（≤#1488）、56683、58251、58730 之内。这是当前最窄、最准确的客户端勘误缺口表述。`GAP`

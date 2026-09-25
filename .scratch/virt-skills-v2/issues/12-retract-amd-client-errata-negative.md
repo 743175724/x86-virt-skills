@@ -1,7 +1,7 @@
 # 12 撤回「AMD 客户端无勘误通道」——一次重复了 6 次的 fabricated negative
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: —
 
 ## Question
@@ -76,3 +76,80 @@ Blocked by: —
 
 一次提交：6 处替换 + bibliography 补录 + errata 追加（+ 可选的 lint 规则与其违例证明）。
 改完 `node tools/lint.mjs` 与 `node tools/build.mjs --check` 必须仍然 clean。
+
+---
+
+## Answer
+
+**实际是 8 处，不是 6 处**（开工前复核时多找出两处：`06-nested-paging.md` 有两处、
+`lint.config.json` 的 `$comment_revguide` 一处），另加 `README.md` 两处，合计 **10 处**。全部已改。
+
+### 最有力的一条证据来自技能自己
+
+不需要任何新下载就能证伪：**`bibliography.md` 的 T1 段列着 `[31]` Cezanne、`[32]` Phoenix、
+`[33]` Strix Halo 三份客户端 PPR，而紧挨其上三行的注释点名 Phoenix 和 Strix 说"没有公开 PPR"。**
+
+这与 `README.md:104-118` 记录的上一次缺陷是**同一形状**——
+*"该章节自己的引用里就有佐证，却得出了相反结论"*。
+
+### 改了什么
+
+| 文件 | 改动 |
+|---|---|
+| `SKILL.md` | 假声明 → 真实的三项窄缺口 + 明确禁止再写成宽声明 |
+| `references/00-quickref.md` | 同上，并指明可引用的具体文档 |
+| `references/06-nested-paging.md` | 两处。INVLPGA 的结论**保留**（那部分是真的），撤回"因为客户端没有第一方源所以永远无解"的推理，改为"55449 尚未检索该助记符"这一**可执行的开放项** |
+| `references/07-virtual-interrupts-avic.md` | 撤回"本章刻意不引用任何勘误，因为锚点语法没有 revision guide 形式"——**该理由已不成立**，语法现在支持 `RevGuide <pub> erratum <n>`。补入 erratum 1235 及其 "None. Do not enable AVIC." 原文 |
+| `references/17-security.md` | 假声明 → 4 条新 claim：revision guide 覆盖客户端、客户端 PPR 清单、`AMD-SB-4xxx` 序列、三项窄缺口 |
+| `references/90-dated-landscape.md` | 新增两节：AVIC 随微码翻转的实测、带检索日期的缺口清单 |
+| `references/errata.md` | **`O2` 关闭**（见下）+ 新增 **`E27`** |
+| `references/bibliography.md` | `[29]`/`[30]` 补全版本；`[30]` 下的假注释重写；新增 `[660]`–`[662]` |
+| `amd-virtualization/lint.config.json` | `$comment_revguide` 订正 + 新规则配置 |
+| `intel-vt/lint.config.json` | 同一条新规则（缺陷类别不分厂商） |
+| `tools/lint.mjs` | 新增 **规则 4c · unscopedNegative** |
+| `README.md` | 两处：勘误计数 26/6 → **27/7**；"客户端无勘误通道"整段重写 |
+| `docs/DEPLOYMENT.md` | 删掉无法验证的 "14 checks" |
+
+### 顺带关闭了一个开放冲突
+
+**`O2`（AVIC erratum #1235 的披露年份）本来是未决的**，原因正是那条假声明：
+原文推断"它多半属于某份 Family 17h 指南"——**这个推断是对的**——
+然后因为"客户端没有公开修订指南"而放弃。
+
+现在查实：**erratum 1235 在 55449 的 p.87，首次进入修订历史是 rev 1.17，2019-07**。
+"AVIC 关了大约八年"这个说法才是准确的那个。
+**一个正确的假设因为一条捏造的负面声明被放弃了八个月。**
+
+### 把契约机械化：新 lint 规则 4c
+
+契约失败了三次，所以这次不写进文档，写进工具。
+
+规则：形如「某厂商不发布 X」「不存在公开的 X」的**笼统负面声明**，
+必须满足以下之一，否则 lint 失败——**指名出版编号**、**带 as-of 日期**、
+**限定到实际检索过的 model range**，或**移进 `90-dated-landscape.md`**（在那里会被定期复核）。
+
+**调参过程本身有信息量**：初版正则在现存语料里命中 3 条，其中 1 条是过宽
+（"the paper publishes no cycle count" 已经限定到某篇具体论文了）。
+据此把模式收紧为**以厂商为主语**——缺陷类别是"某厂商什么都不发布"，
+不是"这篇论文没给某个数"。收紧后另外 2 条是真阳性，已分别补上 as-of 日期与检索范围。
+
+**非空转证明**（`README.md:161-163` 的规矩）：
+
+```
+基线      → 两个技能 lint clean
+注入违例  → intel-vt/references/15-security.md:421
+            "unscoped negative \"Intel publishes no\" ..."   ← 规则触发
+移除违例  → 两个技能 lint clean
+```
+
+Intel 侧 2650 条 claim **零误报**，说明规则不噪。
+
+### 验收
+
+```
+node tools/lint.mjs      → [amd-virtualization] lint clean — 22 章, 201 书目, 2079 claims
+                           [intel-vt]           lint clean — 22 章, 318 书目, 2650 claims
+node tools/build.mjs --check → generated files are up to date
+```
+
+（AMD claim 数 2067 → 2079，书目 198 → 201。）

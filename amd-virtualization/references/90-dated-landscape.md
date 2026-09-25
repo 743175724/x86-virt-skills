@@ -83,6 +83,18 @@ Every date below is the dateline on AMD's own launch announcement, read from the
 
 - **Claim.** SEV is **productised on EPYC**, and that is a statement about products, not about silicon capability: measured CPUID dumps from non-PRO consumer parts (Ryzen 9 3900X, Ryzen 7 5800X3D) report `Fn8000_001F EAX[1] = 1` with 509 ASIDs, while **Zen 4 and later client parts expose SME only** and **SEV-SNP has never been set on a client part**. The durable form of this correction and its source live in `errata.md`; what belongs here is the product consequence — no AMD client SKU is sold with SEV as a supported feature, and the client memory-encryption story is TSME, covered in `11-memory-encryption.md`.  `[35]` `C:medium` `V:dated`
 
+### AVIC on client tracks the microcode patch level, not the model
+
+The durable architectural form — that `Fn8000_000A_EDX` bits 13 and 18 are the only two in that leaf permitted to change after reset — lives in `07-virtual-interrupts-avic.md`. What is dated is which patch level flips them.
+
+- **Claim.** Measured on `fam1Ah_model44h`, one model and stepping across five microcode patch levels read from `MSR 0000_008B`: `0x0B40400C`, `0x0B40401A` and `0x0B404022` report AVIC = 0, while `0x0B404023` and `0x0B404035` report AVIC = 1. An AVIC availability statement about a client part must therefore name the patch level, not only the family and model — which is why a per-model lookup table keyed on CPUID alone answers this question wrong.  `[no-spec]` `[33]` `C:medium` `V:dated`
+
+### The client errata gaps, scoped to documents and a date
+
+The durable form — that AMD's client errata channel exists, and what it consists of — lives in `17-security.md`. What is dated is the gap list, because each entry closes the moment AMD publishes or a copy is located.
+
+- **Claim.** As of **2026-09-26**, three things are genuinely absent: no public revision guide covers a Family 19h or 1Ah **client** model range; four client PPRs (56176 Matisse, 56214 Vermeer, 56713 Raphael, 57254 Strix Point) have no retrievable first-party copy; and the `AMD-SB-4xxx` client bulletins give an AGESA/PI version string rather than a verifiable microcode patch level. A client-errata gap statement must be scoped to these three and re-checked before reuse.  `[no-spec]` `[662]` `C:high` `V:dated`
+
 ## 90.3 Firmware and ABI revisions
 
 ### SEV firmware AMD currently ships
