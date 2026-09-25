@@ -49,6 +49,16 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
   AMD 有正确形状的 family/model 表（`90-dated-landscape.md:46-57`）但**只覆盖 EPYC**，
   客户端 Ryzen 仅 1 条 claim；`Zen 5c` / `Ryzen AI` 命中 **0**
 
+**已撤回的推测——不得写成 claim**（由 04 穷尽搜索后推翻）：
+
+- ❌ 「混合核上 P 核与 E 核的 **VMX 能力位**会不同」——**零证据**。
+  （12 代的 AVX-512 特性交集处理和 ESXi "Fatal CPU mismatch on feature" 是**另一回事**，那个有据可查。）
+- ❌ 「Arrow Lake 取消超线程会搞坏 hypervisor」——**零证据**。
+- ✅ **真实的混合核缺陷**：`NoirVisor` issue #35——**4 个 E-core 共享一个 L2**，
+  使"每核一份 EPT"这个**所有参考实现的默认写法**从 12 代起退化；修法是全核共享一份。
+- ✅ **Zen 4 客户端声称支持 virtualized VMLOAD/VMSAVE，启用会随机重启**：
+  Linux commit `a5ca1dc46a6b`（CVE-2024-53114）。四个主流参考实现**没有一个**带这个规避。
+
 ## Decisions so far
 
 <!-- 索引：每个已关闭 ticket 一行，够判断相关性即可；细节在 ticket 里 -->
@@ -62,6 +72,17 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
   **合并成一个技能可把裁决降级为 `SKILL.md` body 内的路由，而 body 完整加载、不截断、不受白名单管。**
   另：**Kimi Code CLI 2.1.1 本机已装，读 `.agents/skills/`，现状即可用，代码零改动**，
   只需改 README 与 install 文案；Cursor 是唯一确认踩过 symlink 坑的宿主。
+
+- [04 开源 thin hypervisor 参考实现现状调研](issues/04-thin-hypervisor-landscape.md)：
+  主参照应为 **`tandasat/barevisor`**（MIT，2026-08-02，Intel+AMD × Windows驱动+UEFI，
+  单一 OS-agnostic core）。**经典四件套废了三件**：`HyperPlatform` 2026-05-18 归档、
+  `hvpp` 停在 2021、`Bareflank` 许可证存疑（GitHub 判 `NOASSERTION`，澄清前不得 vendor）；
+  `HyperDbg` 是 GPL-3.0，一行不能用。
+  **许可证不砍任何深度档位——可编译骨架可以发**，但推荐写原创 Apache-2.0 而非抄 MIT，
+  理由是这是会被 AI 复述的语料，抄来的代码会让每个复述它的 agent 替用户背上不会履行的署名义务。
+  **现代 Windows 上最大的障碍是 Hyper-V/VBS 已占着 VMX root，不是 PatchGuard**；
+  且微软 **2026-10 起经质量更新自动启用 Memory Integrity 并顺带打开 VBS**。
+  给 09 的硬约束：按型号查的键**至少五维**，只按型号会归错格子并固化错误相关性。
 
 ## Not yet specified
 

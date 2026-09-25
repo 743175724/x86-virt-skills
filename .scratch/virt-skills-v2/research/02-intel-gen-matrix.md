@@ -493,7 +493,7 @@ ISA 位属 Platform Domain → 必须全平台一致 → Gracemont 无 AVX-512 �
 
 ### 3.8 ESXi "Fatal CPU mismatch on feature" —— 由子代理独立取证
 
-见 **§8 子代理取证结果 · A**。本节只给出**从 Intel 一手文档能独立推出的判据**，
+见 **§8.6**（已完成裁决）。本节只给出**从 Intel 一手文档能独立推出的判据**，
 用来在两种修法之间做裁决：
 
 - 若 ESXi 比较的是 **Platform Domain 字段**（ISA 功能位）并发现不一致 →
@@ -555,7 +555,7 @@ ISA 位属 Platform Domain → 必须全平台一致 → Gracemont 无 AVX-512 �
 
 ### 4.3 SMT 具体状态 —— 由子代理取证
 
-Intel ARK 的核/线程数是本项的一手来源。见 **§8 子代理取证结果 · D**。
+Intel ARK 的核/线程数是本项的一手来源。见 **§8.8**。
 
 ---
 
@@ -683,11 +683,11 @@ SDM-V1 **§21.1.5 "CPUID Runtime Mutable Fields"** 用两张表承认 CPUID 不�
 
 **这两张表证明的是"CPUID 可被软件/配置改变"**，而"**微码更新**改变 CPUID 功能位"的具体历史案例
 （TSX 关闭、AVX-512 关闭、Spectre 缓解位由微码引入）需要 Intel 的专项文档，**由子代理取证**，
-见 **§8 子代理取证结果 · C**。
+见 **§8.7.4 / §8.7.5**。
 
 ### 5.5 Vmin Shift Instability / 微码 0x12B / 0x12F
 
-由子代理取证，见 **§8 子代理取证结果 · C**。
+由子代理取证，见 **§8.7.4 / §8.7.5**。
 
 ---
 
@@ -728,14 +728,91 @@ SDM-V1 **§21.1.5 "CPUID Runtime Mutable Fields"** 用两张表承认 CPUID 不�
 - Rev 5.20 的修订记录里有一条与本 ticket 相关：
   "Updated software guidance on usage of **Abort DMA Mode when RMRRs are present**."
 
-### 6.2 VT-d 规范**不能**给的
+### 6.2 VT-d 规范**不能**给的，以及从平台 datasheet 里拿到的
 
 VT-d 规范给的是**结构格式**，不是**某个具体平台的 DMAR 内容**。
 `D51397-019 Rev 5.20` 的 §8 示例（3 个 DRHD、unit #3 置 INCLUDE_PCI_ALL）是**通用示例**，
 不是 LGA1700 或 LGA1851 的实际布局。
-**"LGA1700 与 LGA1851 的 DMAR 差异"在 VT-d 规范里查不到**，只能来自
-(a) Intel 客户端平台 datasheet，(b) 实机上 dump 的 ACPI DMAR 表。
-后者本 session **无法取得**（见 §9）。子代理的平台侧取证见 **§8 子代理取证结果 · D**。
+
+**正确的来源是 Intel 客户端平台 datasheet 的 "Intel® VT-d Key Features" 一节。**
+本次通过 Specification Update 的 "Related Documents" 表拿到文档号后，直接下载并逐字抽取了四代：
+
+| 平台 | datasheet | 版本 |
+|---|---|---|
+| **LGA1700** · Alder Lake (12 代) | 12th Generation Intel® Core™ Processors Datasheet, Vol. 1 of 2 | **655258, Rev 011, May 2025** |
+| **LGA1700** · Raptor Lake (13/14 代) | 13th Gen Intel® Core™ / 14th Gen / (Series 1)(Series 2) / Xeon E 2400 / Xeon 6300 Datasheet, Vol. 1 of 2 | **743844, Rev 015, May 2025** |
+| Lunar Lake (Ultra 200V, BGA) | Intel® Core™ Ultra 200V Series Processors Datasheet, Vol. 1 of 2 | **829568, Rev 004, May 2025** |
+| **LGA1851** · Arrow Lake-S (Ultra 200S) | Intel® Core™ Ultra 200S / 200S Plus / 200HX / 200HX Plus Series Processors Datasheet, Vol. 1 of 2 | **832586, Rev 007, March 2026** |
+
+### 6.3 LGA1700 → LGA1851 的 VT-d 差异（逐字对照）
+
+| 特性 | **LGA1700**（655258-011 / 743844-015，两者措辞逐字相同） | **LGA1851**（832586-007） | Lunar Lake（829568-004） |
+|---|---|---|---|
+| 遵循的 VT-d 规范版本 | "comply with the Intel® VT-d **2.1** Specification" | "comply with the Intel® VT-d **2.1** Specification" | "comply with the Intel® VT-d **4.0** Specification" |
+| DMA remap 引擎数 | "**Two** Intel® VT-d DMA remap engines. — iGFX DMA remap engine — Default DMA remap engine (covers all devices except iGFX)" | **同左，Two**（iGFX + Default） | "**3** Intel® VT-d DMA Remapping Hardware Units: — GFx（iGD, Dev2） — Non-GFX（**NPU Dev11, IPU Dev5, PMCS Dev4**） — Default（rest of PCI + IOxAPIC + HPET）" |
+| GPA/HPA 宽度 | **46-bit** | **46-bit** | **42-bit** |
+| 页表层数 | 4-level only（adjusted guest address width 48 bits） | 4-level only | 4-level only |
+| **super-page** | "support of … super-page (2 MB, 1 GB) for **default** Intel® VT-d engine (that covers all devices except IGD)"；**"IGD Intel® VT-d engine does not support super-page and BIOS should disable super-page in default Intel® VT-d engine when iGfx is enabled."** | "**all VTd engines support super-page (2 MB, 1 GB)**" | "**All VTd engines support 4K, 2M and 1G page sizes**" |
+| **Scalable Mode** | **未列出** | "**Scalable Mode - all VTd engines support Scalable mode operation (using `RID_PASID` only)**" | "All VTd engines support Scalable mode oper…" |
+| **Nested translation** | **未列出** | "**Nested - default Intel® VT-d engine support Nested translation**"（**只有 default 引擎**） | （未在抽取片段中） |
+| Interrupt Remapping | 支持 | 支持 | "Support for Interrupt Remapping **and Posted Interrupt**" |
+| Device-TLB (ATS) | 未列出 | 未列出 | "Support Device-TLB for both engines for integrated accelerators" |
+| Abort DMA Mode | 未列出 | 未列出 | "**Support Abort DMA Mode**" |
+| Pass-through | "Intel® VT-d translation bypass address range is supported (Pass Through)" | **未列出** | 未列出 |
+| 通用免责 | "Intel® VT-d Technology **may not be available on all SKUs**." | 同左 | — |
+
+### 6.4 KF（无核显）对直通的意义 —— 现在有了机制级答案
+
+**LGA1700 上最锋利的一句（`655258-011` / `743844-015` 逐字）**：
+
+> "**IGD Intel® VT-d engine does not support super-page and BIOS should disable super-page in default
+> Intel® VT-d engine when iGfx is enabled.**"
+
+> **读法**：在 12/13/14 代平台上，**只要核显是开着的，BIOS 就被要求把 default 引擎的 super-page 也关掉**
+> ——也就是说 **iGPU 的存在会把整机所有设备的 IOMMU 页大小能力拉低到 4K**。
+> 对直通场景这直接意味着 IOTLB 压力与页表内存开销显著变大。
+>
+> 因此 **"KF 无核显"在 LGA1700 上是有真实 IOMMU 后果的**：
+> 触发条件 "when iGfx is enabled" 不成立，default 引擎的 super-page 就没有被要求关闭。
+>
+> **但这条边界必须写清楚**：datasheet 说的是 "**BIOS should**"，是**对 BIOS 的建议**，
+> 不是处理器行为；实际是否关闭取决于具体主板固件。**这不是可以从文档断言的实机行为。**
+
+**LGA1851 上这条限制消失了**：`832586-007` 直接写 "**all VTd engines** support super-page (2 MB, 1 GB)"，
+不再有 IGD 例外，也不再有对 BIOS 的关闭建议。
+→ **Arrow Lake 世代，iGPU 在不在已经不影响 default 引擎的 super-page 能力。**
+换言之，**"KF 因为没有核显所以 IOMMU 更好"这个说法在 LGA1700 上有依据，在 LGA1851 上已经失效。**
+
+**仍然未解决的（Gap G7）**：KF 部件的 **DMAR ACPI 表里 iGFX 那个 DRHD 到底在不在**。
+datasheet 描述的是**处理器具备的引擎**，DMAR 表内容由 BIOS 生成。
+VT-d 规范 §8.4 只说 RMRR "expected to be used for legacy usages (such as USB, **UMA Graphics**, etc.)"。
+**没有任何一手文档说"无核显 ⇒ 无 IGD DRHD / 无图形 RMRR"。** 必须在 265KF 上 dump DMAR 才能确认。
+
+### 6.5 SR-IOV：限定性否定声明
+
+**声明**：在
+**`655258-011`（Alder Lake）**、**`743844-015`（Raptor Lake）**、**`832586-007`（Arrow Lake-S）**、
+**`829568-004`（Lunar Lake）** 四份 Intel 客户端平台 datasheet 全文中，
+**"SR-IOV" / "SRIOV" 出现次数为 0，"GVT" 出现次数为 0。**
+（检索方式：PDF 全文正则 `SR-IOV|SRIOV` 与 `GVT`。）
+
+**这条声明的边界**：它说的是"**这四份 datasheet 不提 SR-IOV**"，
+**不等于**"客户端 iGPU 不支持 SR-IOV"。Intel 客户端 iGPU 的 SR-IOV 支持状态需要从
+i915/xe 驱动侧或 Intel 图形软件文档取证——**本次未取得**，记为 **Gap G12**。
+对 **265KF 而言这个问题在事实上不适用**：没有核显就没有可虚拟化的 iGPU 函数。
+
+### 6.6 客户端 VT-d 的其他世代差异（datasheet 一手）
+
+- **Scalable Mode 的客户端引入点是 Arrow Lake / Lunar Lake**：LGA1700 两份 datasheet 完全不提，
+  LGA1851 明确列出且限定 "using **`RID_PASID` only**"。
+  这对想用 scalable-mode PASID 表的代码是硬门槛。
+- **Nested translation 只在 default 引擎上**（`832586-007`："**default** Intel VT-d engine support
+  Nested translation"）。做 nested IOMMU 的 VMM 不能假设所有 DRHD 对等。
+- **Lunar Lake 的 GPA/HPA 宽度降到 42-bit**（LGA1700/LGA1851 都是 46-bit），
+  且引擎数增到 3 个（多出一个服务 NPU/IPU/PMCS 的 Non-GFX 单元）。
+  → **"客户端 VT-d 引擎只有两个"这个假设从 Lunar Lake 起不成立。**
+- **Posted Interrupt 在 Lunar Lake 的 datasheet 里被明确列出**，
+  而 LGA1700/LGA1851 两份只写 "Interrupt Remapping is supported"。→ 差异待实测确认（**Gap G13**）。
 
 ---
 
@@ -754,9 +831,16 @@ VT-d 规范给的是**结构格式**，不是**某个具体平台的 DMAR 内容
 | **G4** | **`IA32_VMX_*`（480H–492H）的取值是否跨 P/E 核一致** | SDM-V4 Table 2-47/48/54/55/59/60 全部 register address 已逐一核对，无 48xH；SDM-V3D Appendix A 通篇用 "the logical processor" 措辞但无一致性承诺 | 265KF 上对 20 个 LP 各读一遍 480H–492H 并比对（265KF 无 SMT，20 LP = 20 核，8 P + 12 E） |
 | **G5** | SDM 是否禁止在 **VMX root operation** 中加载微码 | 已检索 SDM-V3A §12.11 全部子节、SDM-V3C Ch.26/27/28、SDM-V3D App.A、SDM-V4 Table 2-2 条目 79H/7BH/7CH/1406H；**只找到 non-root 下是 no-op 的规定** | 若需正面结论，须查 Intel 的 microcode update BIOS writer's guide（可能 NDA） |
 | **G6** | SDM-V4 093 内部措辞冲突：`IA32_MCU_ENUMERATION` 的 `UNIFORM_MCU_SCOPE` 在 bit 0 描述里写 "bits [10:8]"，在字段行里写 `15:8` | SDM-V4 335592-093US Table 2-2, Register Address 7BH | 查 SDM Documentation Changes（252046 系列）是否已收录；或下一修订 |
-| **G7** | **KF 部件（无核显）对 DMAR / RMRR 的实际影响** | VT-d D51397-019 Rev 5.20 §8.3/§8.4 全文；规范只把 "UMA Graphics" 列为 RMRR 典型用途，不描述具体平台布局 | 265KF 实机 dump ACPI DMAR（Windows 下 `Get-CimInstance`/`acpidump`），对比一台带核显的 Arrow Lake-S |
-| **G8** | **LGA1700 → LGA1851 的 DMAR / PCIe 拓扑差异** | VT-d 规范不含平台实例 | Intel 客户端平台 datasheet + 实机 DMAR；子代理结果见 §8 |
+| **G7** | **KF 部件的 DMAR 表里 iGFX DRHD 与图形 RMRR 到底在不在** | VT-d D51397-019 Rev 5.20 §8.3/§8.4；四份平台 datasheet 的 VT-d Key Features 节（描述的是**处理器具备的引擎**，DMAR 内容由 BIOS 生成） | 265KF 实机 dump ACPI DMAR，与一台带核显的 Arrow Lake-S 对比 |
+| ~~G8~~ | ~~LGA1700 → LGA1851 的 VT-d 差异~~ | **已关闭** —— 由 `655258-011` / `743844-015` / `832586-007` / `829568-004` 四份 datasheet 逐字对照得出，见 §6.3 | PCIe 通道数 / 芯片组 / DMI 侧的差异仍未取证 → 见 G8b |
+| **G8b** | LGA1700 → LGA1851 的 **PCIe 通道数、Z790 vs Z890、DMI 代次、Thunderbolt/USB4 集成**差异 | 本次只抽取了 datasheet 的 VT-d 节 | 同两份 datasheet 的 PCIe / DMI 章节；或 §8.8 |
 | **G9** | **本 session 无法做任何 Intel 实机验证** | 执行环境 CPU 经 `Win32_Processor` 确认为 **AMD Ryzen 9 9950X3D（AMD64 Family 26 Model 68 Stepping 0，16C/32T）**，不是用户的 265KF | 所有标注"可实测"的项都需要在 265KF 上另行执行 |
+| **G10** | **Hyper-V / Windows 在混合 CPU 上的行为**，以及是否有与 ESXi 对应的均一性假设 | learn.microsoft.com 与 techcommunity.microsoft.com 在子代理环境中不可达（五次尝试 socket closed）。已核实：**Hypervisor TLFS v6.0b (February 2020) 全文对 hybrid / heterogeneous / asymmetric 零覆盖**，但该文档早于 Alder Lake | 换一个能访问 learn.microsoft.com 的环境重跑；或在 265KF 上直接观测 Hyper-V 行为 |
+| **G11** | **Intel 对 HX 部件是否受 Vmin Shift Instability 影响自相矛盾**：Community "Unaffected Products List"(2024-08-30) 明列 HX 不受影响；`740518-031` Summary Table of Changes 把 HX / HX-Refresh 8P+16E 标为 RPL063 **"No Fix"**。两者是同一块 `B0671h` 硅片、收同一份 `06-b7-01` 微码 | Intel Community 五篇公告、支持文章 000102331、`740518-031` 全文 | 未找到调和文档。**不裁决**，引用时必须同时给出两种说法 |
+| **G12** | **Intel 客户端 iGPU 的 SR-IOV 现状** | `655258-011` / `743844-015` / `832586-007` / `829568-004` 四份 datasheet 全文 `SR-IOV\|SRIOV\|GVT` 命中均为 **0** | i915/xe 驱动文档或 Intel 图形软件文档。**对 265KF 事实上不适用**（无核显） |
+| **G13** | Lunar Lake datasheet 明列 "Interrupt Remapping **and Posted Interrupt**"，而 LGA1700/LGA1851 两份只写 "Interrupt Remapping is supported" —— 是能力差异还是措辞差异 | 四份 datasheet 的 VT-d Key Features 节 | 实机读 VT-d Capability Register 的 PI 位 |
+| **G14** | ESXi 均一性检查**具体比较哪些量**、其 CPUID leaf / MSR 来源 | knowledge.broadcom.com、techdocs.broadcom.com、community.broadcom.com | vmkernel 闭源。§8.6.2 中把三个拓扑名归到 `04H`/`0BH`/`1FH` 是**推断，非厂商来源**，不得当作已证实 |
+| **G15** | SDM 的 microcode 一节从 Ch.9 → Ch.10 → Ch.11 → Ch.12 具体在哪个修订改的 | 只确认了 **093 修订中是 Vol.3A Ch.12 §12.11** | 逐修订比对，或查 Documentation Changes 252046 系列 |
 
 ---
 
@@ -882,13 +966,418 @@ MTL 7、LNL 9、ARL 11、PTL 6），其中值得单列的：
 `834774-023` §2.2 另外逐字确认了 **S / S Plus 系列封装为 "Pin Count: **1851**，
 Package Size 37.5mm x 45mm"** —— 即 **LGA1851**，与 265KF 一致。
 
-### 8.6 混合拓扑 / ESXi 取证
+### 8.6 ESXi "Fatal CPU mismatch on feature" —— 裁决：**是 ESXi 的假设问题，不是硅片不一致**
 
-<!-- SUBAGENT-A-PLACEHOLDER -->
+#### 8.6.1 KB 与开关（T1 / T2）
+
+**Broadcom KB 395554, "ESXi PSOD with 'Fatal CPU mismatch on feature'"**
+（`https://knowledge.broadcom.com/external/article/395554/esxi-psod-with-fatal-cpu-mismatch-on-fea.html`，
+页内 JSON-LD 记 `datePublished / dateModified = 08-18-2025`）。全文逐字：
+
+> **Cause**: "Starting with ESXi 7.0, **a CPU uniformity check is enforced**. A PSOD may occur if a
+> mismatch in CPU features is detected."
+> **Resolution**: "To bypass the CPU uniformity check:" → 开机 `SHIFT+O` 追加
+> **`cpuUniformityHardCheckPanic=FALSE`**；持久化用
+> `esxcli system settings kernel set -s cpuUniformityHardCheckPanic -v FALSE`；
+> "Request the Hardware vendor to ensure the uniformity of CPU features."
+
+**ticket 里猜的拼写是对的**：`cpuUniformityHardCheckPanic`。VMware 自己的 kernel setting 描述串（T2）：
+
+| 选项 | VMware 原文描述 | 默认 |
+|---|---|---|
+| `cpuUniformityHardCheckPanic` | "**Panic if CPU uniformity hard check fails**" | TRUE |
+| `ignoreMsrFaults` | "**Ignore general protection faults as a result of rdmsr and wrmsr instructions**" | FALSE |
+| `timerForceTSC` | "Always use TSC as system reference timer."（7.0U1–U3）→ "**Obsolete option, do not use.**"（8.0a 起） | 见左 |
+
+**语义要点**：这个开关**不关闭检查，只关闭检查失败时的 panic**。
+引入于 **ESXi 7.0 U2**（7.0 U1 的 kernel settings 列表中不存在，U2 中存在），
+在 **ESXi 9.0.0 Build 24755229 中仍然存在且默认仍为 TRUE**。
+`timerForceTSC` **不是**混合架构的解法，是 TSC 参考计时器开关，8.0 起标注废弃——**不要混用**。
+13 代的 `GP Exception 13 in world` 另需 `ignoreMsrFaults=TRUE`。
+
+**限定性否定声明**：**不存在任何一篇 Broadcom/VMware KB 点名 Intel 混合 CPU 或声明其支持状态。**
+KB 395554 全文无 "hybrid" / "Alder Lake" / "12th generation" / "P-core" / "E-core" 字样，
+其建议（"Request the Hardware vendor to ensure the uniformity of CPU features"）是照固件 bug 写的。
+检索范围：knowledge.broadcom.com、techdocs.broadcom.com、community.broadcom.com。
+
+#### 8.6.2 ESXi 到底在比什么 —— 决定性证据
+
+panic 串（T3，virten.net 从 12 代实机紫屏转录）：
+
+```
+HW feature incompatibility detected; cannot start
+Fatal CPU mismatch on feature "Hyperthreads per core"
+Fatal CPU mismatch on feature "Cores per package"
+Fatal CPU mismatch on feature "Cores per die"
+```
+
+完整格式（T3，Broadcom 社区另一例，非混合场景）：
+
+```
+Fatal CPU mismatch on feature "Intel processor platform type identifier";
+cpu7 value = 0x1004195c, but cpu0 value = 0x10041a5c
+```
+
+→ **每个 PCPU 都与 PCPU 0 比对**。
+
+**裁决所需的关键观察**：12 代上触发 panic 的三个 feature 名
+——`"Hyperthreads per core"`、`"Cores per package"`、`"Cores per die"`——
+**全部是拓扑计数，没有一个是 ISA 功能位**。
+而第四个已知名字 `"Intel processor platform type identifier"` 指向的是 **MSR `17H`（`IA32_PLATFORM_ID`）**，
+**根本不是 CPUID**。
+
+按 §3.2 的 Domain 判据：拓扑计数来自 `CPUID.04H` / `0BH` / `1FH`，
+其中 `04H` 全部字段、`1FH` 的 `EBX[15:0] NEXT_LEVEL_NUM_LP` 均为 **Logical Processor Domain**，
+**SDM 明文允许它们逐 LP 不同**。
+
+**更进一步**：`IA32_PLATFORM_ID`（MSR `17H`）在 SDM-V4 Table 2-2 中只定义了 `bits 52:50` 为 Platform ID，
+其余为 Reserved。一位 VMware 工程师（Tim Mann）在社区帖中承认（T3）：
+> "This is actually a bug. Intel specifies only bits 52:50 of MSR 0x17 to be architectural. The other
+> bits are reserved, so **the vmkernel shouldn't insist that those bits be the same across all cpus**."
+
+**裁决**：
+
+> **ESXi 在比较的，是 Intel 架构上从未承诺过一致的量**（Logical Processor Domain 的拓扑字段，
+> 以及一个 MSR 的 Reserved 位）。**硅片没有违反任何规范。**
+> 这是 **hypervisor 侧的均一性假设问题**，修法在 hypervisor（或用 VMware 提供的开关绕过），
+> **不是**"BIOS/微码把平台配错了"那一类问题。
+>
+> 反之，如果 panic 的 feature 名指向的是 **Platform Domain 的 ISA 功能位**
+> （AVX-512、VMX、SGX…），那才是平台确实处于 SDM 所说的 "not properly configured" 状态，
+> 修法在 BIOS/微码侧。**判据就是 §3.2 的 Domain 列。**
+
+**VMware 侧的立场**（T3，但来自 VMware Staff Solution Architect William Lam 的博客）：
+> "ESXi is currently **not aware of this new architecture** and it currently **expects all cores within a
+> CPU package to have uniform characteristics**."
+> "The ESXi scheduler **does not and has no current plans to support** this new Intel Hybrid CPU
+> architecture, especially as this type of architecture is nowhere to be found in traditional Enterprise
+> datacenters and is only limited to Intel Consumer CPUs."
+> "While you can apply a workaround to have ESXi ignore the non-uniformity of the CPU cores, in addition
+> to the non-deterministic behaviors, **random PSOD can also occur due to scheduling across two different
+> types of cores**."
+
+→ 即便加了 `cpuUniformityHardCheckPanic=FALSE`，**调度器层面的不支持依然存在**。
+这条必须与开关一起给出，否则会把"能开机"误读成"支持"。
+
+**限定性否定声明**：**VMware / Broadcom 从未公开过均一性检查所比较的 feature 清单，
+也没有公开这些 feature 名到 CPUID leaf / MSR 的映射。** vmkernel 闭源，唯一公开证据就是 panic 串本身。
+上文把三个拓扑名归到 `04H`/`0BH`/`1FH` 是**推断，不是厂商来源**，必须标注为未核实。
+
+#### 8.6.3 Intel 的"交集"原则 —— 这次拿到了最硬的一句
+
+**SDM-V3B 325462-093US, §22.2.9.2 "Reporting Per Logical Processor"**（逐字）：
+
+> "`CPUID.23H` provides a true-view of per logical processor PMU capabilities. … **Software must not make
+> assumptions that `CPUID.23H` would report any value the same on another logical processor.** It is
+> required to read `CPUID.23H` on every logical processor… It is a requirement of software to compare and
+> determine common features between logical processors if required by iterating over each logical
+> processor's `CPUID.23H`.
+> **Conversely, `CPUID.0AH` provides a maximum common set of capabilities across logical processors when a
+> feature is not supported by all logical processors.**"
+
+同节 NOTE：
+> "Locating a PMU feature under `CPUID.23H` **alerts software that the feature may not be supported
+> uniformly across all logical processors**."
+
+§22.2.9.3：
+> "This capability enables a **virtual-machine monitor to reserve lower-index counters for its own use,
+> while exposing higher-index counters to guest software**. This is especially important should the
+> general-purpose counters **not be fully homogeneous**."
+
+> **"`CPUID.0AH` provides a maximum common set of capabilities" 就是"交集"的架构原文。**
+> 它解释了为什么 §3.2 的 Domain 表把 `0AH` 标成 Platform Domain，
+> 而底层 PMU 明明不同（Gracemont 6 个 GP 计数器 vs Golden Cove 8 个，SDM-V3B Table 22-53 / 22-57）：
+> **Intel 用"旧 leaf 报交集 / 新 leaf 报真值"的手法维持 Platform Domain 的承诺。**
+> 与 §3.6 的 RDT 条款（`0FH`/`10H` 报 common set，`27H`/`28H` 报逐 LP 真值）是同一个模式。
+
+#### 8.6.4 AVX-512：Intel 的三份一手材料
+
+1. **Intel Optimization Reference Manual, Document 248966-050US, April 2024, §2.3.1**（逐字，最权威）：
+   > "A key OSV requirement for enabling hybrid is **symmetric ISA** across different core types… In 12th
+   > Generation Intel Core processors supporting performance hybrid architecture, **ISA is converged to a
+   > common baseline** between the P-cores and E-cores. **To maintain symmetric ISA, the E-cores do not
+   > support the following features: Intel AVX-512, Intel AVX-512 FP-16, and Intel® TSX. The E-cores do
+   > support Intel AVX2 and Intel AVX-VNNI.**"
+2. **Intel white paper 348851-001US, "Optimizing Software for Intel performance hybrid architecture",
+   Rev 1.0, October 2021, §1.1** —— 同样的 "symmetric ISA / converged to a common baseline" 措辞。
+3. **Intel Game Dev Guide for 12th Gen Intel Core Processor（updated 6/13/2022）**：
+   > "● All core types have the same instruction set. ● **AVX512 is disabled on P-cores and not available
+   > on E-cores.**" 表 1：`AVX512 | Disabled in P-cores and N/A in E-cores`；
+   > `TSX | Disabled in P-cores and E-cores`。
+4. **Intel support article 000089918, "Is AVX-512 Fused Off on Alder Lake Client Products?"（03/25/2022）**：
+   > "AVX-512 will be **fused off** on Alder Lake mobile products and most desktop products."
+   > "Although AVX-512 was **not fuse-disabled** on certain early Alder Lake desktop products, Intel plans
+   > to fuse off AVX-512 on Alder Lake products going forward."
+
+**限定性否定声明**：**没有任何 Intel 文档声明"关闭 E 核即可启用 AVX-512"。**
+检索范围：intel.com 支持文章、**12 代 Specification Update `682436`（rev 007 与 rev 040 均查过，
+`grep -i "avx.?512"` 命中为 0）**、Optimization Reference Manual、SDM。
+该做法只存在于媒体与 BIOS 改机社区（T3）——**不得作为 Intel 立场引用**。
+
+#### 8.6.5 Intel 自己划的"哪些东西对软件可见地不一样"
+
+**Intel white paper 348851-001US Rev 1.0, §6.1 "What are the ISA differences visible to software?"**（逐字）：
+
+> "Some ISA differences are visible to software. Examples include:
+> 1. **Structural differences (TLB, cache, topology) between P-cores and E-cores.**
+> 2. **Some aspects of Performance Monitoring, Intel Processor Trace, Last Branch Records, and MCA ISA.**
+> 3. **Some model specific MSRs.**
+> The expectation is that these differences are not going to impact software applications."
+
+**Intel Game Dev Guide**（逐字）：
+> "**CPUID, by design, returns different values depending on the core it is executed on. On hybrid cores
+> more of the CPUID leaves will have data that varies**, meaning that if cores are used to generate a
+> hash for encryption, or to generate a unique seed for random number generation, you should be careful
+> to only use leaves that contain data that doesn't change between core types."
+
+> 注意最后一句的措辞：Intel 说的是 "**by design**"。
+> "CPUID 在所有核上返回相同值"这句流传甚广的说法**在任何 Intel 文档里都找不到**
+> （已检索 SDM CPUID 各章、Intel "CPUID Enumeration and Architectural MSRs" 文章 ID 758381、
+> 两份 hybrid 白皮书）。**这条应进 `errata.md`。**
+
+#### 8.6.6 其他 hypervisor 的做法（对照组）
+
+- **Linux（T2，`arch/x86/kernel/cpu/common.c::identify_cpu()`）**：不 panic，**取交集**——
+  ```c
+  /* AND the already accumulated flags with these */
+  for (i = 0; i < NCAPINTS; i++)
+      boot_cpu_data.x86_capability[i] &= c->x86_capability[i];
+  ```
+  外加 `X86_FEATURE_HYBRID_CPU`（`18*32+15`，注释 "This part has CPUs of more than one type"）。
+- **KVM（T2，`arch/x86/kvm/cpuid.c`）**：**对 guest 完全隐藏混合性**——
+  `CPUID_7_EDX` 的枚举列表中**没有** `HYBRID_CPU`（整个文件 `grep -i hybrid` 零命中）；
+  `__do_cpuid_func()` **没有 `case 0x1a`**，落到 `default:` 把 EAX/EBX/ECX/EDX 全清零。
+  即 **guest 既看不到 hybrid 位，也看不到 leaf 1AH**。
+- **Hyper-V / Windows**：**GAP G10**。子代理所在环境无法访问 learn.microsoft.com /
+  techcommunity.microsoft.com（五次尝试均 socket closed）。
+  已核实的只有一条：**Hypervisor Top Level Functional Specification v6.0b（February 2020）全文
+  对 hybrid / heterogeneous / asymmetric 零覆盖**——但该文档早于 Alder Lake，这条价值有限。
 
 ### 8.7 微码取证
 
-<!-- SUBAGENT-C-PLACEHOLDER -->
+#### 8.7.1 Vmin Shift Instability 的完整微码时间线（T1）
+
+Intel 的根因陈述（Intel Community blog, *"Intel Core 13th and 14th Gen Desktop Instability Root Cause
+Update"*, Thomas_Hannaford (Intel Employee), **2024-09-25**）逐字：
+
+> "Intel® has localized the Vmin Shift Instability issue to **a clock tree circuit within the IA core
+> which is particularly vulnerable to reliability aging under elevated voltage and temperature.** Intel
+> has observed these conditions can lead to a duty cycle shift of the clocks and observed system
+> instability."
+
+四个场景与各自的缓解（逐字）：
+
+| # | 场景 | 缓解 |
+|---|---|---|
+| 1 | "Motherboard power delivery settings exceeding Intel power guidance" | Intel Default Settings（**BIOS，非微码**，2024-05） |
+| 2 | "eTVB Microcode algorithm which was allowing … i9 desktop processors to operate at higher performance states even at high temperatures" | "**microcode 0x125 (June 2024)** addresses eTVB algorithm issue" |
+| 3 | "Microcode SVID algorithm requesting high voltages at a frequency and duration which can cause Vmin shift" | "**microcode 0x129 (August 2024)** addresses high voltages requested by the processor" |
+| 4 | "Microcode and BIOS code requesting elevated core voltages … especially during periods of idle and/or light activity" | "Intel® is releasing **microcode 0x12B, which encompasses 0x125 and 0x129** microcode updates" |
+
+投送方式（逐字）：
+> "the **0x12B microcode update must be loaded via BIOS update** and has been distributed to system and
+> motherboard manufacturers to incorporate into their BIOS."
+
+**0x12F**（Intel Community, **2025-05-01**）逐字：
+> "Intel is releasing a new microcode update (**0x12F**) supplementing the 0x12B microcode update released
+> in September 2024. … **based on Intel's investigation of a limited number of reports regarding systems
+> continuously running for multiple days with low-activity and lightly-threaded workloads.**"
+> "The release of the 0x12F microcode **does not alter the root cause determination**…"
+
+**ticket 未提到、但必须记录的一条**：`intel/Intel-Linux-Processor-Microcode-Data-Files` 的
+`releasenote.md`（Intel 自有仓库）显示 **0x12B 与 0x12F 之间还有一个 `0x12C`（2025-02-11）**，
+Intel 从未为它发过 Vmin 主题公告。完整序列（全部 CPUID `06-b7-01`，标注 "RPL-E/HX/S, stepping B0"）：
+
+`0x122 → 0x123`(2024-05-14) → `0x129`(2024-09-10) → **`0x12b`**(2024-10-29) →
+**`0x12c`**(2025-02-11) → **`0x12f`**(2025-05-12) → `0x132`(2025-11-11) → `0x133`(2026-02-10) →
+`0x137`(2026-08-11)
+
+> **`0x125` 在该仓库中从不出现**（序列从 `0x123` 直接跳到 `0x129`）——与 Intel 所说
+> "通过 BIOS 投送" 一致：它只发给 OEM，从未作为 OS 可加载 blob 公开。
+
+#### 8.7.2 影响范围是**按 die**，不是按 TDP —— 并且 Intel 自相矛盾
+
+**Specification Update `740518-031` 的 RPL063**（逐字）：
+
+> "**RPL063 Incorrect Internal Voltage Request May Lead to Unpredictable System Behavior**
+> **Problem**: The processor may request elevated voltages from the voltage regulator, resulting in an
+> eventual increase to the minimum required operating voltage.
+> **Implication**: … an increase to minimum operating voltage may lead to unpredictable system behavior.
+> **Workaround**: It may be possible for the BIOS to contain a mitigation for this erratum."
+
+Summary Table of Changes 中，**RPL063 只在两列标 "No Fix"：S/S-Refresh 8P+16E 与 HX/HX-Refresh 8P+16E**，
+其余全部 "N/A"。结合 §1.4 的 CPUID 表，这两列都是 **`B0671h` = `06_B7H` stepping 1**，
+正是微码序列 `06-b7-01` 的目标。
+
+> **结论**：影响范围 = **从 Raptor Lake 8P+16E die 切下来的部件**。
+> 8P+8E（`06_BFH` stepping 2）与 6P+0E（`06_BFH` stepping 5）跑的是**完全不同的微码序列**（0x34…0x3e），
+> 移动端 P/H/U（`06_BAH`）跑 0x41xx/0x61xx 系列。
+> 媒体流传的 "65W 及以上" 说法在效果上大致对，但 **Intel 自己的错误表是按 die 划的**。
+
+**未解决的矛盾（照实记录，不裁决）**：
+Intel Community "Unaffected Products List"（2024-08-30）逐字列出
+"Intel Core 13th and 14th Gen **mobile** processors – **including HX-series processors**" 为**不受影响**；
+而 `740518-031` 的 Summary Table of Changes 把 **HX / HX-Refresh 8P+16E 标为 RPL063 "No Fix"**。
+两者是同一块 `B0671h` 硅片、收同一份 `06-b7-01` 微码。**未找到 Intel 文档调和这两处。** → **Gap G11**。
+
+**另一条限定性否定声明**：**`740518` 全文 "microcode" 一词出现 0 次。**
+Intel 的勘误语言一律是 "It may be possible for the BIOS to contain a mitigation for this erratum"。
+→ **勘误文档不会告诉你某条勘误是由微码修的**；微码版本要去 microcode 仓库或 Community 公告查。
+
+#### 8.7.3 Intel 声明的副作用
+
+- **0x129 的硬电压上限**（2024-08-09，逐字）：
+  > "The latest microcode update (0x129) **will limit voltage requests above 1.55V** … This latest
+  > microcode update will **primarily improve operating conditions for K/KF/KS processors**."
+  > "…this latest microcode update (0x129) will not prevent users from overclocking … **Users can disable
+  > the eTVB setting in their BIOS if they wish to push above the 1.55V threshold.**"
+  → **一次微码更新改变了处理器的电压行为上限**，并把逃生口放在 BIOS 设置里。
+- 性能：0x129 "within run-to-run variation … **with a few sub-tests showing moderate impacts**"；
+  0x12B "within run-to-run variation"；**0x12F "Intel has identified no measurable performance impact"**。
+- 0x125 改了 i9 的 eTVB turbo 算法 → **turbo 驻留行为变化**，不只是修 bug。
+
+#### 8.7.4 微码**确实**会改变 CPUID 可见行为 —— Intel 的通用条款
+
+**Intel "Microcode Update Guidance", document ID 660235** —— 这是本问题最好的一手来源，逐字：
+
+> "**Runtime microcode update** refers to loading an update while the system is fully operational and
+> running workloads, **possibly including user-space applications and virtual machines**. Software should
+> ensure that the same update is loaded on all cores. **Some microcode updates may introduce new features
+> and may change CPUID feature flags or other enumeration. Software that wishes to use features
+> introduced via a runtime microcode update may need to reevaluate any CPUID feature flags or other
+> enumeration after the update is loaded**…"
+
+> "Microcode updates may introduce new capabilities. … **An example of this is the `IA32_SPEC_CTRL` MSR,
+> which was introduced to existing processors through a microcode update.**"
+> "**Loading a microcode update will generally not remove any existing capabilities** … **Exceptions to
+> this will generally be communicated.**"
+
+**Intel 336996-003, "Speculative Execution Side Channel Mitigations", Rev 3.0, May 2018, §5.1**
+（文档号与修订已核对封面）逐字：
+> "`CPUID.(EAX=7H,ECX=0):EDX[26]` enumerates support for IBRS and IBPB… `[27]` STIBP… `[28]` L1D_FLUSH…
+> `[29]` … the `IA32_ARCH_CAPABILITIES` MSR. `[31]` … SSBD."
+> "**The mitigation mechanisms may be introduced to a processor by loading a microcode update. In such
+> cases, software should re-evaluate the enumeration after loading that microcode update.**"
+
+#### 8.7.5 **对 ticket 假设的两处纠正**
+
+**(1) TSX 的方向反了。** ticket 设想"微码清掉 `CPUID.07H.0:EBX[11]/[4]`"。实际不是。
+**Intel 643557 Rev 2.3（June 2023）与 604224 Rev 1.5（June 2023）**逐字：
+
+> "**A new CPUID bit, `CPUID.07H.0H.EDX[11]` (RTM_ALWAYS_ABORT), will be enumerated**, which is set to
+> indicate to updated software that the loaded microcode is forcing RTM abort."
+> "**In case the processor enumerated support for RTM previously, the CPUID enumeration bits for Intel TSX
+> (`CPUID.07H.0H.EBX[11]` and `CPUID.07H.0H.EBX[4]`) continue to be set by default after the microcode
+> update.**"
+> "**system software may use a bit in MSR `0x122`, `TSX_CTRL[TSX_CPUID_CLEAR]`, to clear the HLE and RTM
+> CPUID bits**…"
+
+SDM-V4 Table 2-2 侧的架构锚点：
+`IA32_TSX_CTRL`(`122H`) bit 1 `TSX_CPUID_CLEAR` —— "When set to 1, `CPUID.07H.00H:EBX.RTM[11]` and
+`CPUID.07H.00H:EBX.HLE[4]` report 0."；`IA32_TSX_FORCE_ABORT`(`10FH`) bit 1 同义。
+
+> **正确的表述**：**微码"增加"一个 CPUID 位（`EDX[11] RTM_ALWAYS_ABORT`）并提供一个 MSR，
+> 由"软件"去清掉 `EBX[11]/[4]`。** 微码本身不清那两位。
+> 这仍然证明"微码改变 CPUID 可见行为"，但机制与 ticket 的设想不同，**写进知识库时不能写反**。
+
+**(2) Alder Lake 的 AVX-512 不能当作"微码改 CPUID"的先例。**
+Intel 的唯一在案说法是 **"fused off"（硅片熔丝）**，不是微码；
+且 12 代 Specification Update `682436`（rev 007 与 rev 040 都查过）**没有任何 AVX-512 相关勘误**。
+把 AVX-512 当微码先例是 T3 媒体口径。**→ 用 TSX 作先例，不要用 AVX-512。**
+
+#### 8.7.6 微码更新与 VMX —— 本 ticket 要的答案（与 §5.1 相互独立地得到同一结论）
+
+子代理对 SDM 全文（332,723 行）做了
+`grep -iE "microcode.*(VMX|VMM|virtual.machine|VM entry|VM exit)|(VMX|VMM|virtual-machine).*microcode"`，
+**全文仅两处命中，都是 §28.3 那一句**。并且：
+
+- **SDM Chapter 12（§12.11–§12.11.8）中 "VMX"、"virtual machine"、"hypervisor"、"VMM"、"SMM"
+  的出现次数为 0** —— 微码更新一章写得像虚拟化不存在。
+- **Intel "Microcode Update Guidance"（ID 660235）中 "hypervisor"、"VMX"、"VMM"、"root operation"、
+  "S3"、"sleep"、"suspend"、"resume" 出现次数为 0**；虚拟机只作为*工作负载*出现。
+
+> **净结论（与 §5.1 一致）**：架构上**堵死了 guest 加载微码**（§28.3 静默 no-op）
+> 和**经 VMCS MSR 区域加载**（SDM-V4 Table 2-2 条目 79H），
+> 但**对 VMM 在 VMX root operation 中加载微码只字未提**。**这个沉默本身就是结论。**
+
+WRMSR 79H 是否触发 VM exit：**没有特例**，走普通规则
+（SDM-V3C **§28.1.3 "Instructions That Cause VM Exits Conditionally"**）——
+`79H` 落在 `00000000H–00001FFFH` 低区，由 MSR write bitmap 逐位控制。
+两种行为：**bitmap 置位 → VM exit（reason 32, WRMSR）**；
+**bitmap 清零 → 不 exit，且 §28.3 使该写成为 no-op**。
+即**把 79H 直通给 guest 在硬件层面本来就是无害的**——但 guest 会以为自己成功了。
+
+**一条直接相关的勘误**（`682436-040`，12 代，逐字）：
+> "**ADL075 Processor May Hang During a Microcode Update.** Problem: Under complex microarchitectural
+> conditions, **the processor may hang when executing a microcode update (MCU) by writing to
+> `IA32_BIOS_UPDT_TRIG` (MSR 79h)**. … Workaround: It may be possible for BIOS to contain a workaround."
+
+rev 040 中状态为 **Fixed**（四个 Alder Lake die 列全部）。
+`740518`（Raptor Lake）中无对应勘误。
+
+#### 8.7.7 Linux 的 late loading 与 `minrev` —— 对"微码改 CPUID"最好的工程注脚（T2）
+
+`Documentation/arch/x86/microcode.rst` 有一节标题就叫 **"Why is late loading dangerous?"**：
+
+> "**Since kernel 5.19, late loading is not enabled by default.**"
+> "Since the microcode can 'simulate' MSRs too, while the microcode update is in progress, **those
+> simulated MSRs transiently cease to exist**. … it cannot address other special interrupts that can't be
+> shut off. Those are **Machine Check (#MC), System Management (#SMI) and Non-Maskable interrupts (#NMI)**."
+> "Consider … a CPU has patch level 1 and the update is to patch level 3. **Between patch1 and patch3,
+> patch2 might have deprecated a software-visible feature.** … say MSR_X is no longer available after an
+> update, accessing that MSR will cause a #GP fault."
+
+**`minrev` 机制**（`struct microcode_header_intel` 中由 reserved 字段改出的 `min_req_ver`）：
+- commit **`cf5ab01c87030a085e211a0a327535932ec6f719`**，*"x86/microcode/intel: Add a minimum required
+  revision for late loading"*，作者 **Ashok Raj \<ashok.raj@intel.com\>（Intel）, 2023-10-02**，逐字：
+  > "**Intel has added a 'minimum required version' field to a previously reserved field in the microcode
+  > header.** … **When microcode changes visible features, microcode will set the minimum required version
+  > to its own revision which prevents late loading.**"
+  > "**This is a pure OS software mechanism. The hardware/firmware ignores this header field.**"
+- commit **`9407bda845dd19756e276d4f3abc15a20777ba45`**（Thomas Gleixner, 2023-10-17）：
+  > "Applying microcode late can be fatal for the running kernel when the update changes functionality
+  > which is in use already in a non-compatible way, **e.g. by removing a CPUID bit**."
+- Kconfig：`MICROCODE_LATE_LOADING` 的标题就是 **"Late microcode loading (DANGEROUS)"**，`default n`。
+- `common.c::microcode_check()` 在每次 late load 后比对 `x86_capability` 快照并打印
+  "**x86/CPU: CPU features have changed after loading microcode, but might not take effect.**"
+  —— **内核在运行时经验性地确认了 §8.7.4 的结论。**
+
+**限定性否定声明**：**Linux 内核没有任何文档、Kconfig 文本、代码路径或 commit message
+把 late microcode loading 与 VMX/KVM/hypervisor 安全性联系起来。**
+检索范围：`microcode.rst` 全文（`grep virtual|vmx|kvm|hypervisor|guest|vmcs|vm-exit` 零命中）、
+`kernel-parameters.txt` 的 `microcode=` 段、`MICROCODE*` Kconfig 段、
+`microcode/{core.c,intel.c,amd.c,internal.h}`、`asm/microcode.h`、
+`arch/x86/kvm/x86.c`（`grep microcode` 零命中）、`Documentation/virt/kvm/x86/` 全部 11 个 `.rst`。
+唯一与虚拟化有关的逻辑是**反向**的：`microcode_loader_disabled()` 在检测到
+`x86_hypervisor_present` 时**整个禁用加载器**——即"跑在 guest 里就不要加载微码"。
+
+#### 8.7.8 微码在各种事件后的存续（对拥有平台的 hypervisor 直接相关）
+
+- **SDM-V3A §12.11.6.1**（已在 §5.3 引过）：hard reset 清除，**INIT 保持**，重复加载无副作用。
+- **Intel 660235** 补充（逐字）：
+  > "A microcode update is loaded from the FIT **after either a warm or cold hardware reset. It does not
+  > occur in response to an INIT event.**"
+  > "**The microcode update is generally cleared by a warm reset.** However, any state that persists
+  > across a warm reset (for example, last branch records or machine check banks) and has been modified by
+  > the update **will remain modified after the reset.**"
+  > "certain microcode update components **only take effect after a warm reset** … loading the update
+  > **stages** certain changes to take effect on the next warm reset."
+  > "**Once loaded, some updates may prevent loading of another update with a lower update revision.**"
+  > "Some microcode update components may impact system performance. … **the same microcode update may
+  > have a different performance impact depending on when it is loaded.**"
+- **S3/suspend**：Intel 文档**没有**提及。Linux 自己兜底——
+  `microcode/core.c::microcode_bsp_resume()` 注册为 syscore `.resume`，
+  `arch/x86/power/cpu.c::__restore_processor_state()` 直接调用它，注释逐字：
+  ```c
+  microcode_bsp_resume();
+  /*
+   * This needs to happen after the microcode has been updated upon resume
+   * because some of the MSRs are "emulated" in microcode.
+   */
+  msr_restore_context(ctxt);
+  ```
+  → **late-loaded 的微码之所以能跨 S3 存活，是因为 OS 从内存缓存里重新加载了它，不是硬件保持。**
+  一个拥有平台的 hypervisor 如果接管了 S3 路径，**必须自己承担这件事**。
 
 ### 8.8 SMT 与平台 / VT-d 取证
 
@@ -918,7 +1407,7 @@ ticket / map 里写明"用户有真机 Intel Core Ultra 7 265KF，能实测优�
 
 ### 子代理取得的来源
 
-见 **§8**，每条均在该节内标注 tier 与 URL。
+见 **§8.1–§8.7**，每条均在该节内标注文档号 / URL 与 tier。
 
 ### 与现有 bibliography 的对接建议（不在本 ticket 施工，仅记录）
 

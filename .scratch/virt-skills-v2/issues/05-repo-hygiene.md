@@ -45,6 +45,14 @@ Blocked by: —
    要决定：`install.mjs` 要不要检测并警告"目标已存在且是实体目录"；
    以及 `~/.kimi-code/skills/` 该不该改成 junction。
 
+10. **仓库声明 Apache-2.0，但没有 `LICENSE` 文件，也没有 `NOTICE`。**
+    实测 2026-09-26：`LICENSE*` / `NOTICE*` / `COPYING*` 全部不存在，
+    而 `README.md:211-213` 写着 "Apache-2.0"。
+    **这是 ticket 08 开发轨道的先决条件**——由 04 查明：
+    在没有 `LICENSE` 的情况下发布任何代码，下游无法确定自己拿到了什么许可。
+    补 `LICENSE`（Apache-2.0 全文）与 `NOTICE`，并确认 `README` 的声明与之一致。
+    这条优先级高于本 ticket 的其余各条。
+
 ## 要求
 
 - 每一条改动都要能被验证。改完跑 `node tools/lint.mjs` 和 `node tools/build.mjs --check`，

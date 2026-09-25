@@ -730,7 +730,8 @@ Apache-2.0 的代码可以被合进 GPLv3 项目；**GPLv3 的代码不能合进
 | **Windows 驱动 C 形状** | `tandasat/HyperPlatform`（MIT） | **已归档 2026-05-18，只作结构参考，绝不作依赖**；其 user document 是现成的"陷阱清单" |
 | **AMD 侧 C 范本** | `tandasat/SimpleSvm`（MIT，2025-03-03） | AMD 侧目前最接近"最小可读实现"的 C 代码 |
 | **完整产品的需求清单** | `HyperDbg/HyperDbg`（**GPL-3.0**） | 只读、只引、**绝不抄**。它的文档是对 VBS/Hyper-V 冲突讲得最直白的一手材料 |
-| **双厂商 C 的另一个活体** | `Zero-Tang/NoirVisor`（MIT，2026-09-20） | 活跃、双厂商、MIT，但复杂度远高于教学需要，且无官方测试 CPU 清单 |
+| **双厂商 C 的另一个活体** | `Zero-Tang/NoirVisor`（MIT，2026-09-20） | 活跃、双厂商、MIT，但复杂度远高于教学需要，且无官方测试 CPU 清单。**它的 issue #35 是本次调研里唯一一条有代码修复的混合核缺陷，值得单独读** |
+| **UEFI 路线，谨慎** | `tandasat/MiniVisorPkg`（MIT，2024-08-15） | 是"能引导 OS 的 UEFI hypervisor"这条路上最完整的公开实现，但 **#11（i9-13900K，2023-02-15）与 #12/#15（多核，2023-05-17 / 2024-07-15）三条现代硬件失败至今 open 且未诊断**。可读、可引，不要当成"已验证可用"的基线 |
 | **不要建在其上** | `hvpp`(2021-03-15)、`Bareflank`(元数据缺陷)、`ksm`(GPL-2.0)、`gbhv`(CC-BY)、`illusion-rs`/`matrix-rs`(均已归档 2026-05-14) | 见 §1 |
 
 **语言问题（ticket 08 第 3 问）的一条外部证据**：
