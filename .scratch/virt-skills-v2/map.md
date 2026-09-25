@@ -31,8 +31,16 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
 - **不推翻现有的认知纪律**。诊断报告第 4-8 条列出的"好东西"——单文件隔离 dated facts、
   `Maps to:/Owns:/See also:` 章节头、"负面声明需要与正面声明同等证据"、宁可声明缺口也不填塞——
   是这套资产最值钱的部分，v2 必须继承，不得在重构中丢失
-- 用户手上有真机：**Intel Core Ultra 7 265KF**（Arrow Lake-S，20C/20T 无超线程，无核显，无 vPro）。
-  凡是能在真机上实测的结论，优先实测，不要停在文档推断
+- **真机情况（2026-09-26 实测更正）**：
+  - **本会话运行的机器是 AMD Ryzen 9 9950X3D**——`AMD64 Family 26 Model 68 Stepping 0`
+    = **`fam1Ah_model44h` stepping 0**，Granite Ridge，Zen 5 桌面，16C/32T。
+    **AMD 侧可以随时上真机验证**（但它是全 Zen 5、无 Zen 5c，
+    **不能**用来验证 Strix Point 的混合核问题）。
+  - **Intel Core Ultra 7 265KF 不在这台机器上。** 它的身份已由文档确定为
+    `CPUID.01H:EAX = C0662h` → `06_C6H` stepping 2（SDM Table 2-1 + Spec Update `834774-023`），
+    但**本轮未能实测**。**需要向用户确认 265KF 是哪台机器、能否执行命令**——
+    在它上面跑一次 dump 可一次关闭 02 的 9 个缺口。
+  - 凡是能在真机上实测的结论，优先实测，不要停在文档推断
 
 **已经查实、不要再查的事实**：
 - 裁决规则只存在于根 `AGENTS.md:34-43`，由 `tools/build.mjs:159-168` 生成；
@@ -83,6 +91,25 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
   **现代 Windows 上最大的障碍是 Hyper-V/VBS 已占着 VMX root，不是 PatchGuard**；
   且微软 **2026-10 起经质量更新自动启用 Memory Integrity 并顺带打开 VBS**。
   给 09 的硬约束：按型号查的键**至少五维**，只按型号会归错格子并固化错误相关性。
+
+- [02 Intel 10 代 → Core Ultra 300 世代差异与勘误源](issues/02-intel-gen-matrix.md)：
+  24 份 Intel 原始文档实读（SDM `325462-093US`、Vol.4 `335592-093US`、
+  VT-d `D51397-019 Rev 5.20`、全部 10 份客户端 Spec Update）。
+  **判定程序找到了：SDM rev 093 新增的 "CPUID Domains"（Vol.1 §21.1.4）**——
+  ISA 特性位（含 VMX、AVX-512）属 **Platform domain，必须全机一致**；
+  缓存 `04H`、拓扑 `1FH`、native model `1AH` 属 **Logical Processor domain，允许不同**，
+  SDM 点名 hybrid 就是原因。**据此 ESXi 一案定谳：硅片合规，缺陷在 ESXi 的一致性假设**，
+  修法是 `cpuUniformityHardCheckPanic=FALSE`（Broadcom KB 395554）而非改 BIOS/微码。
+  **SDM 六张 P/E 独有表中没有任何 `IA32_VMX_*`**，与 04 的撤回互相印证；
+  真正按核不同的是 perfmon / prefetch / L2 QoS（`D18H`–`D1FH` 在 E 核可用、**P 核 #GP**）。
+  **微码与 VMX 只写了一半**：Vol.3C §28.3 规定 non-root 写 MSR `79H` 是静默无操作，
+  **而对 root operation 规范只字未提**——真实空白；且 `IA32_MCU_STATUS`(`7CH`) bit 0 显示
+  **读 `IA32_BIOS_SIGN_ID` 已不足以证明补丁生效**。
+  **两个键陷阱**：13/14 代 CPUID 无法区分（同为 `B0671h`）；
+  10 代 Comet Lake U 4+2 与 Kaby Lake 同签名（`06_8EH`）——市场名 ↔ CPUID 既非单射也非单调。
+  **更正本图早期两处表述**：SMT 断裂在 **12 代**（Arrow Lake 只是恢复 1:1），
+  VT-d 能力断裂在 **Meteor Lake**（与 LGA1851 插槽无关）。
+  缺口 22 未决 / 3 已关闭，其中 **9 个可由 265KF 一次 dump 关闭**。
 
 ## Not yet specified
 

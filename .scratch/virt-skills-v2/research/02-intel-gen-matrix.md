@@ -8,6 +8,50 @@ Scope: **客户端部件 only**。Xeon / 服务器在本 effort 的 Out of scope
 
 ---
 
+## TL;DR —— 给 ticket 09 设计型号轨道的人
+
+**六个维度全部有一手来源，没有一条是推断出来的表。** 最该带走的八条：
+
+1. **`06_C6H` stepping 2（`CPUID.01H:EAX = C0662h`）就是 265KF。**
+   SDM-V4 Table 2-1 与 Arrow Lake Specification Update `834774-023` Table 2-1
+   **两份独立 Intel 文档互证**。全部 10 代客户端的 DF_DM + stepping 表见 **§1.4**。
+2. **14 代与 13 代在 CPUID 上不可区分**（`740518-031` 把 RPL-S 与 RPL-S Refresh 列为同一个 `B0671h`），
+   而**一颗 10 代 Comet Lake U 4+2 报的是 `06_8EH`，与 Kaby Lake 相同**。
+   → **市场名 ↔ CPUID 不是一一映射，必须有显式映射层。见 §1.5。**
+3. **"P/E 核 CPUID 不一致"这句话是半对的。** SDM rev 093 新增 **§21.1.4 "CPUID Domains"**，
+   给每个 CPUID 字段标注 Platform / Package / Logical Processor 域：
+   **ISA 功能位（含 `CPUID.01H:ECX[5] VMX`、AVX-512）是 Platform 域，必须全平台一致；
+   cache(`04H`) / 拓扑(`1FH`) / native model ID(`1AH`) 是 Logical Processor 域，明文允许不同。**
+   **这条 Domain 列就是所有"哪些能不一样"问题的裁决依据。见 §3.2。**
+4. **ESXi PSOD 是 ESXi 的假设问题，不是硅片不一致。** 它 panic 的三个 feature
+   （`"Hyperthreads per core"` / `"Cores per package"` / `"Cores per die"`）**全是拓扑计数**，
+   落在 SDM 明文允许不一致的 Logical Processor 域；第四个 `"Intel processor platform type identifier"`
+   比的是 MSR `17H` 的 **Reserved 位**。修法是 `cpuUniformityHardCheckPanic=FALSE`（Broadcom KB **395554**），
+   **但 VMware 明说调度器层面依然不支持**。见 **§8.6**。
+5. **`IA32_VMX_*` 从未被 SDM 列为逐核型差异项**（Table 2-47/2-48/2-54/2-55/2-59/2-60 中无 `48xH`）——
+   但 SDM 也**没有正面承诺其取值跨核型一致**。逐核型差异集中在
+   **perfmon / prefetch / L2 QoS 掩码**，其中 `D18H`–`D1FH` **在 E 核可用、在 P 核 #GP**。见 §3.3 / §3.4。
+6. **SDM 对"微码 + VMX"确实有话说，但只说了一半**：
+   Vol.3C §28.3 —— "**no microcode update is loaded … This implies that microcode updates cannot be
+   loaded in VMX non-root operation**"（**静默 no-op，不 fault**）；
+   Vol.4 Table 2-2 条目 79H —— VM-entry/exit 的 MSR 区域也可能被拒。
+   **对 VMX root operation 则只字未提**——这个沉默本身是结论。见 §5.1 / §8.7.6。
+7. **SMT 的破坏点是 12 代，不是 Arrow Lake。** 从 12 代起 P 核 2 LP、E 核 1 LP，
+   `LP = 2 × 核` 已经失效；Arrow Lake / Lunar Lake 只是把比例统一回 1:1。
+   `CPUID.01H:EDX[28] HTT` **不是 SMT 标志**（它只表示 `EBX[23:16]` 有效）。见 §4。
+8. **VT-d 能力的世代断点在 Meteor Lake，不在 LGA1851。** Alder/Raptor Lake 的
+   "IGD 引擎不支持 super-page，开核显时 BIOS 应把 default 引擎的 super-page 也关掉"，
+   在 Meteor Lake 起消失，同时新增 Scalable Mode 与 Nested translation。
+   **按 socket 建键会答错。见 §6.3。**
+
+**缺口规模**：**22 条未决 + 3 条本次关闭**（G1 stepping 表、G8 LGA1700→1851 VT-d 差异、G12 客户端 SR-IOV）。
+未决的 22 条里，**4 条（G2 / G3 / G3b / G4）在 265KF 上各用一条 RDMSR 就能关掉**，
+**3 条（G7 / G1b / G13）靠一次实机 DMAR / CPUID dump 就能关掉**；
+**2 条（G11 / G12d）是 Intel 自身文档互相矛盾，按本仓库惯例不裁决、并列两说**。
+本 session 的执行环境是 AMD 机器，**没有做任何 Intel 实机验证**（§9）。
+
+---
+
 ## 0. 本次实际读到的一手文档（读取即证据）
 
 | 简称 | 文档 | 文档号 / 版本 | 本次取得方式 |
@@ -114,7 +158,9 @@ SDM-V1 **Table 21-6** 对 `EAX[3:0] STEPPING_ID` 的说明是
 | 13th **+ 14th** · Raptor Lake | **740518-031** (Sep 2026) | RPL-S 8P+16E / **RPL-S Refresh 8P+16E** / RPL-HX 8P+16E / **RPL-HX Refresh 8P+16E** | — | `B0671h` | **06_B7H** | 1 |
 | | | RPL-S 8P+8E / **RPL-S Refresh 8P+8E** / RPL-HX 8P+8E | — | `B06F2h` | **06_BFH** | 2 |
 | | | RPL-S 6P+0E / **RPL-S Refresh 6P+0E** | — | `B06F5h` | **06_BFH** | 5 |
-| | | RPL-P 6P+8E / RPL-H 6P+8E | — | `B06A2h` | **06_BAH** | 2 |
+| | | RPL-P 6P+8E / RPL-H 6P+8E / **RPL-H Refresh 6P+8E** | — | `B06A2h` | **06_BAH** | 2 |
+| | | RPL-U 2P+8E / **RPL-U Refresh 2P+8E** | — | `B06A3h` | **06_BAH** | 3 |
+| | | RPL-E 8P+0E / RPL-E Refresh 8P+0E（Xeon E 2400 / Xeon 6300，列此仅为说明该文档范围） | — | `B0671h` | **06_B7H** | 1 |
 | Ultra 100 · Meteor Lake | **792254-024** (Sep 2026) | MTL-H 6P+8E / MTL-U 2P+8E / MTL-U Type4 2P+8E | C0 | `0xA06A4` | **06_AAH** | 4 |
 | Ultra 200V · Lunar Lake | **827538-022** (Sep 2026) | LNL 4P+4E | B0 | `B06D1h` | **06_BDH** | 1 |
 | Ultra 200S · **Arrow Lake-S** | **834774-023** (Sep 2026) | **ARL-S 8P+16E** | **B0** | **`C0662h`** | **06_C6H** | **2** |
@@ -222,6 +268,21 @@ S 与 H 是不同的 DisplayModel（`06_C6H` vs `06_C5H`），Table 5-2 也按�
 必须实测 `IA32_VMX_PROCBASED_CTLS3`（MSR 492H）bit 4，或拿到 200S 的 Specification Update。
 → 记为 **Gap G2**，并且这正是用户手上 265KF **可以一条 RDMSR 就实测掉**的问题。
 
+### 2.2 `IA32_SPEC_CTRL` 虚拟化：客户端缺席
+
+**声明**：在 SDM-V1 **325462-093US** Table 5-2 中，"Virtualization of guest accesses to
+`IA32_SPEC_CTRL`" 一行列出的引入代为 "4th generation Intel® Xeon® Scalable Processor Family based on
+Sapphire Rapids microarchitecture, Intel® Xeon® 6 E-core processors based on Sierra Forest
+microarchitecture, Intel® Atom® P6900 Processor based on the Crestmont microarchitecture"——
+**该行不含任何 Intel Core 或 Core Ultra 客户端条目**。
+
+**意义**：`IA32_SPEC_CTRL` 的 VMCS shadow + mask 机制（SDM-V3C §28.3 描述了
+"virtualize IA32_SPEC_CTRL" VM-execution control 为 1 时 WRMSR 的改写语义）在客户端上
+很可能需要落回 MSR bitmap + 拦截的老路。**同样受 §2.1 的边界约束**：这是"未列为引入代"，
+不是"确认不支持"。→ **Gap G3**。
+
+---
+
 ### 2.3 把 Table 5-2 的世代结论落到**可实测的位**上
 
 Table 5-2 说的是"哪一代引入"，落到能力 MSR 上就是**一个寄存器的一个位**。
@@ -261,21 +322,6 @@ Table 27-8 全表（逐字）：
 > **这张表是型号轨道最该收录的东西**：它把"某代支不支持某虚拟化特性"这个问题
 > 从"查文档"变成"读一个 MSR 的一个位"。
 > 265KF 上跑一遍 `RDMSR 492H` 就能一次性关掉 G2、G3、G3b 三个缺口。
-
-### 2.2 `IA32_SPEC_CTRL` 虚拟化：客户端缺席
-
-**声明**：在 SDM-V1 **325462-093US** Table 5-2 中，"Virtualization of guest accesses to
-`IA32_SPEC_CTRL`" 一行列出的引入代为 "4th generation Intel® Xeon® Scalable Processor Family based on
-Sapphire Rapids microarchitecture, Intel® Xeon® 6 E-core processors based on Sierra Forest
-microarchitecture, Intel® Atom® P6900 Processor based on the Crestmont microarchitecture"——
-**该行不含任何 Intel Core 或 Core Ultra 客户端条目**。
-
-**意义**：`IA32_SPEC_CTRL` 的 VMCS shadow + mask 机制（SDM-V3C §28.3 描述了
-"virtualize IA32_SPEC_CTRL" VM-execution control 为 1 时 WRMSR 的改写语义）在客户端上
-很可能需要落回 MSR bitmap + 拦截的老路。**同样受 §2.1 的边界约束**：这是"未列为引入代"，
-不是"确认不支持"。→ **Gap G3**。
-
----
 
 ## 3. 混合拓扑（维度 2）
 
@@ -491,7 +537,7 @@ ISA 位属 Platform Domain → 必须全平台一致 → Gracemont 无 AVX-512 �
 > **架构 PMU 版本号本身就是一个世代差异**：12/13 代 = v5，Lunar Lake = v6。
 > 对做 PMU 虚拟化的 VMM 这是硬门槛。
 
-### 3.8 ESXi "Fatal CPU mismatch on feature" —— 由子代理独立取证
+### 3.8 ESXi "Fatal CPU mismatch on feature" —— 判据（裁决见 §8.6）
 
 见 **§8.6**（已完成裁决）。本节只给出**从 Intel 一手文档能独立推出的判据**，
 用来在两种修法之间做裁决：
@@ -553,9 +599,20 @@ ISA 位属 Platform Domain → 必须全平台一致 → Gracemont 无 AVX-512 �
 3. **按 APIC ID 低位推断 SMT 兄弟** —— `CPUID.1FH` 的层级位宽在无 SMT 时 Logical Processor 层宽度为 0，
    写死 `apic_id >> 1` 之类的代码会算错 core ID。
 
-### 4.3 SMT 具体状态 —— 由子代理取证
+### 4.3 SMT 具体状态（结论；完整逐代表与来源见 §8.8）
 
-Intel ARK 的核/线程数是本项的一手来源。见 **§8.8**。
+| 世代 | SMT 状态 | 逻辑处理器结构 |
+|---|---|---|
+| 10 代 / 11 代 | **有**（ARK "Yes"） | 全核 2 LP，`LP = 2 × 核` 成立 |
+| 12 / 13 / 14 代、Core Ultra 100 (Meteor Lake) | **有，但只在 P 核上**（ARK "Yes"） | **P 核 2 LP，E 核 1 LP，LPE 核 1 LP** —— `LP = 2 × 核` **从这里开始就错了** |
+| Core Ultra 200V (Lunar Lake) | **无**（ARK **"No"**） | 每核 1 LP |
+| **Core Ultra 200S (Arrow Lake-S，含 265KF)** | **无**（ARK **"No"**） | 每核 1 LP；**265KF = 8 P + 12 E = 20 核 = 20 线程** |
+| Core Ultra Series 3 (Panther Lake) | 线程数 = 核数，但 ARK **不打印该字段** → 见 Gap G17 | — |
+
+> **最容易写错的一句**：SMT 的消失**不是**从 Arrow Lake 开始的破坏点。
+> **真正的破坏点是 12 代**——从那时起同一颗封装内 P 核 2 LP、E 核 1 LP，
+> `LP = 2 × 核` 这个假设已经失效。
+> Arrow Lake / Lunar Lake 只是把比例**统一**回 1:1，反而比 12–14 代更简单。
 
 ---
 
@@ -685,7 +742,7 @@ SDM-V1 **§21.1.5 "CPUID Runtime Mutable Fields"** 用两张表承认 CPUID 不�
 （TSX 关闭、AVX-512 关闭、Spectre 缓解位由微码引入）需要 Intel 的专项文档，**由子代理取证**，
 见 **§8.7.4 / §8.7.5**。
 
-### 5.5 Vmin Shift Instability / 微码 0x12B / 0x12F
+### 5.5 Vmin Shift Instability：0x125 → 0x129 → 0x12B → 0x12C → 0x12F
 
 由子代理取证，见 **§8.7.4 / §8.7.5**。
 
@@ -735,86 +792,223 @@ VT-d 规范给的是**结构格式**，不是**某个具体平台的 DMAR 内容
 不是 LGA1700 或 LGA1851 的实际布局。
 
 **正确的来源是 Intel 客户端平台 datasheet 的 "Intel® VT-d Key Features" 一节。**
-本次通过 Specification Update 的 "Related Documents" 表拿到文档号后，直接下载并逐字抽取了四代：
+本次通过 Specification Update 的 "Related Documents" 表拿到文档号后，直接下载并逐字抽取了**五代**：
 
-| 平台 | datasheet | 版本 |
+| 平台 | datasheet | 文档号-修订 |
 |---|---|---|
-| **LGA1700** · Alder Lake (12 代) | 12th Generation Intel® Core™ Processors Datasheet, Vol. 1 of 2 | **655258, Rev 011, May 2025** |
-| **LGA1700** · Raptor Lake (13/14 代) | 13th Gen Intel® Core™ / 14th Gen / (Series 1)(Series 2) / Xeon E 2400 / Xeon 6300 Datasheet, Vol. 1 of 2 | **743844, Rev 015, May 2025** |
-| Lunar Lake (Ultra 200V, BGA) | Intel® Core™ Ultra 200V Series Processors Datasheet, Vol. 1 of 2 | **829568, Rev 004, May 2025** |
-| **LGA1851** · Arrow Lake-S (Ultra 200S) | Intel® Core™ Ultra 200S / 200S Plus / 200HX / 200HX Plus Series Processors Datasheet, Vol. 1 of 2 | **832586, Rev 007, March 2026** |
+| **LGA1700** · Alder Lake (12 代) | 12th Generation Intel® Core™ Processors Datasheet, Vol. 1 of 2 | **655258-011**, May 2025 |
+| **LGA1700** · Raptor Lake (13/14 代) | 13th Gen / 14th Gen / (Series 1)(Series 2) / Xeon E 2400 / Xeon 6300 Datasheet, Vol. 1 of 2 | **743844-015**, May 2025 |
+| Meteor Lake (Ultra 100, BGA) | Intel® Core™ Ultra Processor Datasheet, Vol. 1 of 2（U/H/U-Type4） | **792044-007**, January 2025 |
+| Lunar Lake (Ultra 200V, BGA) | Intel® Core™ Ultra 200V Series Processors Datasheet, Vol. 1 of 2 | **829568-004**, May 2025 |
+| **LGA1851** · Arrow Lake-S (Ultra 200S) | Intel® Core™ Ultra 200S / 200S Plus / 200HX / 200HX Plus Datasheet, Vol. 1 of 2 | **832586-007**, March 2026 |
 
-### 6.3 LGA1700 → LGA1851 的 VT-d 差异（逐字对照）
+寄存器卷与芯片组（用于 §6.4 / §6.5 / §6.8）：
+**655259-003**（ADL Vol.2）· **743846-001**（RPL Vol.2；注意 `743845` **不是** Vol.2，它会 403）·
+**834966-001**（ARL-S Vol.2，**3 页存根，无寄存器正文**）·
+**743835-004**（Intel 700 Series Chipset / Z790 PCH Vol.1）·
+**833778-003**（Intel 800 Series Chipset / Z890 PCH Vol.1）。
 
-| 特性 | **LGA1700**（655258-011 / 743844-015，两者措辞逐字相同） | **LGA1851**（832586-007） | Lunar Lake（829568-004） |
+> **取文档的三个操作陷阱**（实测）：
+> 1. `ark.intel.com` 拒绝裸 `curl`（返回 568 字节存根），必须用能执行 JS 的抓取方式；
+> 2. 反过来 `edc.intel.com` 的正文是 JS 注水的，只拿导航骨架，必须用 `curl` 取 PDF；
+> 3. EDC 路径里的 `/secure/design/confidential/` 段**不是访问控制**——
+>    Arrow Lake VT-d 的 confidential 路径变体匿名返回的是同一份公开 rev 007 内容。
+>    **不要从该路径推断 NDA 状态。**
+
+### 6.3 客户端 VT-d 能力的世代分界 —— **不在 socket 上，在 Meteor Lake 上**
+
+本次把五份 datasheet 的 "Intel® VT-d Key Features" 节逐字对照，得到的分界线**与 ticket 的假设不同**：
+断点不是 LGA1700 → LGA1851，而是 **Raptor Lake → Meteor Lake**。
+Meteor Lake（BGA）与 Arrow Lake-S（LGA1851）的措辞**完全相同**。
+
+| 特性 | **Alder Lake `655258-011`** / **Raptor Lake `743844-015`**（逐字相同，LGA1700） | **Meteor Lake `792044-007`** / **Arrow Lake-S `832586-007`**（逐字相同） | **Lunar Lake `829568-004`** |
 |---|---|---|---|
-| 遵循的 VT-d 规范版本 | "comply with the Intel® VT-d **2.1** Specification" | "comply with the Intel® VT-d **2.1** Specification" | "comply with the Intel® VT-d **4.0** Specification" |
-| DMA remap 引擎数 | "**Two** Intel® VT-d DMA remap engines. — iGFX DMA remap engine — Default DMA remap engine (covers all devices except iGFX)" | **同左，Two**（iGFX + Default） | "**3** Intel® VT-d DMA Remapping Hardware Units: — GFx（iGD, Dev2） — Non-GFX（**NPU Dev11, IPU Dev5, PMCS Dev4**） — Default（rest of PCI + IOxAPIC + HPET）" |
+| 遵循的 VT-d 规范版本 | "comply with the Intel® VT-d **2.1** Specification" | "**2.1**" | "**4.0**" |
+| remap 引擎数 | "**Two** … — iGFX DMA remap engine — Default DMA remap engine (covers all devices except iGFX)" | **Two**（措辞完全相同） | "**3** … — GFx（iGD Dev2） — Non-GFX（**NPU Dev11, IPU Dev5, PMCS Dev4**） — Default（rest of PCI + IOxAPIC + HPET）" |
 | GPA/HPA 宽度 | **46-bit** | **46-bit** | **42-bit** |
-| 页表层数 | 4-level only（adjusted guest address width 48 bits） | 4-level only | 4-level only |
-| **super-page** | "support of … super-page (2 MB, 1 GB) for **default** Intel® VT-d engine (that covers all devices except IGD)"；**"IGD Intel® VT-d engine does not support super-page and BIOS should disable super-page in default Intel® VT-d engine when iGfx is enabled."** | "**all VTd engines support super-page (2 MB, 1 GB)**" | "**All VTd engines support 4K, 2M and 1G page sizes**" |
-| **Scalable Mode** | **未列出** | "**Scalable Mode - all VTd engines support Scalable mode operation (using `RID_PASID` only)**" | "All VTd engines support Scalable mode oper…" |
-| **Nested translation** | **未列出** | "**Nested - default Intel® VT-d engine support Nested translation**"（**只有 default 引擎**） | （未在抽取片段中） |
-| Interrupt Remapping | 支持 | 支持 | "Support for Interrupt Remapping **and Posted Interrupt**" |
+| 页表层数 | 4-level only（adjusted GAW 48 bits） | 同左 | 同左 |
+| **super-page** | "…for **default** Intel® VT-d engine (that covers all devices except IGD)"；**"IGD Intel® VT-d engine does not support super-page and BIOS should disable super-page in default Intel® VT-d engine when iGfx is enabled."** | "**all VTd engines support super-page (2 MB, 1 GB)**" | "**All VTd engines support 4K, 2M and 1G page sizes**" |
+| **Scalable Mode** | **未列出** | "**all VTd engines support Scalable mode operation (using `RID_PASID` only)**" | "All VTd engines support Scalable mode oper…" |
+| **Nested translation** | **未列出** | "**default** Intel® VT-d engine support Nested translation"（**仅 default 引擎**） | （未在抽取片段中） |
+| Interrupt Remapping | "is supported" | "is supported" | "Support for Interrupt Remapping **and Posted Interrupt**" |
 | Device-TLB (ATS) | 未列出 | 未列出 | "Support Device-TLB for both engines for integrated accelerators" |
 | Abort DMA Mode | 未列出 | 未列出 | "**Support Abort DMA Mode**" |
 | Pass-through | "Intel® VT-d translation bypass address range is supported (Pass Through)" | **未列出** | 未列出 |
+| 其他仅 LGA1700 列出 | "Support for 4K page sizes only"、"root entry, context entry, and the default context"、"boot protection of default page table"、"MSI cycles (MemWr to address FEEx_xxxxh) not translated" | — | — |
 | 通用免责 | "Intel® VT-d Technology **may not be available on all SKUs**." | 同左 | — |
 
-### 6.4 KF（无核显）对直通的意义 —— 现在有了机制级答案
+> **修正 ticket 的问题表述**：问"LGA1700 到 LGA1851 的 DMAR / 拓扑差异"会把断点找错。
+> **VT-d 能力的断点在 Meteor Lake**（`792044-007`，2025-01）——
+> super-page 的 IGD 例外消失、Scalable Mode 与 Nested translation 出现，都发生在这一代，
+> 而 Meteor Lake 根本不是 LGA1851。
+> **按 socket 建键会给出错误答案；按微架构/世代建键才对。**
 
-**LGA1700 上最锋利的一句（`655258-011` / `743844-015` 逐字）**：
+### 6.4 寄存器级佐证（仅 LGA1700 侧公开）
+
+Alder Lake / Raptor Lake 的 datasheet **Volume 2**（寄存器卷）公开了两个 VT-d 寄存器窗口
+（`655259-003` §3.2.2/§3.2.3、`743846-001` §3.2.2）：
+
+| 寄存器 | 位置 | 使能位 |
+|---|---|---|
+| **`GFXVTBAR`** — "GFX VT Range Base Address Register (`GFXVTBAR_0_0_0_MCHBAR_NCU`)" | **MCHBAR + `5400h`** | bit 0 `GFXVTBAREN` |
+| **`VTDPVC0BAR`** — "VT DMI PEG VC0 Range Base Address Register (`VTDPVC0BAR_0_0_0_MCHBAR_NCU`)" | **MCHBAR + `5410h`** | bit 0 `VTVC0BAREN` |
+
+两个窗口的 `CAP_REG` 默认值**不同**（`09C0000C406F0466h` 对 `08D2008C40690462h`）——
+这正是 §6.3 中"IGD 引擎不支持 super-page"在硬件层面的对应物。
+两者都受 **`CAPID0_A_0_0_0_PCI.VTDD`** 熔丝门控
+（"VT-d Disable… 0: VT-d is supported / 1: VT-d is not supported"），
+这就是 "may not be available on all SKUs" 背后的机制。
+`GFXVTBAREN` 的描述另写明 "**This bit will remain 0 if VTd capability is disabled.**"
+
+**LGA1851 侧没有对应的寄存器级公开**：Arrow Lake-S 的 Volume 2（**`834966-001`, January 2025**）
+是一份 **3 页的存根**，三个寄存器章节都没有正文。
+→ **"LGA1851 没有 `GFXVTBAR`"是不能说的**，那只是**出版不完整**；
+Volume 1 `832586-007` 仍然明写 iGFX 引擎存在。这是必须避免的误读陷阱。
+
+### 6.5 限定性否定声明：客户端 datasheet **根本不用 DMAR 术语**
+
+**声明**：字符串 **`DRHD`、`DMAR`、"DMA Remapping Reporting"、`INCLUDE_PCI_ALL`
+在下列七份文档中出现次数均为 0**：`655258-011`、`743844-015`、`832586-007`、
+`655259-003`、`743846-001`、`743835-004`（Z790 PCH）、`833778-003`（Z890 PCH）。
+（唯一例外：**Lunar Lake `829568-004` 是唯一使用 "DMA Remapping Hardware Units" 措辞的客户端 datasheet**。）
+
+> **后果**：Intel 客户端 datasheet 描述的是**处理器具备几个硬件 remap 引擎**，
+> **不是 ACPI DMAR 表里有几个 DRHD 结构**。引擎 → DRHD 的映射是 **BIOS 行为**，
+> 属于 BIOS Writer's Guide（NDA）或实机 DMAR dump 的范围。
+> **任何把 DRHD 数量归因于这些 datasheet 的说法都不成立。**
+
+同理，**没有任何公开 Intel 客户端文档声明 IGD 或 USB/xHCI 的 RMRR 区域**。
+`655259` 与 `743846` 中 "RMRR" 各出现两次，都在 Protected Memory Enable 寄存器描述的规范套话里
+（"software is recommended to not overlap protected memory regions with any reserved memory regions of
+the platform reported through the RMRR structures"），是交叉引用，不是设备清单。
+
+VT-d 规范侧能说的（`D51397-019 Rev 5.20`）：
+§8.4 "The RMRR regions are **expected to be used for legacy usages (such as USB, UMA Graphics, etc.)**"；
+"The reserved memory region reporting structures are **optional**. **If there are no RMRR structures,
+the system software concludes that the platform does not have any reserved memory ranges that are DMA
+targets.**"；§8.3 "RMRR structures are not reported via `_DSM`, since use of reserved memory regions are
+limited to legacy devices (**USB, iGFX** etc.)"。
+
+### 6.6 KF（无核显）对直通的意义 —— 能说的和不能说的
+
+**能说的（LGA1700 上）**，`655258-011` / `743844-015` 逐字：
 
 > "**IGD Intel® VT-d engine does not support super-page and BIOS should disable super-page in default
 > Intel® VT-d engine when iGfx is enabled.**"
 
-> **读法**：在 12/13/14 代平台上，**只要核显是开着的，BIOS 就被要求把 default 引擎的 super-page 也关掉**
-> ——也就是说 **iGPU 的存在会把整机所有设备的 IOMMU 页大小能力拉低到 4K**。
-> 对直通场景这直接意味着 IOTLB 压力与页表内存开销显著变大。
+> **读法**：在 12/13/14 代平台上，只要核显开着，**BIOS 就被要求把 default 引擎的 super-page 也关掉**
+> ——iGPU 的存在会把整机**所有设备**的 IOMMU 页大小拉低到 4K，
+> 直通场景下 IOTLB 压力与页表内存开销显著上升。触发条件是 "**when iGfx is enabled**"，KF 不满足它。
 >
-> 因此 **"KF 无核显"在 LGA1700 上是有真实 IOMMU 后果的**：
-> 触发条件 "when iGfx is enabled" 不成立，default 引擎的 super-page 就没有被要求关闭。
->
-> **但这条边界必须写清楚**：datasheet 说的是 "**BIOS should**"，是**对 BIOS 的建议**，
-> 不是处理器行为；实际是否关闭取决于具体主板固件。**这不是可以从文档断言的实机行为。**
+> **边界**：datasheet 说的是 "**BIOS should**"，是**对 BIOS 的建议**，不是处理器行为；
+> 实际是否关闭取决于主板固件。**这不是可以从文档断言的实机行为。**
 
-**LGA1851 上这条限制消失了**：`832586-007` 直接写 "**all VTd engines** support super-page (2 MB, 1 GB)"，
-不再有 IGD 例外，也不再有对 BIOS 的关闭建议。
-→ **Arrow Lake 世代，iGPU 在不在已经不影响 default 引擎的 super-page 能力。**
-换言之，**"KF 因为没有核显所以 IOMMU 更好"这个说法在 LGA1700 上有依据，在 LGA1851 上已经失效。**
+**并且这条从 Meteor Lake 起已经不成立**：`792044-007` 与 `832586-007` 都写
+"all VTd engines support super-page"，没有 IGD 例外，也没有对 BIOS 的关闭建议。
+→ **"KF 没有核显所以 IOMMU 更好"在 LGA1700 上有依据，在 Arrow Lake 上已经失效。**
 
-**仍然未解决的（Gap G7）**：KF 部件的 **DMAR ACPI 表里 iGFX 那个 DRHD 到底在不在**。
-datasheet 描述的是**处理器具备的引擎**，DMAR 表内容由 BIOS 生成。
-VT-d 规范 §8.4 只说 RMRR "expected to be used for legacy usages (such as USB, **UMA Graphics**, etc.)"。
-**没有任何一手文档说"无核显 ⇒ 无 IGD DRHD / 无图形 RMRR"。** 必须在 265KF 上 dump DMAR 才能确认。
+**不能说的（Gap G7）**：**KF 部件的 DMAR 表里 iGFX DRHD 与图形 RMRR 到底在不在。**
+已检索：ARK 265K/265KF、Series 2 桌面产品简介、`832586-007` / `655258-011` / `743844-015`、
+寄存器卷 `655259-003` / `743846-001` / `834966-001`、
+PCH datasheet `743835-004` / `833778-003`、VT-d 规范 `D51397-019`。
+**没有一份把 F/KF SKU 与 DMAR 内容联系起来。** 只能靠实机 dump DMAR 或 NDA 的 BIOS Writer's Guide。
 
-### 6.5 SR-IOV：限定性否定声明
+### 6.7 265KF 的 ARK 数据（Intel 官方，逐字）
 
-**声明**：在
-**`655258-011`（Alder Lake）**、**`743844-015`（Raptor Lake）**、**`832586-007`（Arrow Lake-S）**、
-**`829568-004`（Lunar Lake）** 四份 Intel 客户端平台 datasheet 全文中，
-**"SR-IOV" / "SRIOV" 出现次数为 0，"GVT" 出现次数为 0。**
-（检索方式：PDF 全文正则 `SR-IOV|SRIOV` 与 `GVT`。）
+265KF 的 ARK 页面**整节没有 "Processor Graphics" 行**。与 265K 对照：
 
-**这条声明的边界**：它说的是"**这四份 datasheet 不提 SR-IOV**"，
-**不等于**"客户端 iGPU 不支持 SR-IOV"。Intel 客户端 iGPU 的 SR-IOV 支持状态需要从
-i915/xe 驱动侧或 Intel 图形软件文档取证——**本次未取得**，记为 **Gap G12**。
-对 **265KF 而言这个问题在事实上不适用**：没有核显就没有可虚拟化的 iGPU 函数。
+| GPU Specifications 行 | **265KF** | **265K** |
+|---|---|---|
+| GPU Name | **行不存在** | "Intel® Graphics" |
+| Graphics Output | **"n/a"** | "eDP1.4b, DP 2.1 UHBR20, HDMI 2.1 FRL" |
+| **Xe-cores** | **"0"** | "4" |
+| Intel® Quick Sync Video | **"No"** | "Yes" |
+| # of Displays Supported | **"0"** | "4" |
+| Device ID | **行不存在** | "0x7D67" |
 
-### 6.6 客户端 VT-d 的其他世代差异（datasheet 一手）
+Intel 的 *Core Ultra Desktop Processors (Series 2) Product Brief* 对 265KF / 265F 印的是
+**"Processor Graphics: N/A"**。
 
-- **Scalable Mode 的客户端引入点是 Arrow Lake / Lunar Lake**：LGA1700 两份 datasheet 完全不提，
-  LGA1851 明确列出且限定 "using **`RID_PASID` only**"。
-  这对想用 scalable-mode PASID 表的代码是硬门槛。
-- **Nested translation 只在 default 引擎上**（`832586-007`："**default** Intel VT-d engine support
-  Nested translation"）。做 nested IOMMU 的 VMM 不能假设所有 DRHD 对等。
-- **Lunar Lake 的 GPA/HPA 宽度降到 42-bit**（LGA1700/LGA1851 都是 46-bit），
-  且引擎数增到 3 个（多出一个服务 NPU/IPU/PMCS 的 Non-GFX 单元）。
-  → **"客户端 VT-d 引擎只有两个"这个假设从 Lunar Lake 起不成立。**
-- **Posted Interrupt 在 Lunar Lake 的 datasheet 里被明确列出**，
-  而 LGA1700/LGA1851 两份只写 "Interrupt Remapping is supported"。→ 差异待实测确认（**Gap G13**）。
+**另一处与直通直接相关的差异**：**265KF 的 "Intel® Thunderbolt™ 4" = "No"**，
+而 265K 与 285K 都是 **"Yes"**。这是 265K 与 265KF 之间 Expansion Options 里**唯一**的差异；
+其余相同（PCIe Revision "5.0 and 4.0"、Configurations "Up to 1x16+2x4, 2x8+2x4, 1x8+4x4"、
+Max PCIe Lanes "24"、DMI Revision "4"、Max DMI Lanes "8"）。
 
----
+> **KF 不只是"少了核显"，还少了 Thunderbolt 4。** 对 eGPU / 外部 PCIe 直通场景是实质差异。
+
+**NPU 仍在**：265KF 的 NPU Specifications 节与 265K **完全相同**
+（NPU Name "Intel® AI Boost"、NPU Peak TOPS (Int8) "13"、Sparsity Support "Yes"）。
+`832586-007` 把 NPU 描述为独立设备：
+> "The NPU IP … is a Deep Learning accelerator **enumerated to a host processor as an integrated PCIe
+> device**."
+
+**但媒体引擎没了**：Quick Sync Video "No"；265K 的编解码行（H.264 / H.265 / AV1 Encode/Decode）
+在 265KF 页面上整体不存在。
+
+**Gap G16**：**KF 是物理上没有图形 tile，还是熔丝关闭。**
+已检索 ARK、产品简介、`832586-007` 的 feature-overview / introduction / device-ids /
+processor-graphics / processor-sku-support-matrix 各节，
+字符串 "KF"、"graphics disabled"、"without graphics"、"no graphics" **均无命中**。
+datasheet 只有一句通用的 "The availability of the features above may vary between different processor
+SKUs."。**不从"NPU 在 + Xe-cores 0"反推 tile 级结论。**
+
+### 6.8 PCIe / 芯片组拓扑（LGA1700 vs LGA1851）
+
+| 项 | **LGA1700**（12/13/14 代） | **LGA1851**（Ultra 200S） |
+|---|---|---|
+| ARK "Max # of PCI Express Lanes" | 12900K / 13900K = **"20"** | 285K / 265K / 265KF = **"24"** |
+| ARK Configurations | "Up to 1x16+4, 2x8+4" | "Up to 1x16+2x4, 2x8+2x4, 1x8+4x4" |
+| datasheet 拆分 | `655258` §7.1.1：16 lane Gen5 + 4 lane Gen4 | `832586-007`："Maximum of **20 PCIe Lanes support up to Gen5** transfer rate (**16 SOC-S + 4 IOE**)"；Max Lanes 24；**Max Devices (Root Ports) = 5** |
+| 分叉配置来源 | pin strap | "configured based off **Pin Strap and Soft Strap**"；IOE 侧 "set **only through the IOE Soft Straps**" |
+| **DMI** | "8 lanes Gen 4 DMI support… **16 GT/s** point-to-point DMI interface to PCH" | **逐字相同** |
+| 芯片组 | **Z790**：DMI x8 Gen4；chipset PCIe **28**（Gen3 ×8 + Gen4 ×20）；Integrated Thunderbolt Lanes **"NO"** | **Z890**：DMI Gen4 x8；chipset PCIe **24**，全 Gen4；Processor TBT4/USB4 ports **"Up to 2"** |
+
+> **DMI 没有变**：两代都是 **Gen4 x8，16 GT/s**，datasheet 措辞逐字相同。
+> **Z890 的芯片组 PCIe 总通道数反而比 Z790 少**（24 vs 28），但全部升到 Gen4、不再有 Gen3。
+> USB4 host router 章节在 Alder Lake datasheet 里**就已存在**
+> （slug `usb-4-host-router-implementation-capabilities`），
+> 所以 **USB4 硅片不是 LGA1851 新增的**；变的是产品化
+> （ARK 在 12900K/13900K 上根本不列 Thunderbolt 字段）。
+
+### 6.9 SR-IOV —— 本次最需要纠正的一条，且 **Intel 与上游内核不一致**
+
+**先收回一个中途结论**：只读 datasheet 时可以得到"四份 datasheet 中 SR-IOV 命中为 0"。
+那条**作为 datasheet 层面的事实成立**，但**不能**用来推断"客户端 iGPU 不支持 SR-IOV"——
+Intel 的答案在**支持文章**里，不在 datasheet 里。
+
+**Intel 支持文章 000093216, "Graphics Virtualization Technologies Support for Each Intel® Graphics
+Family", Last Reviewed 2026-05-27**（逐字）：
+
+> "The latest of these technologies been **Single Root IO Virtualization (SR-IOV)** which replaced the
+> previous Intel® Graphics Virtualization Technology –g (GVT-g). **Current SR-IOV support is available
+> for systems running Linux as the host operating system with Windows or Linux guest virtual machines.**"
+
+客户端相关行（逐字）：**Panther Lake — SR-IOV**；**Arrow Lake — SR-IOV**；
+**Lunar Lake — "Not Supported"**；
+**Meteor Lake — "SR-IOV (Supported on Linux host with Windows/Linux virtual machines)"**；
+**Raptor Lake / Raptor Lake Refresh — SR-IOV**；**Alder Lake — SR-IOV**；
+**Tiger Lake — "Not Supported"**；Rocket Lake / Ice Lake / Comet Lake 及更早 — **GVT-g**。
+
+> **"SR-IOV 只有 Flex/Max 数据中心卡才有"这个常见说法是错的**——
+> Intel 官方对客户端 iGPU 宣称支持 SR-IOV，**但限定 Linux 宿主**。
+
+**上游内核与这条宣称不符（T2，已直接核对 `drivers/gpu/drm/xe/xe_pci.c` master）**：
+`.has_sriov = true` 出现在 `tgl_desc`、`adl_s_desc`、`adl_p_desc`、`adl_n_desc`、`ats_m_desc`、
+`bmg_desc`、`ptl_desc` 等；**`mtl_desc` 与 `lnl_desc` 上没有**。
+**Arrow Lake 没有自己的 descriptor**：`INTEL_ARL_IDS(INTEL_VGA_DEVICE, &mtl_desc)`
+——继承 Meteor Lake 的，因此也继承了"无 SR-IOV"。上游 `i915` **完全没有** SR-IOV 代码。
+
+**调和**：MTL/ARL 的 SR-IOV 走的是 **Intel 的 out-of-tree i915**，不是上游。
+Intel 自有仓库 `github.com/intel/edge-gfx-dkms-installer` 以 DKMS 形式提供 i915 + kvmgt，
+自述 "with out-of-tree patches that deliver functionality not yet merged into the upstream kernel"，
+Supported Platforms 明列 Meteor Lake 与 Arrow Lake。
+
+**对 265KF 而言这一整节事实上不适用**：没有核显就没有可虚拟化的 iGPU 函数。
+
+仍存的缺口：**G12b**（Lunar Lake 为何 "Not Supported" 而 MTL/ARL/PTL 支持）、
+**G12c**（Intel 只肯定性地限定到 Linux 宿主，从未明说 Windows 宿主不支持）、
+**G12d**（Intel 内部不一致：支持文章 000058558(2021) 说 SR-IOV 从 Tiger Lake 起，
+而 000093216(2026) 把 Tiger Lake 列为 "Not Supported"）。
 
 ## 7. 缺口清单（Gaps）
 
@@ -837,10 +1031,16 @@ i915/xe 驱动侧或 Intel 图形软件文档取证——**本次未取得**，�
 | **G9** | **本 session 无法做任何 Intel 实机验证** | 执行环境 CPU 经 `Win32_Processor` 确认为 **AMD Ryzen 9 9950X3D（AMD64 Family 26 Model 68 Stepping 0，16C/32T）**，不是用户的 265KF | 所有标注"可实测"的项都需要在 265KF 上另行执行 |
 | **G10** | **Hyper-V / Windows 在混合 CPU 上的行为**，以及是否有与 ESXi 对应的均一性假设 | learn.microsoft.com 与 techcommunity.microsoft.com 在子代理环境中不可达（五次尝试 socket closed）。已核实：**Hypervisor TLFS v6.0b (February 2020) 全文对 hybrid / heterogeneous / asymmetric 零覆盖**，但该文档早于 Alder Lake | 换一个能访问 learn.microsoft.com 的环境重跑；或在 265KF 上直接观测 Hyper-V 行为 |
 | **G11** | **Intel 对 HX 部件是否受 Vmin Shift Instability 影响自相矛盾**：Community "Unaffected Products List"(2024-08-30) 明列 HX 不受影响；`740518-031` Summary Table of Changes 把 HX / HX-Refresh 8P+16E 标为 RPL063 **"No Fix"**。两者是同一块 `B0671h` 硅片、收同一份 `06-b7-01` 微码 | Intel Community 五篇公告、支持文章 000102331、`740518-031` 全文 | 未找到调和文档。**不裁决**，引用时必须同时给出两种说法 |
-| **G12** | **Intel 客户端 iGPU 的 SR-IOV 现状** | `655258-011` / `743844-015` / `832586-007` / `829568-004` 四份 datasheet 全文 `SR-IOV\|SRIOV\|GVT` 命中均为 **0** | i915/xe 驱动文档或 Intel 图形软件文档。**对 265KF 事实上不适用**（无核显） |
+| ~~G12~~ | ~~Intel 客户端 iGPU 的 SR-IOV 现状~~ | **已关闭** —— Intel 支持文章 **000093216**（Last Reviewed 2026-05-27）明列 Alder/Raptor/Arrow/Panther Lake 为 **SR-IOV**、Lunar Lake 为 "Not Supported"，**且限定 Linux 宿主**。见 §6.9 | — |
+| **G12b** | Lunar Lake 为何是 "Not Supported"，而 MTL / ARL / PTL 支持 | intel.com、edc.intel.com、eci.intel.com、kernel git log | — |
+| **G12c** | Intel 是否**明确**排除 Windows 宿主 | 000093216 只**肯定性地**把 SR-IOV 限定到 Linux 宿主，从未写 Windows 不支持 | — |
+| **G12d** | Intel 内部不一致：支持文章 **000058558**（2021）说 SR-IOV 从 Tiger Lake 起；**000093216**（2026）把 Tiger Lake 列为 "Not Supported"、把 Ice Lake / Rocket Lake 列为 GVT-g | 两篇支持文章 | **不裁决**，引用时并列两说 |
 | **G13** | Lunar Lake datasheet 明列 "Interrupt Remapping **and Posted Interrupt**"，而 LGA1700/LGA1851 两份只写 "Interrupt Remapping is supported" —— 是能力差异还是措辞差异 | 四份 datasheet 的 VT-d Key Features 节 | 实机读 VT-d Capability Register 的 PI 位 |
 | **G14** | ESXi 均一性检查**具体比较哪些量**、其 CPUID leaf / MSR 来源 | knowledge.broadcom.com、techdocs.broadcom.com、community.broadcom.com | vmkernel 闭源。§8.6.2 中把三个拓扑名归到 `04H`/`0BH`/`1FH` 是**推断，非厂商来源**，不得当作已证实 |
 | **G15** | SDM 的 microcode 一节从 Ch.9 → Ch.10 → Ch.11 → Ch.12 具体在哪个修订改的 | 只确认了 **093 修订中是 Vol.3A Ch.12 §12.11** | 逐修订比对，或查 Documentation Changes 252046 系列 |
+| **G16** | 265KF 是**物理上没有图形 tile**，还是**熔丝关闭** | ARK、Series 2 桌面产品简介、`832586-007` 的 feature-overview / introduction / device-ids / processor-graphics / processor-sku-support-matrix 各节；"KF" / "graphics disabled" / "without graphics" / "no graphics" 均无命中 | 不从 "NPU 在 + Xe-cores 0" 反推 tile 级结论 |
+| **G17** | **Panther Lake 的 SMT 缺乏 Intel 肯定性陈述** | ARK SKU 页与 Series 3 系列页；线程数 = 核数，但 "Intel® Hyper-Threading Technology" **整行不存在**（不是写了 "No"） | Series 3 datasheet（未定位到）；或实机 `CPUID.1FH` |
+| **G18** | Intel 没有定义复合后缀 **"KF"** | *Processor Names, Numbers and Generation List*、*What Do the Letters Mean…*（2025-12-09）两页都只分别定义 K 与 F，不列 KF（也不列 KS / HX） | — |
 
 ---
 
@@ -869,6 +1069,12 @@ i915/xe 驱动侧或 Intel 图形软件文档取证——**本次未取得**，�
 
 - **文档号 → PDF（最可靠）**：`https://cdrdv2.intel.com/v1/dl/getContent/<DOCNUM>`，302 到当前公开修订。
   **不要自己拼文件名**——分隔符不一致（`615211-008.pdf` 对 `682436_040.pdf`）。
+
+> **两个必须写进 bibliography 的检索陷阱**：
+> 1. **10 代与 11 代各有两份标题完全相同的 Specification Update**
+>    （10 代：Comet Lake `615213` 与 Ice Lake `341079`；11 代：Rocket Lake `634808` 与 Tiger Lake `631123`），
+>    连 intel.com 的 slug 都一样——**只有文档号能区分它们**。
+> 2. **`615211` 与 `636761` 是 datasheet，不是 Specification Update**，搜索引擎经常把两者混为一谈。
 - **落地页**：`https://www.intel.com/content/www/us/en/content-details/<DOCNUM>/<slug>.html`。
   slug 是装饰性的：传任意 slug 也会被重定向到正规 URL 并返回 200。**文档号本身就够了。**
 - **EDC HTML 阅读器**：
@@ -1379,9 +1585,58 @@ rev 040 中状态为 **Fixed**（四个 Alder Lake die 列全部）。
   → **late-loaded 的微码之所以能跨 S3 存活，是因为 OS 从内存缓存里重新加载了它，不是硬件保持。**
   一个拥有平台的 hypervisor 如果接管了 S3 路径，**必须自己承担这件事**。
 
-### 8.8 SMT 与平台 / VT-d 取证
+### 8.8 SMT 状态逐代表（Intel ARK，一手）
 
-<!-- SUBAGENT-D-PLACEHOLDER -->
+ARK 字段名随世代变化：早期部件没有 P/E 核行；Arrow Lake / Lunar Lake / Panther Lake 把显卡
+放在 "GPU Specifications" 而不是 "Processor Graphics" 下。下表的
+"Intel® Hyper-Threading Technology" 列是 ARK 该字段的**逐字取值**。
+
+| 世代（代号） | 型号 | Total Cores | P-cores | E-cores | LPE-cores | **Total Threads** | ARK "Intel® Hyper-Threading Technology" |
+|---|---|---|---|---|---|---|---|
+| 10th (Comet Lake-S) | i9-10900K | 10 | 无此行 | 无此行 | — | **20** | **"Yes"** |
+| 11th (Rocket Lake-S) | i9-11900K | 8 | 无此行 | 无此行 | — | **16** | **"Yes"** |
+| 12th (Alder Lake-S) | i9-12900K | 16 | 8 | 8 | — | **24** | **"Yes"** |
+| 13th (Raptor Lake) | i9-13900K | 24 | 8 | 16 | — | **32** | **"Yes"** |
+| 14th (Raptor Lake R) | i9-14900K | 24 | 8 | 16 | — | **32** | **"Yes"** |
+| Ultra 100 (Meteor Lake) | Ultra 7 155H | 16 | 6 | 8 | **2** | **22** | **"Yes"** |
+| Ultra 200V (Lunar Lake) | Ultra 7 268V | 8 | 4 | — | **4** | **8** | **"No"** |
+| Ultra 200V (Lunar Lake) | Ultra 7 258V | 8 | 4 | — | **4** | **8** | **"No"** |
+| Ultra 200S (Arrow Lake-S) | Ultra 9 285K | 24 | 8 | 16 | — | **24** | **"No"** |
+| Ultra 200S (Arrow Lake-S) | Ultra 7 265K | 20 | 8 | 12 | — | **20** | **"No"** |
+| **Ultra 200S (Arrow Lake-S)** | **Ultra 7 265KF** | **20** | **8** | **12** | — | **20** | **"No"** |
+| Ultra Series 3 (Panther Lake) | Ultra X9 388H | 16 | 4 | 8 | **4** | **16** | **该行整个不存在** |
+| Ultra Series 3 (Panther Lake) | Ultra X9 378H | 16 | 4 | 8 | **4** | **16** | **该行整个不存在** |
+
+**哪一种核带 SMT（12 代起）** —— Intel 支持文章
+**000091896 "What Is Performance Hybrid Architecture?"（Last Reviewed 2026-06-18）**逐字：
+P-core "**Capable of hyper-threading, which means running two software threads at once**"；
+E-core "**Capable of running a single software thread.**"
+线程算术在每一颗混合部件上都对得上：12900K `8×2+8 = 24`；13900K/14900K `8×2+16 = 32`；
+155H `6×2+8+2 = 22`。
+
+datasheet 侧的 HT 陈述（`655258-011`，逐字）：
+> "The processor supports Intel® Hyper-Threading Technology (Intel® HT Technology) that allows an
+> execution processor IA core to function as two logical processors… This feature **should be enabled
+> using the BIOS and requires operating system support**."
+加上 "Intel® HT Technology **may not be available on all SKUs**."
+
+**ticket 的两个假设都被证实**：**Lunar Lake 与 Arrow Lake-S 都取消了 SMT**——
+ARK 的 Hyper-Threading 字段明写 **"No"**，且所查每一颗部件的线程数都等于核数。
+
+**Panther Lake 要谨慎措辞（不是缺口，但要限定）**：
+ARK 上 Series 3 共 15 个 SKU，Launch Date "Q1'26"，Status "Launched"；
+所查两个 SKU 线程数等于核数（16/16），且 **ARK 根本不打印
+"Intel® Hyper-Threading Technology" 这一行**（Advanced Technologies 全列表已逐项检查）。
+这与"SMT 继续缺席"一致，但**那是"行不存在"，不是 Intel 写了 "No"**。
+→ **Gap G17**：Panther Lake 的 SMT 缺乏 Intel 的肯定性陈述。
+另：**ARK 上列出的 Series 3 SKU 全部是移动级，没有 LGA 桌面 Panther Lake。**
+
+**KF 后缀的官方定义**：Intel **没有**在任何地方把 "KF" 作为整体定义，只分别定义字母：
+*Intel® Processor Names, Numbers and Generation List* —— **K = "High performance, unlocked"**，
+**F = "Requires discrete graphics"**；
+*What Do the Letters Mean in Intel® Processor Names?*（Last Reviewed 2025-12-09）——
+**K = "Unlocked"**，**F = "Requires discrete graphics"**。
+→ **Gap G18**：没有任何 Intel 页面定义复合后缀 "KF"（同样也不定义 "KS"、"HX"）。
 
 ---
 
@@ -1405,9 +1660,76 @@ ticket / map 里写明"用户有真机 Intel Core Ultra 7 265KF，能实测优�
 | S2 | SDM Combined Volumes 1, 2A–2D, 3A–3D, 4 | **325462-093US, September 2026** | Vol.1 §1.1（§1.2）；Vol.1 **Ch.5 Table 5-2 + 脚注 3**（§2, §3.5）；Vol.1 **Ch.21 §21.1.4 CPUID Domains**（§3.2）、§21.1.5 Table 21-1/21-2（§5.4）、§21.1.8（§5.3）、Table 21-6/21-8/21-9/21-10/21-14/21-19/21-21/21-30/21-63/21-72（§3.2, §4.1）；Vol.3A **Ch.12 §12.11 及 §12.11.6.1–.4**（§5.3）；Vol.3B **§20.20.3 + Table 20-22**（§3.6）、**§22.3.10 / §22.3.10.3 / §22.3.11**（§3.7）；Vol.3C **§26.6, §26.7**、**§27.11.5**（§4.2）、**Ch.28 §28.3**（§5.1a）、§32.1.6（IPI virtualization 为 tertiary control）；Vol.3D **Appendix A / A.1**（§3.4） |
 | S3 | Intel VT for Directed I/O Architecture Specification | **D51397-019, Rev 5.20, April 2026** | §3.4.4 / PMR 寄存器描述（§6.1）；**§8.3 DRHD / INCLUDE_PCI_ALL**；**§8.4 RMRR**（§6.1）；§8 三 DRHD 通用示例（§6.2）；修订记录（§6.1） |
 
-### 子代理取得的来源
+### T1 · Intel Specification Update（10 份，全部下载并核对封面；见 §8.1 的完整表）
 
-见 **§8.1–§8.7**，每条均在该节内标注文档号 / URL 与 tier。
+`615213-013` · `341079-023` · `634808-012` · `631123-034` · `682436-040` · `740518-031` ·
+`792254-024` · `827538-022` · `834774-023` · `869992-008`（旁支：`764616-004`）。
+本文档引用到的具体位置：各文档 **§2.1 "Component Identification via Programming Interface"**
+（Table 1 或 Table 2-1）见 §1.4；**Summary Table of Changes** 与勘误正文见 §8.3、§8.7.2、§8.7.6；
+`834774-023` §1.2 Related Documents 与 §2.2 Component Marking 见 §8.5。
+
+### T1 · Intel 客户端平台 Datasheet / PCH Datasheet
+
+| 文档 | 文档号-修订 | 引用位置 |
+|---|---|---|
+| 12th Gen Intel® Core™ Processors Datasheet, Vol.1 of 2 | **655258-011**, May 2025 | §6.2–§6.8 |
+| 12th Gen … Datasheet, Vol.2 of 2（寄存器） | **655259-003**, April 2022 | §6.4, §6.5 |
+| 13th Gen / 14th Gen / (Series 1)(Series 2) / Xeon E 2400 / Xeon 6300 Datasheet, Vol.1 of 2 | **743844-015**, May 2025 | §6.2–§6.8 |
+| 13th Gen … Datasheet, Vol.2 of 2（寄存器） | **743846-001**, October 2022 | §6.4, §6.5 |
+| Intel® Core™ Ultra Processor Datasheet, Vol.1 of 2（Meteor Lake U/H/U-Type4） | **792044-007**, January 2025 | §6.2, §6.3 |
+| Intel® Core™ Ultra 200V Series Processors Datasheet, Vol.1 of 2 | **829568-004**, May 2025 | §6.3, §6.5 |
+| Intel® Core™ Ultra 200S/200S Plus/200HX/200HX Plus Datasheet, Vol.1 of 2 | **832586-007**, March 2026 | §6.3–§6.8 |
+| Intel® Core™ Ultra 200S … Datasheet, Vol.2 of 2 | **834966-001**, January 2025（**3 页存根**） | §6.4 |
+| Intel 700 Series Chipset Family PCH Datasheet, Vol.1 of 2（Z790） | **743835-004**, April 2024 | §6.5, §6.8 |
+| Intel 800 Series Chipset Family PCH Datasheet, Vol.1 of 2（Z890） | **833778-003**, February 2025 | §6.5, §6.8 |
+
+（另已取得文档号但未下载：`842704` / `844261` ARL-H/U Datasheet、`831519` LNL Vol.2。）
+
+### T1 · Intel 其他官方文档
+
+| 文档 | 文档号 / 修订 | 引用位置 |
+|---|---|---|
+| Optimizing Software for Intel® performance hybrid architecture（白皮书） | **348851-001US, Rev 1.0, October 2021** —— §1.1、**§6.1** | §8.6.4, §8.6.5 |
+| Intel® 64 and IA-32 Architectures Optimization Reference Manual, Volume 1 | **248966-050US, April 2024** —— **§2.3.1** | §8.6.4 |
+| Speculative Execution Side Channel Mitigations | **336996-003, Rev 3.0, May 2018** —— **§5.1, §5.2** | §8.7.4 |
+| Microcode Update Guidance | **Intel document ID 660235** | §8.7.4, §8.7.8 |
+| CPUID Enumeration and Architectural MSRs | **Intel document ID 758381** | §8.6.5, §8.7.4 |
+| Intel® TSX Disable Update for Selected Processors | **643557, Rev 2.3, June 2023** | §8.7.5 |
+| Performance Monitoring Impact of Intel® TSX Memory Ordering Issue | **604224, Rev 1.5, June 2023** | §8.7.5 |
+| 支持文章 "Is AVX-512 Fused Off on Alder Lake Client Products?" | **article ID 000089918**, reviewed 2022-03-25 | §8.6.4, §8.7.5 |
+| 支持文章 "Graphics Virtualization Technologies Support for Each Intel® Graphics Family" | **article ID 000093216**, reviewed **2026-05-27** | **§6.9** |
+| 支持文章 "What Is Performance Hybrid Architecture?" | **article ID 000091896**, reviewed 2026-06-18 | §8.8 |
+| 支持文章 "What Do the Letters Mean in Intel® Processor Names?" | **article ID 000058567**, reviewed 2025-12-09 | §8.8 |
+| 支持文章 "Does My Computer with … Number Ending with 'F' Need a Discrete Graphics Card?" | **article ID 000058487**, reviewed 2022-04-28 | §8.8 |
+| （内部不一致的另一半）支持文章 GVT-g / SR-IOV 世代表 | **article ID 000058558**（2021） | §6.9, Gap G12d |
+| Intel® Processor Names, Numbers and Generation List | intel.com 产品命名页 | §8.8 |
+| Game Dev Guide for 12th Gen Intel® Core™ Processor | updated 2022-06-13 | §8.6.4, §8.6.5 |
+| Intel ARK 产品规格页（10900K / 11900K / 12900K / 13900K / 14900K / 155H / 268V / 258V / 285K / **265K / 265KF** / X9 388H / X9 378H） | ark.intel.com，Intel 官方 | §6.7, §8.8 |
+| Core Ultra Desktop Processors (Series 2) Product Brief | intel.com | §6.7 |
+| Intel Community — Vmin Shift Instability 系列公告（2024-07-22 / 2024-08-09 / 2024-08-30 / **2024-09-25** / **2025-05-01**） | — | §8.7.1–§8.7.3 |
+| 支持文章 "Vmin Shift Instability Latest Information" | **article ID 000102331** | §8.7.2 |
+| `intel/Intel-Linux-Processor-Microcode-Data-Files` — `releasenote.md` | Intel 自有仓库 | §8.7.1 |
+| `intel/edge-gfx-dkms-installer`（out-of-tree i915 + kvmgt，明列 MTL / ARL） | Intel 自有仓库 | §6.9 |
+
+### T2 · 其他厂商 / 内核来源
+
+| 来源 | 引用位置 |
+|---|---|
+| Broadcom KB **395554** "ESXi PSOD with 'Fatal CPU mismatch on feature'"（2025-08-18） | §8.6.1 |
+| VMware ESXi kernel settings（`esxcli system settings kernel list -d` 输出，7.0U1→9.0.0 各 build） | §8.6.1 |
+| Linux `arch/x86/kernel/cpu/common.c::identify_cpu()` / `microcode_check()` | §8.6.6, §8.7.7 |
+| Linux `arch/x86/kvm/cpuid.c`（`HYBRID_CPU` 未枚举、无 `case 0x1a`） | §8.6.6 |
+| Linux `drivers/gpu/drm/xe/xe_pci.c`（`.has_sriov` 分布；`INTEL_ARL_IDS(..., &mtl_desc)`） | §6.9 |
+| Linux `Documentation/arch/x86/microcode.rst`、`arch/x86/Kconfig`、`microcode/intel.c::ucode_validate_minrev()` | §8.7.7 |
+| Linux commits **`cf5ab01c8703`**（Ashok Raj, Intel, 2023-10-02）、**`9407bda845dd`**（Gleixner, 2023-10-17） | §8.7.7 |
+| Linux `arch/x86/power/cpu.c::__restore_processor_state()` | §8.7.8 |
+| Microsoft Hypervisor Top Level Functional Specification **v6.0b, February 2020**（用于一条限定性否定声明） | §8.6.6 |
+
+### T3 · 仅作佐证、不单独支撑架构 claim
+
+virten.net 的 12/13 代 PSOD 转录（panic 串原文）、Broadcom 社区帖（panic 完整格式、
+VMware 工程师 Tim Mann 与 Valentin Bondzio 的发言）、William Lam 博客（VMware 立场）。
+**§8.6.2 中把三个拓扑 feature 名归到具体 CPUID leaf 是本文档的推断，非厂商来源**，已在 G14 标注。
 
 ### 与现有 bibliography 的对接建议（不在本 ticket 施工，仅记录）
 
