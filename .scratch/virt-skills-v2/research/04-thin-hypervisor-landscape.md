@@ -27,10 +27,17 @@ Type: research
    `hvpp` 最后一次 push 是 **2021-03-15**；`Bareflank/hypervisor` 的 `LICENSE.md` 里写的版权人是
    **mkdocs-material 的作者 Martin Donath**，与源码头部的 Assured Information Security 不一致，
    GitHub 因此判定为 `NOASSERTION`——**许可证元数据有缺陷，在澄清之前不得 vendor**。
-3. **现代硬件上确实会坏，而且坏法是按型号的**。最硬的一条证据：Linux 内核 commit
-   `a5ca1dc46a6b`（2024-11-05）——**一批 Zen 4 客户端 SoC 声称支持 virtualized VMLOAD/VMSAVE，
-   实际使用会导致随机重启**，内核的修法是直接把这个能力位清掉。
-   这直接证明 ticket 09 的"按型号查"轨道有真实价值，且**必须带微码/AGESA 维度**。
+3. **现代硬件上确实会坏，但坏法和预想的不一样。** 三条最硬的证据：
+   (i) Linux commit `a5ca1dc46a6b`（2024-11-05，CVE-2024-53114）——**一批 Zen 4 客户端 SoC
+   声称支持 virtualized VMLOAD/VMSAVE，实际使用会导致随机重启**，内核直接把能力位清掉；
+   **上述四个 AMD 项目没有一个带这个规避**。
+   (ii) `NoirVisor` #35（2024-09-08 修复）——**4 个 E-core 共享一个 L2，
+   导致"每核一份 EPT"这个所有参考实现的默认写法在 12 代以后退化**，修法是改成全核共享。
+   (iii) `SimpleSvm` #3（2025-03-03 修复）——恒等映射只覆盖 512 GB，
+   在 MMIO 高于 512 GB 的机器上蓝屏；**报告人误判成"只有 Zen 4/5 才坏"，维护者在 Zen 4 上复现不出来。**
+   → ticket 09 的"按型号查"有真实价值，但**键至少要五维**，且必须能表达"这不是 CPU 的问题"。
+   **反过来，"混合核上 VMX 能力位会不同"和"Arrow Lake 无 SMT 会搞坏 hypervisor"两条，
+   穷尽搜索后零证据，不得写成 claim。**
 4. **可编译骨架代码可以发**，但理由不是"教程是 MIT 所以能抄"，而是"**骨架的形状由 ISA 决定，不由作者决定，自己写就行**"。
    见 §6。
 5. **现代 Windows 上最大的障碍不是 PatchGuard，也不是 HVCI，是 Hyper-V 已经占着 root**，
@@ -745,12 +752,22 @@ Apache-2.0 的代码可以被合进 GPLv3 项目；**GPLv3 的代码不能合进
    本环境 `learn.microsoft.com` 与 `techcommunity.microsoft.com` 均 `Socket is closed`。
 2. **Intel 社区那条 265KF `HYPERVISOR_ERROR` 讨论串**（HTTP 403）未能直连。
    **用户手上就有 265KF，这条应当直接真机复现，而不是继续找文档。**
-3. **`barevisor` 的测试硬件只写了两个内部代号**（Intel "PICO-MTU4-SEMI"、AMD "LLM1v6SQ"），
-   无法据此判断它在 Arrow Lake / Zen 5 上是否验证过。
+3. **`barevisor` 的测试硬件只写了两个内部代号**（Intel "PICO-MTU4-SEMI" = Meteor Lake，
+   本身是混合部件；AMD "LLM1v6SQ"），无法据此判断它在 Arrow Lake / Zen 5 上是否验证过。
 4. **未核实 `Bareflank` 早期版本（v1/v2）的实际许可证**（常被称为 LGPL-2.1）。
    由于 master 的元数据本身有缺陷，这条应在任何引用之前一并澄清。
-5. **未找到**任何参考项目对 Arrow Lake 无 SMT 的适配 PR 或失败报告。这是一条负面结论，
-   搜索范围见 §2.2；它可能意味着问题不存在，也可能只意味着用户群太小。**不要把它当成"没问题"来引用。**
+5. **两条穷尽搜索后仍为零的负面结论，列在这里以便后人推翻：**
+   (a) 没有任何来源证明 VMX capability MSR 在已出货部件的 P-core 与 E-core 之间真的不同；
+   (b) 没有任何报告显示 hypervisor 因"假设 SMT 存在 / 每核 2 LP"而在 Arrow Lake 上失败。
+   搜索范围：13 个参考仓库的全量 issue+PR 枚举（`/issues?state=all&per_page=100`），
+   加 GitHub issue 全站搜索，加 KVM / Xen / QEMU 邮件列表，加 HyperDbg CHANGELOG 全量。
+   **这两条的正确读法是"目前无证据"，不是"确认没问题"**——
+   这几个项目的用户基数极小（`hvpp` / `ksm` / `gbhv` 自 2021–2023 年起就没有提交了），
+   报告的缺席很可能只是用户的缺席。
+6. **一条二手来源未能独立核实**：微软 techcommunity 串 3010622
+   "Alder Lake 12th Gen Intel CPU won't boot on Windows Server 2022 with HyperV enabled"
+   （其中"开着 E-core 时 Server 2022 的 Hyper-V 不工作"的说法及关 E-core 的绕法）
+   只拿到搜索摘要级别，**不得当作一手来源引用**。
 
 ---
 
@@ -782,12 +799,17 @@ memN0ps/matrix-rs · Gbps/gbhv · Air14/airhv
 - `raw.githubusercontent.com/HyperDbg/docs/master/tips-and-tricks/nested-virtualization-environments/run-hyperdbg-on-hyper-v.md`
 - `tandasat.github.io/HyperPlatform/userdocument/index.html`
 
-**Issue（含日期）**：
+**Issue / PR（含日期）**：
 - Hypervisor-From-Scratch #18(2022-04-13) · #25(2024-08-29) · #32(2026-01-04)
 - HyperPlatform #87(2021-12-05) · #90(2022-10-17) · #96(2024-05-06) · #97(2024-06-24) · #98(2025-01-21) · #99(2025-09-08)
-- SimpleSvm #3(2025-02-14 开 / 2025-03-03 关)
+- SimpleSvm #3(2025-02-14 开 / 2025-03-03 关) · PR #4 → commit `c4a479e`(2025-03-03)
+- SimpleSvmHook #2(2019-08-31) · #5(2020-09-04) · #6(2020-12-20) · #10(2023-01-22)
+- MiniVisorPkg #11(2023-02-15, open, i9-13900K) · #12(2023-05-17, open, i9-12900KS) · #15(2024-07-15, open) · #21(2026-08-24, Haswell-E + HT)
+- NoirVisor **#35**(2024-09-04 开 / 2024-09-08 关, i7-14700K, E-core 共享 L2)
+- SimpleVisor PR #49(2022-07-16, open, "Tested on ... Intel 4th and 12th generation") · #42(2019-10-19, preemption timer)
 - HyperDbg #690(2026-09-12)
 - QubesOS/qubes-issues #10897(2026-05-27)
+- pytorch/cpuinfo PR #350(2025-11-21, "leaves 1, 4, 0x0b, 0x1a, and 0x1f are known to vary by core")
 
 **规范与厂商文档**：
 - Intel SDM Vol.3C §31.8.1 "Initialization"（"an MP-aware VMM must check..."），
@@ -795,12 +817,24 @@ memN0ps/matrix-rs · Gbps/gbhv · Air14/airhv
 - Intel, "Game Dev Guide for 12th Gen Intel Core Processor Hybrid Architecture"
   （CPUID.1AH、Core Type 20H/40H、`CPUID.07H:EDX[15]`、"CPUID, by design, returns different values..."）
 
-**Linux 内核**：
+**Linux 内核 / 其他 hypervisor 项目**：
 - commit `a5ca1dc46a6b610dd4627d8b633d6c84f9724ef0`,
   `x86/CPU/AMD: Clear virtualized VMLOAD/VMSAVE on Zen4 client`, 2024-11-05,
+  随 Linux 6.12（2024-11-17）发布，**CVE-2024-53114**，`x86_model` `0x18`–`0x1f` / `0x60`–`0x7f`；
   bug <https://bugzilla.kernel.org/show_bug.cgi?id=219009>；
   邮件原文 <https://lkml.indiana.edu/hypermail/linux/kernel/2411.0/06883.html>
+  与 <https://lkml.iu.edu/hypermail/linux/kernel/2411.0/06789.html>
+- KVM, "[PATCH v7 0/2] KVM: VMX: Workaround VMX preemption timer erratum",
+  Sean Christopherson, 2026-07-31（`EMR158`，封顶公式）
+- KVM, "[PATCH v2 3/4] x86/bugs: KVM: Add support for SRSO_MSR_FIX", 2024-12
+- Xen Project 4.20 发布说明（2025-03，含 Zen 5 支持与 SRSO 缓解）
+- xen-devel, "[BUG] Intel Alder Lake guest PMU unusable because Xen vPMU rejects
+  IA32_PERF_GLOBAL_CTRL bit 48", 2026-09-12（混合核 PMU 非对称，非 VMX）
 - Phoronix, "Linux Fixes Hosts Randomly Rebooting During Virtualization With Ryzen 7000/8000 CPUs", 2024-11-17 `[Tier-2]`
+- Broadcom 社区, "Nested virtualization crash on AMD Zen4 CPUs due to VMLoad function",
+  首帖 2026-05-24，Broadcom 员工回复 2026-07-05 `[Tier-2]`
+- `tempered-steel/proxmox-arrowlake-iommu-incident`（事件 2026-03-17，Core Ultra 9 285H，Linux 6.17.13 DMAR）
+- Google security-research, Zenbleed README（**CVE-2023-20593，Zen 2 only**——用于纠正 ticket 的前提）
 
 **许可证权威来源**：
 - ASF, "Third Party Licensing Policy" <https://www.apache.org/legal/resolved.html>（Category A/B/X 定义与名单）
@@ -813,6 +847,16 @@ memN0ps/matrix-rs · Gbps/gbhv · Air14/airhv
 - `[MS-间接]` techcommunity.microsoft.com "Expanding memory integrity protection across Windows devices"（2026-09-01），
   经 Help Net Security 2026-09-03 转述交叉确认
 
-**其他 `[Tier-2]`**：
-- williamlam.com 关于 ESXi 与 Intel 混合架构的文章（"Fatal CPU mismatch on feature"、`cpuUniformityHardCheckPanic=FALSE`）
-- community.intel.com 关于 Ultra 200S 265K 触发 `HYPERVISOR_ERROR` 的讨论串（403，未直连）
+**Intel / VMware / Broadcom 平台材料**：
+- `intel/intel-cmt-cat` wiki, "Hybrid architectures"，最后编辑 2024-05-09
+  （E-core CBM 长度按核类型不同；Intel 自家工具的"探一核套全部"bug）
+- LWN, "x86: Add initial support to discover Intel hybrid CPUs", Ricardo Neri (Intel), 2020-10-02
+- virten.net, "ESXi 7 and 8 installation fails with Fatal CPU mismatch on feature", 2022-11-27
+  （PSOD 原文串："Hyperthreads per core" / "Cores per package" / "Cores per die"）`[Tier-2]`
+- Broadcom KB **395554**, "ESXi PSOD with Fatal CPU mismatch on feature"（页面未渲染更新日期）
+- williamlam.com, "ESXi PSOD due to GP Exception 13 in world with Intel 13th Generation CPU", 2023-04-22
+  （HTTP 403，日期与内容由 virten.net 交叉确认）`[Tier-2]`
+- Intel Community, "Field Update 1 of 2: Intel Core Ultra 200S Series Performance Status", 2024-12-18
+  （HTTP 403；EAC 蓝屏根因原文由 thefpsreview.com 同日报道交叉确认）`[Tier-2]`
+- community.intel.com 关于 Ultra 200S 265K 触发 `HYPERVISOR_ERROR` 的讨论串（403，未直连）`[Tier-2]`
+- ASUS ROG 论坛 1053629（403，仅片段级）`[Tier-2]`

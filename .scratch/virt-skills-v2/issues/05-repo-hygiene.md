@@ -35,6 +35,16 @@ Blocked by: —
    只讲 issue tracker / triage labels / domain docs，**只字不提这两个技能、不提路由、
    不指向 `AGENTS.md`**。而这正是 Claude Code 为本仓库加载的 project memory。
 
+9. **Kimi 的用户级安装是实体副本，不是链接——会静默漂移。**
+   实测（2026-09-26）：`~/.kimi-code/skills/{intel-vt,amd-virtualization}` 是**实体目录**
+   （2026-09-22 建），而 `~/.agents/skills/` 下同名两项是 junction（2026-09-25 建）。
+   `diff -rq` 确认两者**当前逐字节一致**，所以这不是现存故障。
+   但 v2 一改仓库，副本那份就开始漂移且**不会有任何报错**。
+   而 `docs/DEPLOYMENT.md:155-157` 写着 *"A junction install needs nothing after a pull."*
+   ——对这份实体副本安装来说是**假的**。
+   要决定：`install.mjs` 要不要检测并警告"目标已存在且是实体目录"；
+   以及 `~/.kimi-code/skills/` 该不该改成 junction。
+
 ## 要求
 
 - 每一条改动都要能被验证。改完跑 `node tools/lint.mjs` 和 `node tools/build.mjs --check`，
