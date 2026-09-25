@@ -111,6 +111,24 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
   VT-d 能力断裂在 **Meteor Lake**（与 LGA1851 插槽无关）。
   缺口 22 未决 / 3 已关闭，其中 **9 个可由 265KF 一次 dump 关闭**。
 
+- [03 AMD Zen 1 → Zen 5 客户端差异与勘误源](issues/03-amd-gen-matrix.md)：
+  **技能重复 6 次的「AMD 客户端无勘误通道」三个分句全是假的**——
+  客户端 PPR 下载到了（`57930-A0-PUB_3.00`，1017 页，Fam 1Ah Model 70h，`[AMD Public Use]`）；
+  Revision Guide `55449 Rev 1.21` 按 Ryzen / Threadripper 分列勘误，
+  其 p.87 **erratum 1235 就是虚拟化勘误**（workaround 原文 "None. Do not enable AVIC."）；
+  `AMD-SB-4xxx` 是 2022 年起的客户端公告序列。**这是第三次 fabricated negative** → **ticket 12**。
+  真实缺口窄得多：仅当前世代（Fam 19h/1Ah）客户端机型段 Revision Guide 不可得 + 4 份 PPR 无第一方副本。
+  **AMD 客户端混合核是调度问题不是正确性问题**（有实测）：HX 370 的 24 个 LP 上
+  `Fn8000_000A` **逐位相同**；但限定两条——只测了 CPUID/MSR 报告面、无 VMCB/VMEXIT 行为测量，
+  且 **Phoenix 2（`fam19h_model78h`）根本不报告 hybrid**，hypervisor 连分裂都看不见。
+  **AVIC 在客户端是微码属性而非世代属性**：同 family/model/stepping，
+  µcode `0x0B40400C/401A/4022` 读 AVIC=0，`0x0B404023` 与**本机 `0x0B404035`** 读 AVIC=1；
+  PPR 57930 指出 AVIC(13) 与 x2AVIC(18) 是表中**仅有的两个 `Reset: 1` 而非 `Reset: Fixed,1`** 的位。
+  **本机实测：`Fn8000_001D` 在 CPU 0–15 报 96 MB L3、16–31 报 32 MB，而 `Fn8000_0026` 什么都不标**
+  ——**AMD 的缓存不对称不需要混合 SKU**，是 04 那条 Intel 发现的对应物。
+  Zen 4 VMLOAD/VMSAVE 缺陷**没有 AMD 勘误号**，范围精确到 `fam19h` 18h–1Fh 与 60h–7Fh，
+  Zen 5 不受影响，且**裸机 hypervisor 得不到任何自动缓解**。
+
 ## Not yet specified
 
 以下是能看见轮廓、但还没法写成精确问题的部分。前沿推进后再毕业成 ticket。
@@ -125,6 +143,7 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
 ## Out of scope
 
 - **重写既有内容**。v2 是结构与入口改造，不是内容重写。现有 claim 的正确性已经过 2531 条核对和两轮盲测，不在本图范围内推翻。
+  **例外**：本 effort 自己查实为**假**的声明要订正，那不是重写而是订正——见 ticket 12。
 - **扩大服务器/云覆盖**（EPYC、Xeon、TDX 服务器场景的深度）。目标平台是 Windows PC 客户端。
 - **非 x86 深度**（ARM CCA、RISC-V H 扩展）。保留现有的对比章节即可。
 - **`C:\Users\Administrator\Desktop\Kimi_Agent` 目录的 GitHub tracker 配置**。那是另一件事，不要混进来。

@@ -4,6 +4,23 @@ Ticket: `.scratch/virt-skills-v2/issues/03-amd-gen-matrix.md`
 As of: **2026-09-26**
 格式与 `02-intel-gen-matrix.md` 对齐：**世代 × 维度矩阵 + 逐条来源 + 缺口清单**。
 
+**与 Intel 侧的节对照表**（便于并排阅读；左为本文，右为 `02-intel-gen-matrix.md`）：
+
+| 本文（AMD） | Intel 侧对应 | 备注 |
+|---|---|---|
+| §0 八条结论 | `## TL;DR` | |
+| §0.5 实机测量记录 | `## 9. 本次 session 的执行环境声明` | **两侧都有真机**：Intel 侧 Core Ultra 7 265KF，AMD 侧本机 9950X3D |
+| §1 family/model/stepping | `## 1. 矩阵 A：CPUID DisplayFamily_DisplayModel` | Intel 用 `DisplayFamily_DisplayModel`，AMD 用 `famXXh_modelXXh` |
+| §3.1 的 `Fn8000_000A_EDX` 矩阵 | `## 2. 矩阵 B：虚拟化相关特性的世代引入点` | AMD 的等价物是单张 SVM 能力叶；Intel 是 `IA32_VMX_*` MSR 族 |
+| §2 客户端混合核心 | `## 3. 混合拓扑（维度 2）` | **核心对照点**，见下 |
+| —（AMD 客户端普遍保留 SMT） | `## 4. 超线程取消（维度 3）` | AMD 侧无对应：实测的 Zen 5 客户端件仍全部 SMT2 |
+| §5 AGESA / 微码 | `## 5. 微码作为行为变量（维度 4）` | |
+| §6 勘误通道复核 | `## 8. 勘误通道（维度 5）` | |
+| §4 安全勘误按型号映射 | （Intel 侧并入第 5/8 节） | |
+| §7 缺口清单 | `## 7. 缺口清单（Gaps）` | |
+| §8 来源 | `## 10. 来源清单` | |
+| —（IOMMU 未纳入本 ticket） | `## 6. VT-d / IOMMU 平台侧（维度 6）` | AMD IOMMU 侧不在 03 的范围内 |
+
 ---
 
 ## 元信息：证据分级与方法
@@ -28,7 +45,7 @@ As of: **2026-09-26**
 
 ---
 
-## §0 六条结论（先看这里）
+## §0 八条结论（先看这里）
 
 1. **技能里那条反复出现的声明是错的，而且错得很彻底。**
    `SKILL.md:165-167` 等六处断言 *"client Ryzen has no public revision guide and no public PPR"*。
@@ -63,6 +80,79 @@ As of: **2026-09-26**
 6. **微码会改变客户端上 CPUID 可见的虚拟化能力。** 这不是推断：`fam1Ah_model44h` 上
    AVIC/x2AVIC 两位的有无与 `MSR 0000_008B` patch level 单调相关（0x0B40400C / 0x0B40401A /
    0x0B404022 → 0；0x0B404023 → 1；本机 0x0B404035 → 1）。详见 §3.2 与 §5。
+   本机另有第二个实例：微码 `0x0B404035` **恰好等于**内核 `zen5_rdseed_microcode[]` 对该型号要求的
+   最低值，低一档 RDSEED 就会被连同 CPUID 位一起抹掉（§4.5）。
+
+7. **AMD 确实为客户端部件发过带编号的虚拟化勘误，而且措辞极其强硬。**
+   Revision Guide 55449 Rev 1.21 p.87 的 **erratum 1235**（AVIC guest 可能漏处理 IPI）
+   适用 package 含 **AM4**，其 **Suggested Workaround 逐字是 "None. Do not enable AVIC."**，
+   Fix Planned 是 "No fix planned"。**这是 AVIC 默认关了十年的最强单一理由**，也是对
+   "客户端勘误无法引用"这一说法的直接反例。详见 §3.4。
+
+8. **有一条影响 Zen 4 客户端的严重虚拟化缺陷，AMD 从未给它编号。**
+   `fam19h` models `18h–1Fh` 与 `60h–7Fh`（Storm Peak / Raphael / Dragon Range / Phoenix /
+   Phoenix 2 / Hawk Point）会**advertise 但不应使用** virtualized VMLOAD/VMSAVE，使用会导致
+   **随机 host 重启**。全部公开记录只有一条内核 commit（`a5ca1dc46a6b`，作者是 AMD 员工）
+   加一个 kernel bugzilla 条目。**`fam1Ah`（Zen 5）不受影响，本机实测 bit 15 = 1 且内核不清它。**
+   裸机 thin hypervisor 不会自动获得这个缓解。详见 §4.4。
+
+---
+
+## §0.5 实机测量记录（`M:local`）——与文档性结论分开存放
+
+> **被测机器**：AMD Ryzen 9 9950X3D · 16C/32T · `AuthenticAMD` ·
+> `AMD64 Family 26 Model 68 Stepping 0` = **`fam1Ah_model44h` stepping 0**（Granite Ridge，Zen 5 桌面）
+> **CPUID signature** `Fn0000_0001_EAX = 0x00B40F40`
+> **运行微码** `MSR 0000_008B = 0x0B404035`
+> **BIOS** AMI `F12a`，ReleaseDate 2026-03-11 · **OS** Windows 11 Pro 26200
+> **测量日期 2026-09-26** · 方法：PowerShell + 内联 x64 CPUID stub（§5.4），逐核用
+> `ProcessorAffinity` 绑定
+
+**原始读数（未绑核，任意核）：**
+```
+Fn0000_0001 : EAX=00B40F40 EBX=11200800 ECX=7ED8320B EDX=178BFBFF
+Fn8000_0001 : EAX=00B40F40 EBX=00000000 ECX=75C237FF EDX=2FD3FBFF   -> ECX[2] SVM = 1
+Fn8000_000A : EAX=00000001 EBX=00008000 ECX=00000000 EDX=FEBFBDFF
+              SvmRev=1 · NASID=0x8000=32768 ASID
+Fn8000_001F : EAX=00000001 EBX=000000B3 ECX=00000000 EDX=00000000
+              -> SME=1, SEV=0, NumEncryptedGuests=0, CbitPos=51, PhysAddrReduction=2
+Fn8000_0008 : EAX=00003030 EBX=791EF257 ECX=0000501F EDX=00010000
+Fn8000_0021 : EAX=593FFFCF EBX=00080382 ECX=00000000 EDX=00000000
+Fn0000_0007.0: EAX=00000001 EBX=F1BF97AB ECX=19405FCE EDX=10000110  -> EBX[18] RDSEED = 1
+Fn8000_0000 : EAX=80000028  (max extended leaf)
+```
+
+`Fn8000_000A_EDX = 0xFEBFBDFF` 逐位：`NP`(0)=1 `LbrVirt`(1)=1 `SVML`(2)=1 `NRIPS`(3)=1
+`TscRateMsr`(4)=1 `VmcbClean`(5)=1 `FlushByAsid`(6)=1 `DecodeAssists`(7)=1 **`PmcVirt`(8)=1**
+`PauseFilter`(10)=1 *bit11=1（文档标 Reserved）* `PauseFilterThreshold`(12)=1 **`AVIC`(13)=1**
+`VMSAVEvirt`(15)=1 `VGIF`(16)=1 `GMET`(17)=1 **`x2AVIC`(18)=1** `SSSCheck`(19)=1 `SpecCtrl`(20)=1
+`ROGPT`(21)=1 `HOST_MCE_OVERRIDE`(23)=1 **`TlbiCtl`(24)=0** `VNMI`(25)=1 `IbsVirt`(26)=1
+`ExtLvtAvicAccessChg`(27)=1 `NestedVirtVmcbAddrChk`(28)=1 `BusLockThreshold`(29)=1
+`IdleHltIntercept`(30)=1 *bit31=1（APM 3.38 标 Reserved；PPR 57930 命名为 `EnhancedShutdownIntercept`）*
+
+**逐核绑定读数（`Fn8000_001D` 子叶 3 = L3）：**
+```
+CPU  0 : 8000001D.3 EAX=0003C163 ECX=00017FFF -> L3 96 MB, 16 LP 共享 | 8000001E EAX=00000000 EBX=00000100 | 80000026.0 EAX=00000001 EBX=00000002 CoreType=0 | 8000000A EDX=FEBFBDFF
+CPU  1 : 同上（96 MB）
+CPU 16 : 8000001D.3 EAX=0003C163 ECX=00007FFF -> L3 32 MB, 16 LP 共享 | 8000001E EAX=00000010 EBX=00000108 | 80000026.0 EAX=00000001 EBX=00000002 CoreType=0 | 8000000A EDX=FEBFBDFF
+CPU 17 : 同上（32 MB）
+CPU 30 : 同上（32 MB）
+```
+
+**从这台机器上直接确立的五条：**
+
+| # | 结论 | 详见 |
+|---|---|---|
+| 1 | **非混合部件也存在 cache 拓扑不对称。** 同一封装内 `Fn8000_001D` 随执行核返回 96 MB 或 32 MB，而 `Fn8000_0026` 的 `AsymmetricCores`/`HeterogeneousCoreTopology`/`CoreType` **全为 0**，完全不标记这件事。**AMD 的 cache 不对称不需要 hybrid SKU。** | §2.4 |
+| 2 | **`Fn8000_000A` 在两个 CCD 上逐位相同**（`FEBFBDFF`）——SVM 能力面是均匀的，不均匀的只有 cache。 | §2.4 |
+| 3 | **本机 AVIC=1、x2AVIC=1**，而三份同 `fam1Ah_model44h` st0、微码更低的公开 dump 报 AVIC=0、x2AVIC=0。**AVIC 在客户端不是世代常量。** | §3.2 |
+| 4 | **Zen 5 客户端只有 SME，没有 SEV**（`Fn8000_001F_EAX=1`、`ECX=0`）——确认语料库 `90-dated-landscape.md:82-84`。 | §1 / §8 |
+| 5 | **微码正好卡在内核 RDSEED 门槛上**（`0x0B404035` = `zen5_rdseed_microcode[]` 对该型号要求的最低值），RDSEED 位因此保留。 | §4.5 |
+
+**这台机器不能回答什么（必须写明）：** `GAP`
+Granite Ridge 是**纯 Zen 5、没有 Zen 5c**。因此 **§2 里关于 Zen 5 vs Zen 5c 的全部结论
+都是文档 + 公开 dump 得出的，未在本机验证**；要在金属上验证需要一颗 Strix Point / Krackan Point
+（Ryzen AI 300/400）部件。本机也**没有做任何 VMRUN/VMCB 级别的测量**。
 
 ---
 
@@ -663,7 +753,109 @@ Phoenix AM5（Ryzen 8000）→ `ComboAM5PI 1.2.0.3`/`1.1.0.3c`；Phoenix/Hawk Po
 Dragon Range → `DragonRangeFL1 1.0.0.3g` (2024-12-18)。
 **Matisse / Picasso / Renoir / Castle Peak / Chagall WS 一律 `Not affected`**——与"只有 Family 19h 受影响"一致。 `D:amd`
 
-### 4.4 一条必须收进本文的公告：AMD-SB-7059
+### 4.4 Zen 4 客户端的 virtualized VMLOAD/VMSAVE 缺陷 —— 一条**没有 AMD 勘误号**的缺陷
+
+这条是 ticket 04 带过来的，值得在本文按 family/model 定死。
+Linux commit **`a5ca1dc46a6b610dd4627d8b633d6c84f9724ef0`**，作者 **Mario Limonciello (AMD)**，
+2024-11-05，`Cc: stable`，逐字： `D:kernel`
+
+> **Subject: x86/CPU/AMD: Clear virtualized VMLOAD/VMSAVE on Zen4 client**
+> "A number of Zen4 client SoCs advertise the ability to use virtualized VMLOAD/VMSAVE, but using
+> these instructions is reported to be a cause of a **random host reboot**. These instructions aren't
+> intended to be advertised on Zen4 client so clear the capability."
+> `Link: https://bugzilla.kernel.org/show_bug.cgi?id=219009`
+
+当前 mainline 的代码（`arch/x86/kernel/cpu/amd.c:1015-1030`，在 **`init_amd_zen4()`** 内）：
+```c
+	/*
+	 * These Zen4 SoCs advertise support for virtualized VMLOAD/VMSAVE
+	 * in some BIOS versions but they can lead to random host reboots.
+	 */
+	switch (c->x86_model) {
+	case 0x18 ... 0x1f:
+	case 0x60 ... 0x7f:
+		clear_cpu_cap(c, X86_FEATURE_V_VMSAVE_VMLOAD);
+		break;
+	}
+```
+
+**精确影响范围**（`init_amd_zen4()` 只在 `X86_FEATURE_ZEN4` 置位时调用 = `fam19h` models
+`0x10…0x1f` 与 `0x60…0xaf`，switch 再收窄一次）： `D:kernel`
+
+| famXXh_modelXXh | 部件 | 受影响？ |
+|---|---|---|
+| `fam19h_model10h…17h` | Genoa（服务器） | 否 |
+| **`fam19h_model18h…1Fh`** | **Storm Peak（TR 7000 / PRO 7000WX）** | **是** |
+| **`fam19h_model61h`** | **Raphael / Dragon Range** | **是** |
+| **`fam19h_model74h/75h/78h/7Ch`** | **Phoenix / Hawk Point / Phoenix 2 / Hawk Point 2** | **是** |
+| `fam19h_model80h…AFh` | Bergamo 等 | 否 |
+| **`fam1Ah`（全部 Zen 5）** | Granite Ridge / Strix Point / Strix Halo / Krackan / Shimada Peak | **否**——`init_amd_zen5()` 是另一个函数，不含此 clear |
+
+**本机实测核对：** `fam1Ah_model44h` st0，`Fn8000_000A_EDX = FEBFBDFF` → **bit 15 `VMSAVEvirt` = 1**，
+且不在被清列表内，所以内核会保留它。**Zen 5 客户端不受此缺陷影响。** `M:local`（2026-09-26）
+
+**三条对本技能重要的性质：**
+1. **AMD 没有为它发过勘误号，也没有公告。** 它的全部公开记录是一条内核 commit 加一个
+   kernel bugzilla 条目。**这正是"客户端勘误通道"问题的典型形态**：AMD 的员工把修复提交到内核，
+   但没有走 AMD-SB 或 Revision Guide。 `GAP`
+2. commit message 说 *"in some BIOS versions"*——又一个**固件决定 CPUID 可见性**的客户端案例，
+   与 §3.2 的 AVIC 现象同类。
+3. **裸机 hypervisor 不会自动获得这个缓解。** 内核的 clear 只影响 Linux 自己；一个在
+   `fam19h_model61h` 上直接读 `Fn8000_000A_EDX[15]` 并据此使用 virtualized VMLOAD/VMSAVE 的
+   thin hypervisor 会踩到随机重启。**这应当成为 v2 开发轨道的一条硬性检查项。**
+
+### 4.5 内核里按 family/model/stepping 屏蔽特性的四张微码表
+
+这四张表是目前**唯一**可以按 `famXXh_modelXXh` + stepping 查"需要哪个微码版本"的机器可读来源，
+全部在 `arch/x86/kernel/cpu/amd.c`，共用宏
+`#define ZEN_MODEL_STEP_UCODE(fam, model, step, ucode) X86_MATCH_VFM_STEPS(VFM_MAKE(X86_VENDOR_AMD, fam, model), step, step, ucode)`（`:383-385`）。 `D:kernel`
+
+| 表 | 针对 | 覆盖 | 不达标时的动作 |
+|---|---|---|---|
+| `erratum_1386_microcode[]` (`:881-885`) | **AMD erratum 1386**（XSAVES 故障） | `fam17h_model01h` st2 ≥ `0x0800126E`；`fam17h_model31h` st0 ≥ `0x08301052` | `clear_cpu_cap(X86_FEATURE_XSAVES)` |
+| `amd_zenbleed_microcode[]` (`:957-963`) | **Zenbleed** CVE-2023-20593 | 见 §4.1 | 置 `MSR_AMD64_DE_CFG` bit 9 |
+| `amd_tsa_microcode[]` (`:387-405`) | **TSA** | 16 条 `fam19h` 条目 | 见 §4.3 |
+| **`zen5_rdseed_microcode[]`** (`:1032-1043`) | **Zen 5 RDSEED 故障** | 见下表 | `clear_cpu_cap(X86_FEATURE_RDSEED)` **并且** `msr_clear_bit(MSR_AMD64_CPUID_FN_7, 18)`，打印 `"RDSEED32 is broken. Disabling the corresponding CPUID bit."` |
+
+`zen5_rdseed_microcode[]` 全表（`init_amd_zen5()` 目前**只做这一件事**）：
+
+| famXXh_modelXXh | stepping | 最低微码 |
+|---|---|---|
+| `fam1Ah_model02h` | 1 | `0x0B00215A` |
+| `fam1Ah_model08h` | 1 | `0x0B008121` |
+| `fam1Ah_model11h` | 0 | `0x0B101054` |
+| **`fam1Ah_model24h`**（Strix / Gorgon Point） | 0 | **`0x0B204037`** |
+| **`fam1Ah_model44h`**（Granite Ridge） | 0 | **`0x0B404035`** |
+| `fam1Ah_model44h` | 1 | `0x0B404108` |
+| `fam1Ah_model60h`（Krackan） | 0 | `0x0B600037` |
+| `fam1Ah_model68h` | 0 | `0x0B608038` |
+| `fam1Ah_model70h`（Strix Halo） | 0 | `0x0B700037` |
+
+> **本机实测：微码正好落在门槛上。** 这台 9950X3D 是 `fam1Ah_model44h` st0，运行微码
+> **`0x0B404035`**——与表中该行要求的最低值**逐位相等**。因此内核不会清 RDSEED；
+> 实测 `Fn0000_0007_EBX = F1BF97AB`，**bit 18 `RDSEED` = 1**，与预期一致。
+> **再低一个微码版本，这台机器上 CPUID 里的 RDSEED 位就会被内核连同 `MSR_AMD64_CPUID_FN_7` bit 18
+> 一起抹掉。** 这是"微码是行为变量"这句话在本机上的第二个实例（第一个是 §3.2 的 AVIC）。 `M:local`（2026-09-26）
+
+**注意 `msr_clear_bit(MSR_AMD64_CPUID_FN_7, 18)` 这个动作本身**：内核通过一个 MSR
+**改写 CPUID 的返回值**。也就是说在 AMD 客户端上，`CPUID` 的输出不但受微码影响，
+还可以被 ring-0 软件改写。任何"读一次 CPUID 就缓存"的 hypervisor 都要知道这件事。 `D:kernel`
+
+### 4.6 内核无条件清掉 Zen 2 的 INVLPGB
+
+`init_amd_zen2()` 里（`amd.c:995-996`），无条件、不看微码： `D:kernel`
+```c
+	/* Correct misconfigured CPUID on some clients. */
+	clear_cpu_cap(c, X86_FEATURE_INVLPGB);
+```
+
+这与 §3.1 观察到的 `Fn8000_000A_EDX[24] TlbiCtl` 分布互为印证：**`TlbiCtl` 在实测的主流客户端
+桌面/移动件上全为 0，只有 Threadripper（`fam19h_model18h`、`fam1Ah_model08h`）为 1。**
+`TlbiCtl` 正是 `INVLPGB`/`TLBSYNC` 在 VMCB 里的 hypervisor enable 位
+（语料库 `06-nested-paging.md:262`，`[APM3 §4 "INVLPGB"]`）。
+**结论：客户端上不要指望 `INVLPGB` 的 guest 侧控制；内核甚至认为 Zen 2 客户端的这个 CPUID 位本身是错的。**
+
+### 4.7 一条必须收进本文的公告：AMD-SB-7059
 
 **`Guest Initiated Machine Check Errors`**，CVE-2023-31364，**CVSS 8.3 High**，2026-02-24 发布。 `D:amd`
 > Summary: "AMD received a report from the security team at Amazon Web Services (AWS) indicating that
@@ -829,7 +1021,8 @@ Rev 3.03, 2018-07，第一方 HTTP 200：
   **AMD Ryzen Processors / 2nd Generation AMD Ryzen Processors / AMD Ryzen Threadripper /
   2nd Generation AMD Ryzen Threadripper Processors**，与 EPYC 并列。修订历史逐字：
   *"Added 2nd Generation AMD Ryzen™ Threadripper™ silicon information to Overview, Table 4, and Table 12."*
-  文档收录 60+ 条编号勘误（#1017 … #1488）。
+  文档收录 60+ 条编号勘误（#1017 … #1488），**其中 p.87 的 erratum 1235 就是一条虚拟化勘误
+  （AVIC/IPI），适用 package 含 AM4**——见 §3.4。**这一条单独就足以推翻"客户端勘误无法引用"。**
 - 更老的客户端专属：**47534** Family 14h Models 00h-0Fh Rev 3.18（仅 C-Series / E-Series APU）、
   **48063** Family 15h Models 00h-0Fh Rev 3.24（FX-Series + Opteron），均在
   `.../archived-tech-docs/revision-guides/` 下 HTTP 200。
@@ -933,11 +1126,28 @@ OP Cache Corruption 7052、Guest-Initiated MCE 7059）全都在 `7xxx` 跨段号
    CPUID 只给 cache 拓扑，不给频率。本文因此**只用实测的 L3/CCX 差异描述两种核的区别，
    不引用任何频率数字**。`GAP`
 8. **未做的实测**：VMCB 行为、`#VMEXIT` 时序、ASID 分配在 Zen 5 / Zen 5c 上的差异。
-   §2.5 的结论只覆盖 CPUID 报告面。`GAP`
+   §2.5 的结论只覆盖 CPUID 报告面。本机（Granite Ridge）**没有 Zen 5c 核**，
+   §2 的混合结论**全部未在金属上验证**。`GAP`
+8b. **Zen 4 客户端 virtualized VMLOAD/VMSAVE 缺陷没有 AMD 勘误号、没有 AMD 公告。**
+   （§4.4）全部公开记录 = 内核 commit `a5ca1dc46a6b` + `bugzilla.kernel.org/show_bug.cgi?id=219009`。
+   本次**未能**在任何 AMD-SB 公告或 Revision Guide 中找到对应条目。
+   该缺陷与 CVE-2024-53114 的对应关系**未经第一方核实**（web search 预算耗尽，见 §7.11）。`GAP`
+8c. **Hyper-V 是否使用 AVIC，未确立。** 未找到任何 Microsoft 文档说明 Hyper-V 在 AMD 上是否
+   使用 AVIC/x2AVIC。可验证的只有反向关系：KVM 必须为使用 Hyper-V SynIC/AutoEOI 的 guest 关闭 AVIC
+   （`APICV_INHIBIT_REASON_HYPERV` ∈ `AVIC_REQUIRED_APICV_INHIBITS`，`svm.h:935`）。
+   **这是一条负面缺口，不是负面结论**——本技能面向 Windows PC，这条应单独立 ticket。`GAP`
+8d. **`MSR_AMD64_CPUID_FN_7` 的 MSR 地址未在本次读到的头文件中定位到**
+   （`msr-index.h` 无该符号，可能已移入 `asm/msr.h` 或新头）。用法确凿
+   （`amd.c:991,1049` 两处 `msr_clear_bit(MSR_AMD64_CPUID_FN_7, 18)`），但**地址值未取得**。`GAP`
 9. **Krackan Point（`fam1Ah_model60h`，也是 Zen 5 + Zen 5c）未做逐核 CPUID diff**，
    只取到单核视角。样本量 = 1 个混合 model 的 3 台机器。`GAP`
 10. **AGESA 正式规范 44065 (Rev 3.04, 2017) 的正文未取回**；
     `ComboAM4PI` / `ComboAM5PI` 命名方案**没有任何 AMD 文档定义**，所有解释均为第三方。`GAP`
+11. **本次会话的 WebSearch 预算已用尽（200/200）。** 以下三项因此未完成，需由后续 session 接手：
+    (a) CVE-2024-53114 ↔ commit `a5ca1dc46a6b` 的对应关系；
+    (b) AMD 是否有命名 x2AVIC 首发世代的营销/博客文档（目前"Zen 4 首发"由 AMD 员工提交的内核
+    commit `ca2967de5a5b` 的 commit message 加实测 CPUID 两条共同支撑，**不是** AMD 产品页）；
+    (c) Hyper-V 的 AVIC 使用情况（见 7.8c）。`GAP`
 
 ---
 
@@ -952,7 +1162,12 @@ OP Cache Corruption 7052、Guest-Initiated MCE 7059）全都在 `7xxx` 跨段号
   PPR 55803 (Castle Peak) `…/oWGePLWshQVJC~bQ63RRUg/content`
 - OSRR for AMD Family 17h Models 00h–2Fh, Pub 56255, Rev 3.03 —
   `https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/56255_OSRR.pdf`
-- Revision Guide 55449 Rev 1.21 (Fam 17h 00h-0Fh, 含 Ryzen/Threadripper 段) `…/abOrVU_gcO7ZsC3qDF4uNQ/content`
+- Revision Guide 55449 Rev 1.21, 2023-08 (Fam 17h 00h-0Fh, 含 Ryzen/Threadripper 段；**erratum 1235 在 p.87**)
+  `…/abOrVU_gcO7ZsC3qDF4uNQ/content` · Revision Guide 56323 Rev 1.03, 2026-02 (Fam 17h 30h-3Fh; erratum 1235 在 p.39)
+  `…/V2_PYRjhtUCkuQy_LbO5Zg/content`
+- APM Vol.2, Pub **24593**, Rev **3.45**, 2026-07, §15.29.7 / §15.29.10（AVIC 与 x2AVIC 的 CPUID 位定义）·
+  APM Vol.3, Pub **24594**, Rev **3.38**, 2026-07, App. E §E.4.9（`Fn8000_000A` 全表）·
+  **Pub 25481 "CPUID Specification" 已作废**，其封面自述内容已并入 APM Vol.3 附录
 - Revision Guide 56683 / 58251 / 58730 —
   `https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/revision-guides/{56683,58251,58730}.pdf`（**本次已下载并提取封面**）
 - 安全公告：AMD-SB-7008 / 7005 / 7029 / 7033 / 7052 / 7059 / 4008 / 4012 / 4013 / 4017 —
@@ -965,7 +1180,19 @@ OP Cache Corruption 7052、Guest-Initiated MCE 7059）全都在 `7xxx` 跨段号
 - `linux-firmware` `amd-ucode/README` — `https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/amd-ucode/README`
 
 **Linux mainline**（torvalds/linux, v7.3-rc4/rc5, 经 `git.kernel.org/…/plain/<path>` 取原始文件）
-- `arch/x86/kernel/cpu/amd.c:478-531`（Zen 世代 family/model 映射）、`:957-980`（Zenbleed）、`:1427`（AGESA DMI）
+- `arch/x86/kernel/cpu/amd.c:383-385`（`ZEN_MODEL_STEP_UCODE`）、`:387-405`（TSA 微码表）、
+  `:478-531`（Zen 世代 family/model 映射）、`:881-904`（erratum 1386）、`:957-980`（Zenbleed）、
+  `:982-999`（`init_amd_zen2`：Cyan Skillfish RDSEED、无条件清 `INVLPGB`）、
+  `:1015-1030`（**Zen 4 客户端 V_VMSAVE_VMLOAD clear**）、`:1032-1052`（Zen 5 RDSEED 微码表）、`:1427`（AGESA DMI）
+- `arch/x86/kvm/svm/avic.c:68-107`（三态 `avic` 参数）、`:1228-1238`、`:1257-1336`
+  （`avic_want_avic_enabled()` / `avic_hardware_setup()`，erratum 1235）·
+  `arch/x86/kvm/svm/svm.h:931-946`（`AVIC_REQUIRED_APICV_INHIBITS`）· `arch/x86/kvm/svm/svm.c:158,177,5713-5750`
+- commit `a5ca1dc46a6b610dd4627d8b633d6c84f9724ef0`（Mario Limonciello (AMD), 2024-11-05,
+  "x86/CPU/AMD: Clear virtualized VMLOAD/VMSAVE on Zen4 client",
+  `https://bugzilla.kernel.org/show_bug.cgi?id=219009`）·
+  commit `ca2967de5a5b`（v6.18，AVIC 默认翻转）· commit `8de4a1c8164e`（v6.17，erratum 1235 关 IPIv）·
+  commit `9a12fa5213cf`（v7.1，Hygon 18h，CVE-2026-64172）· commit `aae99a7c9ab3`（v6.0，x2AVIC CPUID 位）·
+  commit `3aba0b40cacd`（v6.15，`AMD_HTR_CORES` 改名）· commit `1ad466706671`（v6.13，异构核 flag）
 - `arch/x86/kernel/cpu/topology_amd.c:63-127, 178-183` · `topology_common.c:35-66, 162-181`
 - `arch/x86/kernel/cpu/scattered.c:70` · `arch/x86/include/asm/processor.h:71-78, 110-130`
 - `arch/x86/include/asm/topology.h:117-121` · `arch/x86/include/asm/cpufeatures.h:77,78,221,316-319,444,512`
