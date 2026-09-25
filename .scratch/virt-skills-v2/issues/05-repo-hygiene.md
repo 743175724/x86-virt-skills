@@ -53,6 +53,16 @@ Blocked by: —
     补 `LICENSE`（Apache-2.0 全文）与 `NOTICE`，并确认 `README` 的声明与之一致。
     这条优先级高于本 ticket 的其余各条。
 
+11. **规范基线落后一个修订版，而落后的那版正好装着最需要的东西。**
+    `intel-vt/SKILL.md` frontmatter 的 `normative-baseline` 写的是
+    **`Intel SDM rev 092 (2026-06)`**，而 ticket 02 的调研是对着
+    **`325462-093US`（rev 093）** 做的。
+    **rev 093 正是引入 "CPUID Domains" 分类（Vol.1 §21.1.4）的那一版**——
+    也就是 02 找到的那个"P 核与 E 核能不能不一样"的判定程序，
+    以及 09 打算直接采用的表结构判据。
+    需要：把基线提到 rev 093，并检查 rev 092 → 093 之间还有哪些与本技能相关的变更。
+    AMD 侧的基线（APM Vol.2 rev 3.45 / Vol.3 rev 3.38，2026-07）也应同样复核一次。
+
 ## 要求
 
 - 每一条改动都要能被验证。改完跑 `node tools/lint.mjs` 和 `node tools/build.mjs --check`，

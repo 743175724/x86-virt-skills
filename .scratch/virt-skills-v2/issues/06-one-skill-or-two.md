@@ -1,7 +1,7 @@
 # 06 一个技能还是两个？——v2 的顶层结构决策
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 01
 
 ## Question
@@ -54,3 +54,78 @@ Blocked by: 01
 ## 交付物
 
 决议写进本 ticket 的 `## Answer`；若产出 ADR，放 `docs/adr/`。
+
+---
+
+## Answer
+
+**ADR**：[`docs/adr/0001-one-skill-two-reference-trees.md`](../../../docs/adr/0001-one-skill-two-reference-trees.md)
+（本仓库第一篇 ADR，三条标准全中：难回退、不解释看不懂、真实权衡）。
+
+### 第 1 问：合并入口，保留两棵 references 树
+
+```
+x86-virt/
+  SKILL.md              <- 厂商路由 + 裁决规则在这里（body 完整加载、不截断、不受白名单管）
+  references/
+    intel/  00-quickref.md … 18-comparison.md  +  bibliography.md (318 条)
+    amd/    00-quickref.md … 19-comparison.md  +  bibliography.md (198 条)
+```
+
+**不动**：2531 条规范锚点（它们引的是 `[SDM 3C §30.2.1]` 这类厂商文档，**不是文件路径**，
+合并根本碰不到）、**6616 处 `[N]` 书目引用**（各自作用域在本树内，零重编号）。
+
+**要动**：路径前缀、两份 `lint.config.json` 合并。
+
+**白捡的修复**：AMD 章节里硬编码的 **11 处指向 intel-vt 的仓库根相对路径**
+（`16-windows-platform.md` 9 处、`19-comparison-intel-arm-riscv.md` 2 处，
+现在从所在文件解析出来是 404）变成技能内部路径，**自动生效**。
+
+**被否决的两个选项及原因**见 ADR 的 Considered options。要点：
+完全合并需重编 ~2793 处 `[N]`，而盲测已证明现有厂商分立结构的事实召回率达 95.5% / 97.8%，
+**交织章节买不到任何可测的召回提升**；保持两个则"删掉 8 个重合触发词"会导致
+**只含那些词的问题两边都不触发**。
+
+### 第 2 问：`description` 草稿（816 字符）
+
+```
+x86 hardware virtualization expert knowledge base for Windows PCs, covering Intel
+and AMD behind one entry point that routes by vendor internally - ask without naming
+one. Intel: VT-x/VMX/VMCS, VM-exit decoding, EPT/VPID, VT-d/IOMMU, APICv, nested VMX,
+TDX/SEAM. AMD: AMD-V/SVM, VMCB, intercepts and #VMEXIT, nested paging and ASIDs,
+AVIC/x2AVIC, AMD-Vi/IVRS, SME/SEV/SEV-ES/SEV-SNP. Either: Hyper-V, VBS/HVCI, WSL2,
+Kernel DMA Protection, and who owns VMX root or SVM on Windows; writing a hypervisor,
+including a thin or minimal one, and diagnosing a driver that will not load;
+per-CPU-model behaviour across Intel 10th gen to Core Ultra 300 and AMD Zen 1 to
+Zen 5, keyed on CPUID family/model plus microcode revision. Every architectural claim
+is anchored to a vendor specification by document number and section.
+```
+
+**816 字符**——低于最严的 1024 上限（Claude Code 1536 + 1%，Codex 2% / 8000），
+且**比旧的任何一个都短**（intel 844 / amd 925），却多覆盖了一家厂商和两条新轨道。
+
+设计要点：
+
+- **删掉了 "Do NOT use for ..." 免责句**——合并后无对象可免责。
+- **前置了"内部按厂商路由，问的时候不必点名厂商"**。这正是旧结构失败的地方：
+  用户问"Hyper-V 怎么样"时不会说厂商，而截断又恰好砍掉末尾的免责句。
+- **新增了开发与型号两条触发面**（`writing a hypervisor, including a thin or minimal one`、
+  `diagnosing a driver that will not load`、`per-CPU-model behaviour ... keyed on CPUID
+  family/model plus microcode revision`）。旧的两个 description **一个开发类词都没有**，
+  所以"怎么写 hypervisor"根本触发不了——这是用户的首要诉求之一。
+- **保留了行话密度**（`VMCS` `#VMEXIT` `EPT` `ASID` `IVRS` `SEV-SNP`）。
+  01 查明宿主靠模型判断而非关键词匹配，但行话正是模型识别相关性的依据，
+  所以走"散文里嵌术语"而不是逗号分隔的关键词墙。
+
+### 第 3 问：`00-quickref.md` 上移导航三节
+
+上移进 `SKILL.md`：**§0.2 症状→章节**、**§0.3 表→归属章节**、**§0.5 五个 Windows 问题的一行答**。
+留在 quickref：中英术语对照（§0.4）、实现者阅读顺序（§0.6）。
+
+判据：**路由属于入口，内容属于 references。**
+这同时修掉"路由被埋在 `SKILL.md` 38% 处"（`intel-vt/SKILL.md:56`，前面 55 行是前言）。
+
+### 交给 07 的约束
+
+规范建议 `SKILL.md` body **< 5000 token**。合并后它要承载：厂商路由 + 上移的三节导航
++ 约 46 章的路由表。**这是 07 的分层读取契约必须解决的第一个具体问题**，不是理论问题。

@@ -129,6 +129,21 @@ Baseline commit: `9192e4c`（改造前的工作树快照）
   Zen 4 VMLOAD/VMSAVE 缺陷**没有 AMD 勘误号**，范围精确到 `fam19h` 18h–1Fh 与 60h–7Fh，
   Zen 5 不受影响，且**裸机 hypervisor 得不到任何自动缓解**。
 
+- [06 一个技能还是两个？](issues/06-one-skill-or-two.md) ★ 枢纽：
+  **合并入口、保留两棵 references 树**——一个 `SKILL.md` 在 body 内做厂商路由，
+  `references/intel/` 与 `references/amd/` 各留各的书目。
+  **2531 条规范锚点与 6616 处 `[N]` 引用一处不动**（锚点引的是厂商文档不是路径；
+  `[N]` 作用域在本树内）；要动的只有路径前缀和两份 `lint.config.json`。
+  **白捡修复**：AMD 章节里 11 处指向 intel-vt 的 404 路径变成技能内部路径。
+  ADR：[`docs/adr/0001-one-skill-two-reference-trees.md`](../../docs/adr/0001-one-skill-two-reference-trees.md)（本仓库第一篇）。
+  **`description` 草稿 816 字符**，低于最严的 1024 上限、比旧的两个都短，
+  却新增了开发与型号两条触发面——旧 description **一个开发类词都没有**，
+  这正是"怎么写 hypervisor"触发不了的原因。
+  **`00-quickref.md` 的导航三节（§0.2 症状→章节、§0.3 表→章节、§0.5 五个 Windows 一行答）上移进 `SKILL.md`**，
+  术语对照与阅读顺序留在 quickref；判据是"路由属于入口，内容属于 references"。
+  **交给 07 的硬问题**：合并后的 body 要承载路由 + 三节导航 + 约 46 章路由表，
+  而规范建议 body < 5000 token。
+
 ## Not yet specified
 
 以下是能看见轮廓、但还没法写成精确问题的部分。前沿推进后再毕业成 ticket。
