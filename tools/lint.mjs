@@ -115,10 +115,24 @@ function loadConfig(skillDir) {
 
 // ------------------------------------------------------------------- engine
 
-function lintSkill(skillName) {
-  const SKILL_DIR = join(ROOT, skillName)
-  const REFS = join(SKILL_DIR, 'references')
-  const cfg = loadConfig(SKILL_DIR)
+// A lint unit is one reference subtree plus the SKILL.md that governs it.
+//
+// In the v1 layout a unit is a whole skill: intel-vt/{SKILL.md, lint.config.json,
+// references/}. In v2 one SKILL.md governs several subtrees, each carrying its
+// own lint.config.json and its own bibliography, because the anchor grammars
+// are vendor-specific -- an SDM section and an APM section have nothing in
+// common but the word "section". Keeping one config per subtree means the
+// grammars stay separate and `[N]` stays scoped to the bibliography beside it,
+// which is what lets 6,616 citations survive the move without renumbering.
+//
+// Both shapes are supported so the migration can be verified in stages rather
+// than as one leap.
+function lintSkill(unit) {
+  const { name: skillName, skillDir: SKILL_DIR, refsDir: REFS, configDir } =
+    typeof unit === 'string'
+      ? { name: unit, skillDir: join(ROOT, unit), refsDir: join(ROOT, unit, 'references'), configDir: join(ROOT, unit) }
+      : unit
+  const cfg = loadConfig(configDir)
   const errors = []
   const warnings = []
   const noSpec = []
@@ -660,28 +674,58 @@ function lintSkill(skillName) {
 
 // --------------------------------------------------------------------- main
 
+// Expand one skill directory into its lint units. A skill whose references/
+// holds subdirectories with their own lint.config.json contributes one unit per
+// subtree, all sharing the parent SKILL.md; otherwise it is a single unit.
+const unitsOf = (dirName) => {
+  const skillDir = join(ROOT, dirName)
+  const refs = join(skillDir, 'references')
+  const subtrees = existsSync(refs)
+    ? readdirSync(refs)
+        .filter((d) => {
+          try {
+            return statSync(join(refs, d)).isDirectory() && existsSync(join(refs, d, 'lint.config.json'))
+          } catch { return false }
+        })
+        .sort()
+    : []
+
+  if (subtrees.length) {
+    return subtrees.map((sub) => ({
+      name: `${dirName}/${sub}`,
+      skillDir,
+      refsDir: join(refs, sub),
+      configDir: join(refs, sub),
+    }))
+  }
+  return [{ name: dirName, skillDir, refsDir: refs, configDir: skillDir }]
+}
+
 const requested = process.argv.slice(2).filter((a) => !a.startsWith('-'))
-const skills = requested.length
-  ? requested.map((s) => s.replace(/[\\/]+$/, ''))
-  : readdirSync(ROOT)
-      .filter((d) => {
-        try { return statSync(join(ROOT, d)).isDirectory() } catch { return false }
-      })
-      .filter((d) => existsSync(join(ROOT, d, 'SKILL.md')) && existsSync(join(ROOT, d, 'lint.config.json')))
-      .sort()
+const skills = (
+  requested.length
+    ? requested.map((s) => s.replace(/[\\/]+$/, ''))
+    : readdirSync(ROOT)
+        .filter((d) => {
+          try { return statSync(join(ROOT, d)).isDirectory() } catch { return false }
+        })
+        .filter((d) => existsSync(join(ROOT, d, 'SKILL.md')))
+        .sort()
+).flatMap(unitsOf)
 
 if (!skills.length) {
-  console.error('\nno skills found — a skill is a directory holding SKILL.md and lint.config.json\n')
+  console.error('\nno skills found — a skill is a directory holding SKILL.md, with lint.config.json beside it or in each references/ subtree\n')
   process.exit(1)
 }
 
 const label = (s) => s.replace(/^(\S+?):/, (_, f) => `\x1b[36m${f}\x1b[0m:`)
 let failed = 0
 
-for (const skill of skills) {
+for (const unit of skills) {
+  const skill = typeof unit === "string" ? unit : unit.name
   let r
   try {
-    r = lintSkill(skill)
+    r = lintSkill(unit)
   } catch (e) {
     console.error(`\n\x1b[31mconfig error\x1b[0m — ${e.message}\n`)
     process.exit(1)

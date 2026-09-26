@@ -28,7 +28,10 @@ const named = process.argv.slice(2).filter((a) => !a.startsWith('-')).map((s) =>
 // that a half-created directory cannot silently join the build.
 const allSkills = readdirSync(ROOT)
   .filter((d) => { try { return statSync(join(ROOT, d)).isDirectory() } catch { return false } })
-  .filter((d) => existsSync(join(ROOT, d, 'SKILL.md')) && existsSync(join(ROOT, d, 'lint.config.json')))
+  // lint.config.json used to be required here too. In the v2 layout it lives in
+  // each references/ subtree instead, because the anchor grammars are
+  // vendor-specific, so SKILL.md is the only reliable marker of a skill.
+  .filter((d) => existsSync(join(ROOT, d, 'SKILL.md')))
   .sort()
 
 const skills = named.length ? named : allSkills
@@ -79,9 +82,21 @@ function readSkill(name) {
 
   const triggers = /Triggers\s*[-—:]\s*([^.]+)\./i.exec(desc)?.[1]?.trim()
 
-  const chapters = existsSync(refs) ? readdirSync(refs)
-    .filter((f) => f.endsWith('.md'))
-    .sort()
+  // Walk references/ recursively. A v1 skill has chapters directly inside it; a
+  // v2 skill groups them into per-vendor subtrees, and the index must carry the
+  // subtree in the path so a reader can address references/intel/02-vmcs.md.
+  const walkRefs = (dir, prefix = '') => {
+    if (!existsSync(dir)) return []
+    const out = []
+    for (const entry of readdirSync(dir).sort()) {
+      const full = join(dir, entry)
+      if (statSync(full).isDirectory()) out.push(...walkRefs(full, `${prefix}${entry}/`))
+      else if (entry.endsWith('.md')) out.push(`${prefix}${entry}`)
+    }
+    return out
+  }
+
+  const chapters = walkRefs(refs)
     .map((file) => {
       const body = readFileSync(join(refs, file), 'utf8')
       const title = (/^#\s+(.+)$/m.exec(body)?.[1] ?? file).trim()
@@ -97,7 +112,7 @@ function readSkill(name) {
         bytes: Buffer.byteLength(body),
         sha256: sha256(body),
       }
-    }) : []
+    })
 
   return { name, dir, fm, desc, shortDesc, triggers, chapters, fatal, displayName: cfg.displayName ?? name }
 }
