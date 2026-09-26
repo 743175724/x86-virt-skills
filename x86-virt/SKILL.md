@@ -174,6 +174,47 @@ emulation, SMP bring-up or teardown. `00-quickref.md` §0.4 says so too. Answer 
 "write me the skeleton" request from the architecture chapters and the trap list, and say
 which parts are not covered here.
 
+## Which chapter owns a table
+
+Grouped, not per-table. **No values are reproduced anywhere but in the owning
+chapter**, so two copies can never drift. Each subtree's `00-quickref.md` §0.3 has the
+full per-table map.
+
+| You need | Intel | AMD |
+|---|---|---|
+| Control-structure field offsets and encodings | `references/intel/02-vmcs.md` | `references/amd/02-vmcb.md` |
+| Intercept / execution-control bits | `references/intel/02-vmcs.md` | `references/amd/03-intercepts.md` |
+| Entry checks | `references/intel/04-vm-entry.md` | `references/amd/04-world-switch.md` |
+| **Exit reasons and exit-information layouts** | `references/intel/05-vm-exit.md` | `references/amd/05-exit-decoding.md` |
+| Nested-paging entry formats, TLB invalidation | `references/intel/06-address-translation.md` | `references/amd/06-nested-paging.md` |
+| Interrupt virtualization tables | `references/intel/07-apic-virtualization.md` | `references/amd/07-virtual-interrupts-avic.md` |
+| **Instruction error numbers** | `references/intel/08-vmx-instructions.md` §8.4 | `references/amd/05-exit-decoding.md` §5.1 |
+| Capability MSRs | `references/intel/08-vmx-instructions.md` §8.6 | `references/amd/01-svm-intro.md` §1.3 |
+| IOMMU register maps, translation structures | `references/intel/10-vtd-dma-remapping.md` | `references/amd/08-iommu-architecture.md` |
+| **IOMMU fault codes** | `references/intel/12-vtd-faults-bios-siov.md` §12.3 | `references/amd/09-iommu-page-tables.md` §9.6 |
+| Interrupt-remapping table entries | `references/intel/11-vtd-interrupt-remapping.md` | `references/amd/10-iommu-interrupt-remapping.md` |
+| Memory-encryption / confidential-computing | `references/intel/13-tdx.md` | `references/amd/12-sev.md`, `14-sev-snp.md` |
+| Mitigation MSRs, CVE matrix | `references/intel/15-security.md` | `references/amd/17-security.md` |
+| Anything with a date or a version number | `references/intel/90-dated-landscape.md` | `references/amd/90-dated-landscape.md` |
+
+## Terminology, EN ↔ 中文
+
+Routing, not content: a question asked in Chinese has to reach an English chapter.
+Each subtree's `00-quickref.md` §0.4 has the full list with disambiguation notes.
+
+| 中文 | EN | 中文 | EN |
+|---|---|---|---|
+| 影子分页 | shadow paging | 嵌套分页 | nested paging (EPT / NPT) |
+| 世界切换 | world switch | 退出码 | exit code / exit reason |
+| 拦截 | intercept | 陷入 | trap / VM exit |
+| 直通 | passthrough | 中断重映射 | interrupt remapping |
+| 恒等映射 | identity map | 影子 VMCS | shadow VMCS |
+| 嵌套虚拟化 | nested virtualization | 逻辑处理器 | logical processor |
+| 混合核 | hybrid cores (P-core / E-core) | 微码 | microcode |
+| 勘误 | erratum / errata | 修订指南 | revision guide |
+| 内存完整性 | Memory Integrity (HVCI) | 基于虚拟化的安全 | VBS |
+| 轻量级 hypervisor | thin / minimal hypervisor | 蓝屏 | bugcheck |
+
 ## The Windows fact that resolves most questions
 
 On a Windows PC with Hyper-V, VBS, HVCI, WSL 2, Windows Sandbox, Credential Guard or
