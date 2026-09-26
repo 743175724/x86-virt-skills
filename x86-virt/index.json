@@ -74,8 +74,8 @@
         "3.11 SMI interception",
         "3.12 Open items"
       ],
-      "bytes": 54787,
-      "sha256": "b16a6edb7147cf20b205895c09e20cffce79f10f07468d970e0703fc968756c0"
+      "bytes": 55021,
+      "sha256": "052f2a2710acacef107f04019af0629f6039ee8f2c1c2012a99170ed3f5a6ab8"
     },
     {
       "path": "references/amd/04-world-switch.md",
@@ -168,8 +168,8 @@
         "8.8 Log entry formats: event, PPR and GA",
         "8.9 Open items"
       ],
-      "bytes": 50989,
-      "sha256": "d904d35fa8a0fc8b69ce0466116558370daa41630336fd81741b7f6bfa29833e"
+      "bytes": 51056,
+      "sha256": "3a07b843f995a00f12cab96051176876c81cad2c359650bb224305a7213065e7"
     },
     {
       "path": "references/amd/09-iommu-page-tables.md",
@@ -203,8 +203,8 @@
         "10.7 Hardware-accelerated vIOMMU",
         "10.8 Open items"
       ],
-      "bytes": 40495,
-      "sha256": "ffa2851967e97a0107b8e5b4cdefe991cd3527312ce4169fea38c732faf34958"
+      "bytes": 40714,
+      "sha256": "db90bcbedd179c49e56b8252d8f74a6f80474f1db19fa11a8f4b7597bdf9abd0"
     },
     {
       "path": "references/amd/11-memory-encryption.md",
@@ -222,8 +222,8 @@
         "11.8 What a client part does not have",
         "11.9 Open items"
       ],
-      "bytes": 33855,
-      "sha256": "c47891ee23f3b71db9f3d77d462cca04e0056aa5c6a24a97ae920b20ece1ce2d"
+      "bytes": 34003,
+      "sha256": "a32006df577645f6ea405d2764c052f1824152bb623853dcd6abfbc4ef2d6998"
     },
     {
       "path": "references/amd/12-sev.md",
@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 61472,
-      "sha256": "d503e75ab6a4d4daead8236a29d39edcf89dd9dea9d837b44b72375a1fa75fc1"
+      "bytes": 61546,
+      "sha256": "db0dc8b529be5b4b8b42dc0fa96aface993e045342cd72ac8d481eab899413ee"
     },
     {
       "path": "references/amd/18-performance.md",
@@ -403,8 +403,8 @@
         "90.7 Roadmap",
         "90.8 Open items"
       ],
-      "bytes": 54867,
-      "sha256": "6b4c699f9f74a053085716cf65018d8e3e1a1fe7e863a059c5195bd381471d53"
+      "bytes": 54620,
+      "sha256": "9d0a2d7f6018edefdb30362051a5a6c467662bc1355a57287420b79c0b2967cf"
     },
     {
       "path": "references/amd/bibliography.md",

@@ -334,7 +334,7 @@ this chapter follows the register definition in Chapter 3 over the prose in Chap
 
 **Not covered by any AMD specification.**
 
-- **Claim.** No AMD specification states the firmware default for interrupt remapping on a given client board: the IOMMU specification defines discovery through the ACPI IVRS table (`09-iommu-page-tables.md`) and says nothing about defaults, and AMD publishes neither a client Ryzen PPR nor a client revision guide.  `[no-spec]` `[7]` `C:medium` `V:durable`
+- **Claim.** No AMD specification states the firmware default for interrupt remapping on a given client board: the IOMMU specification defines discovery through the ACPI IVRS table (`09-iommu-page-tables.md`) and says nothing about defaults. As of 2026-09-26 no public revision guide covers a Family 19h or 1Ah client model range, and client PPRs 56176, 56214, 56713 and 57254 have no retrievable first-party copy (`errata.md` E27). Family 17h client parts have Revision Guide 55449, which still does not state a firmware default.  `[no-spec]` `[7][29]` `C:medium` `V:durable`
 
 **Boundary with `08-iommu-architecture.md`** (settled 2026-09-21). `recheck-findings.md`
 carried two decisions that contradicted each other — §1 gave this chapter the GA log

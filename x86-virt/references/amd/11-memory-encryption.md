@@ -322,8 +322,10 @@ which gates OS-driven SME rather than firmware-driven TSME.
   from the other.
 - **TSME has no normative specification.** Everything in §11.5 about TSME comes from AMD's
   memory-encryption white paper and one `PLATFORM_INFO` field in the SNP firmware ABI. The APM does not
-  contain the string "TSME". If a normative description exists it is in a PPR, and **AMD publishes no
-  PPR for client Ryzen**, so this gap is unlikely to close.
+  contain the string "TSME". If a normative description exists it is in a PPR. As of
+  2026-09-26 client PPRs 56176, 56214, 56713 and 57254 have no retrievable first-party
+  copy (`errata.md` E27). Client PPRs that are published, such as Cezanne 56569, were
+  not found to contain a TSME specification either.
 - **The fTPM is undocumented in this corpus** (see §11.7). The claim that it runs on the AMD-SP is
   widely repeated and nowhere specified in the documents this skill cites.
 - **`COHERENCY_SFW_NO` (`EBX[31]`) points at AMD-SB-3017**, which is not in this skill's bibliography;
