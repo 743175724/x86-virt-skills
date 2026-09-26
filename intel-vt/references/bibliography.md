@@ -1,5 +1,7 @@
 # Bibliography
 
+> **中文速览**：本技能的全局引用表。每条 claim 行用 `` `[N]` `` 指向这里的一条。查一条 claim 的出处就到这里按编号找；新增来源时在本文件末尾追加，不要复用已有编号。
+
 Global citation ID space for this skill. Every `[N]` token in a chapter file resolves here.
 
 **Tier key** — `T1` normative (Intel official specifications and advisories) · `T2` corroborating (kernel.org, LKML, peer-reviewed papers, other vendors' official specifications and documentation) · `T3` background (blogs, news, marketing — never the sole source for an architectural claim).

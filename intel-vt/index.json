@@ -449,7 +449,7 @@
     {
       "path": "references/bibliography.md",
       "title": "Bibliography",
-      "summary_zh": null,
+      "summary_zh": "本技能的全局引用表。每条 claim 行用 `` `[N]` `` 指向这里的一条。查一条 claim 的出处就到这里按编号找；新增来源时在本文件末尾追加，不要复用已有编号。",
       "maps_to": null,
       "headings": [
         "1–40 · Intel official (T1)",
@@ -465,8 +465,8 @@
         "550–599 · Dated landscape (90)",
         "600–649 · Errata"
       ],
-      "bytes": 70781,
-      "sha256": "ed8d90bdd450734a4ef55192e51a81e22e4505bf39ae8c847fd423e30ce58fa5"
+      "bytes": 71011,
+      "sha256": "76a8c9cae618533366bdb2679ec0bf07d0308985ecbe3e7dc297f84a4ddca558"
     },
     {
       "path": "references/core-facts.md",
