@@ -48,21 +48,35 @@ Three chapters, in the order a reader actually needs them:
    `05-exit-decoding.md` → `06-nested-paging.md`.
    The AMD subtree's `00-quickref.md` §0.6 has the implementer's reading order in full.
 
-## 0.4 What is not here yet
+## 0.4 This subtree does not ship a skeleton, and will not
 
-Stated plainly rather than implied by absence:
+Stated plainly rather than implied by absence, and as a scope decision rather than a gap:
 
-- **No skeleton source.** The decision recorded in the v2 spec is a compilable minimal
-  skeleton, written as original Apache-2.0 rather than vendored from an MIT project,
-  because this is corpus an agent will reproduce and vendored code would hand the reader
-  an attribution obligation they will not honour. It is not written yet.
+- **No skeleton source, by design.** This subtree is not a starting template. Working
+  implementations already exist under licences that permit use, and duplicating one here
+  would add a fourth thing to keep current against Windows changes with nothing to test
+  it: this repository has no hardware in CI, and an untestable artifact is the kind of
+  asset it exists to avoid.
 - **No per-component walkthrough** of driver entry, per-processor context allocation,
   host GDT/IDT/stack, identity-map construction, the dispatch loop, CPUID/MSR emulation,
   SMP bring-up or teardown.
 
-Until those exist, `03-thin-hypervisor-landscape` in the effort's research notes lists
-which published implementations are current and which are archived, and
-`02-known-traps.md` covers what to avoid in the ones that are.
+**Use instead, in this order:**
+
+1. **The architecture chapters** for the mechanism — `references/intel/` and
+   `references/amd/`, which say what each field, bit and exit code means and cite the
+   specification for it.
+2. **`02-known-traps.md` before writing code**, for the practices that circulate in
+   published implementations and are now defects.
+3. **A maintained implementation for structure.** `02-known-traps.md` §2.5 has the
+   survey, including which projects are archived and which licence forbids reuse in an
+   Apache-2.0 work.
+
+**What this subtree adds that a reference implementation does not** is the part nobody
+maintains: whether your driver can load at all on the machine in front of you
+(`01-platform-ownership.md`), what the published implementations get wrong
+(`02-known-traps.md`), and why the same code behaves differently on two machines
+(`03-failures-by-model.md`).
 
 ## 0.5 Terminology (中英对照)
 

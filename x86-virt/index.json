@@ -458,11 +458,11 @@
         "0.1 What this subtree is for",
         "0.2 Symptom → chapter",
         "0.3 Start here, in this order",
-        "0.4 What is not here yet",
+        "0.4 This subtree does not ship a skeleton, and will not",
         "0.5 Terminology (中英对照)"
       ],
-      "bytes": 4374,
-      "sha256": "4702bac2d50a3323da1f6115ab31abf2bb570f769360ca67c903069fb4543138"
+      "bytes": 5169,
+      "sha256": "f7a3287b08f5b421e7730b06172c84d0c3d5a77c9a7c75f881463efc4445f576"
     },
     {
       "path": "references/dev/01-platform-ownership.md",

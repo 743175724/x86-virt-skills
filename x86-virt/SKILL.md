@@ -167,12 +167,14 @@ one you picked (T1), not this list expanded.
 Each subtree's `00-quickref.md` holds the table-to-chapter map and the implementer's
 reading order. Its symptom table is reproduced above; the rest stays there.
 
-**What `references/dev/` does not yet contain**, stated rather than implied: no skeleton
-source, and no per-component walkthrough of driver entry, per-processor context
+**`references/dev/` ships no skeleton source, by design** — it is not a starting
+template, and it carries no per-component walkthrough of driver entry, context
 allocation, host GDT/IDT/stack, identity-map construction, the dispatch loop, CPUID/MSR
-emulation, SMP bring-up or teardown. `00-quickref.md` §0.4 says so too. Answer a
-"write me the skeleton" request from the architecture chapters and the trap list, and say
-which parts are not covered here.
+emulation, SMP bring-up or teardown. Answer a "write me a hypervisor" request from the
+architecture chapters for the mechanism and `references/dev/02-known-traps.md` for what to avoid, point
+at a maintained implementation for structure (§2.5 surveys them, with the licences), and
+say plainly that no skeleton is provided here. Do not invent one and present it as the
+corpus's.
 
 ## Which chapter owns a table
 
