@@ -1,0 +1,239 @@
+# dev golden evaluation set
+#
+# 20 questions.  Scoring protocol: eval/RUNNER.md
+#   diagnosis   6   "why does this not work on this machine"
+#   trap        6   does the answer avoid a practice the corpus records as wrong
+#   build       5   NEW in v2 — write a component, scored against the trap list
+#   gap         3   NEW in v2 — the correct answer is a scoped "cannot be determined"
+#
+# This set is smaller than the vendor sets on purpose. The dev subtree carries
+# 23 claims, not 2,650, and a set padded out to 80 would be testing invention
+# rather than recall.
+#
+# Two question types here are not scored like the vendor sets:
+#
+#   build — the answer is code or a component design. It is NOT scored for
+#   resemblance to any reference implementation. It passes when it steps on
+#   none of the traps in 02-known-traps.md that apply to the component asked
+#   for. Compiling is not required and not attempted: CI has no hardware, and
+#   "compiles but bugchecks on a hybrid part" is the failure this set exists to
+#   catch. See eval/RUNNER.md.
+#
+#   gap — the correct answer is that the knowledge base cannot determine this,
+#   together with the scope of the gap. An answer that names the gap correctly
+#   scores FULL marks. Marking "I don't know" down is how a corpus gets trained
+#   toward fabrication, which is the defect this whole repository exists to
+#   avoid.
+
+# ===========================================================================
+# DIAGNOSIS  (6)
+# ===========================================================================
+
+- id: driver-loads-one-machine-not-another
+  chapter: 01-platform-ownership.md
+  type: diagnosis
+  question: "My hypervisor driver loads on my desktop and refuses on my laptop. Both are the same CPU generation and both show virtualization enabled in BIOS. Where do I look first?"
+  must_include:
+    - "who already owns the virtualization extension, not the BIOS setting"
+    - "Hyper-V, VBS, HVCI, WSL 2, Windows Sandbox, Credential Guard or Device Guard makes the Microsoft hypervisor the owner"
+    - "the extension has exactly one owner per logical processor"
+    - "CPUID still reports the feature while another hypervisor owns it, so a CPUID probe is not sufficient"
+
+- id: bios-says-enabled-but-disabled
+  chapter: 01-platform-ownership.md
+  type: diagnosis
+  question: "Users keep reporting that virtualization is disabled in BIOS when the BIOS setting is clearly on. What is actually happening?"
+  must_include:
+    - "the extension is present and already taken by another hypervisor"
+    - "the same root cause produces driver load failures and instruction failures"
+
+- id: worked-before-windows-update
+  chapter: 01-platform-ownership.md
+  type: diagnosis
+  question: "My driver worked last month and does not now, and the user says they changed nothing. What changed?"
+  must_include:
+    - "Memory Integrity enabled through a quality update, which turns VBS on with it"
+    - "the user made no deliberate change"
+    - "treat VBS being on as the default state rather than the exception"
+
+- id: slower-on-newer-cpu
+  chapter: 03-failures-by-model.md
+  type: diagnosis
+  question: "My hypervisor is measurably slower on a 14th-generation part than on an 8th-generation one, with the same code. What should I suspect?"
+  must_include:
+    - "four E-cores share one L2 cache"
+    - "a per-logical-processor paging hierarchy stops being cache-friendly"
+    - "one global paging structure shared across all cores"
+
+- id: bluescreen-some-machines-same-cpu
+  chapter: 03-failures-by-model.md
+  type: diagnosis
+  question: "My AMD hypervisor bugchecks on one customer's machine and works on twenty others, all the same CPU family. How do I approach this?"
+  must_include:
+    - "do not conclude the processor generation is the cause"
+    - "an identity map that covers only the first 512 GB"
+    - "the machine's memory layout rather than its processor decides who sees it"
+    - "the maintainer could not reproduce it on the generation the reporter blamed"
+
+- id: esxi-psod-hybrid
+  chapter: 03-failures-by-model.md
+  type: diagnosis
+  question: "ESXi purple-screens with 'Fatal CPU mismatch on feature' on a 13th-generation desktop. Is the CPU faulty, and what is the fix?"
+  must_include:
+    - "the silicon is not at fault"
+    - "a uniformity assumption in ESXi"
+    - "the compared features are topology counts"
+    - "cpuUniformityHardCheckPanic=FALSE"
+    - "not a firmware or microcode change"
+
+# ===========================================================================
+# TRAP  (6)
+# ===========================================================================
+
+- id: trap-per-core-ept
+  chapter: 02-known-traps.md
+  type: trap
+  question: "Every hypervisor tutorial I have read allocates a separate EPT hierarchy per logical processor. Is that the right default in 2026?"
+  must_include:
+    - "not on Intel hybrid parts"
+    - "four E-cores share one L2 cache"
+    - "share one hierarchy across cores unless a per-core one is required for a stated reason"
+    - "what is penalised is the design habit, not a bug in any one implementation"
+  must_not_include:
+    - "per-core hierarchies are the recommended default"
+
+- id: trap-cpuid-cached-once
+  chapter: 02-known-traps.md
+  type: trap
+  question: "Is it safe to probe CPUID once on the boot processor and reuse the result for the whole machine?"
+  must_include:
+    - "no"
+    - "AVIC and x2AVIC track the microcode patch level rather than the family and model"
+    - "SDM rev 093 Vol.1 classifies ISA feature bits as Platform domain, which must be identical on every logical processor"
+    - "cache, topology and native-model leaves may legitimately differ"
+    - "record the firmware level alongside any conclusion you store"
+
+- id: trap-advertised-bit
+  chapter: 02-known-traps.md
+  type: trap
+  question: "CPUID says this AMD part supports virtualized VMLOAD/VMSAVE. Can I turn it on?"
+  must_include:
+    - "not on affected Family 19h client parts"
+    - "random reboots"
+    - "the workaround lives in the Linux kernel, so a bare-metal hypervisor is not protected"
+    - "CVE-2024-53114"
+
+- id: trap-hyperplatform-starting-point
+  chapter: 02-known-traps.md
+  type: trap
+  question: "Should I start my Windows hypervisor from HyperPlatform, hvpp, Bareflank or HyperDbg?"
+  must_include:
+    - "HyperPlatform was archived by its author"
+    - "Bareflank's licence file is inconsistent with its own source headers"
+    - "HyperDbg is GPL-3.0 and its code may not be included in an Apache-2.0 work"
+    - "barevisor is the maintained one covering both vendors across a Windows driver and UEFI"
+
+- id: trap-patchguard-first
+  chapter: 01-platform-ownership.md
+  type: trap
+  question: "I am planning the work. Should I solve PatchGuard before worrying about anything else?"
+  must_include:
+    - "no"
+    - "ownership of the virtualization extension is the larger obstacle"
+    - "virtualization changes none of the guest-visible bytes PatchGuard inspects"
+  must_not_include:
+    - "PatchGuard is the main barrier"
+
+- id: trap-disable-vbs-advice
+  chapter: 01-platform-ownership.md
+  type: trap
+  question: "Is 'tell the user to disable Memory Integrity' a reasonable thing to put in my README?"
+  must_include:
+    - "it describes a shrinking configuration"
+    - "it asks the user to lower their machine's security permanently"
+    - "the nested path and the Windows Hypervisor Platform API are the alternatives"
+
+# ===========================================================================
+# BUILD  (5)  — scored against the trap list, not for resemblance
+# ===========================================================================
+
+- id: build-identity-map
+  chapter: 03-failures-by-model.md
+  type: build
+  question: "Write the design for a nested-paging identity map for an AMD hypervisor. State what it must cover and why."
+  must_include:
+    - "cover the full guest-physical width the part supports, derived rather than assumed"
+    - "do not stop at 512 GB"
+    - "MMIO can be placed above that on real machines"
+  must_not_include:
+    - "a four-level walk that omits the top-level index"
+
+- id: build-ept-allocation
+  chapter: 02-known-traps.md
+  type: build
+  question: "Design the paging-structure allocation for a hypervisor that must run on Intel parts from 10th generation to Core Ultra 300."
+  must_include:
+    - "one structure shared across all cores"
+    - "four E-cores share one L2 cache from 12th generation onward"
+    - "measure on a hybrid part rather than on the development machine"
+
+- id: build-capability-probe
+  chapter: 02-known-traps.md
+  type: build
+  question: "Design the capability-detection step of a hypervisor that supports both vendors."
+  must_include:
+    - "read a capability where it is used when the vendor marks it free to change after reset"
+    - "record the microcode patch level with any stored conclusion"
+    - "CPUID is not sufficient to determine ownership"
+
+- id: build-load-sequence
+  chapter: 01-platform-ownership.md
+  type: build
+  question: "What is the first thing a Windows hypervisor driver should do in its entry point, before anything else?"
+  must_include:
+    - "detect who owns the virtualization extension"
+    - "fail early and clearly rather than late and confusingly"
+  must_not_include:
+    - "allocate the VMXON region first"
+
+- id: build-feature-gating
+  chapter: 03-failures-by-model.md
+  type: build
+  question: "Design the rule your code uses to decide whether to enable an optional virtualization acceleration on the part it is running on."
+  must_include:
+    - "check whether the kernel disables it on that part and why"
+    - "a mitigation that exists only in an operating system is a signal, not a reassurance"
+
+# ===========================================================================
+# GAP  (3)  — naming the gap correctly scores full marks
+# ===========================================================================
+
+- id: gap-skeleton-source
+  chapter: 00-quickref.md
+  type: gap
+  question: "Give me the complete source of a minimal Windows thin hypervisor from this knowledge base."
+  must_include:
+    - "this knowledge base does not contain skeleton source"
+    - "no per-component walkthrough of driver entry, context allocation, host GDT/IDT/stack, the dispatch loop, CPUID/MSR emulation, SMP bring-up or teardown"
+    - "what it does have is the architecture chapters and the trap list"
+  must_not_include:
+    - "here is the complete skeleton"
+
+- id: gap-strix-point-hybrid
+  chapter: 03-failures-by-model.md
+  type: gap
+  question: "On a Ryzen AI 300 part, do the Zen 5 and Zen 5c cores differ in any way that breaks a hypervisor?"
+  must_include:
+    - "no Strix Point part was available, so this is documentary rather than measured"
+    - "state the limit rather than answering as if it had been verified on hardware"
+
+- id: gap-nested-hyperv-matrix
+  chapter: 01-platform-ownership.md
+  type: gap
+  question: "Which Windows builds and host CPU generations support running my hypervisor nested under Hyper-V?"
+  must_include:
+    - "that matrix is not recorded here"
+    - "it is a per-model question"
+    - "it is named as an open item rather than answered from memory"
+  must_not_include:
+    - "a confident list of builds and generations"

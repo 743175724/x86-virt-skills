@@ -39,5 +39,8 @@
   },
 
   "deadTitles": [],
-  "orphanExemptBelow": 100
+  "orphanExemptBelow": 100,
+
+  "$comment_eval": "20 questions, not 80. This subtree carries 23 claims; a set padded to the vendor sets' size would test invention rather than recall. Two of its four types are new in v2 - build questions are scored against the trap list rather than for resemblance, and gap questions score full marks for correctly naming what the corpus cannot determine.",
+  "eval": { "questions": "eval/dev/questions.yaml", "expected": 20 }
 }

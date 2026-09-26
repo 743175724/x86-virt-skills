@@ -1,0 +1,206 @@
+# Routing probes — new in v2
+#
+# The vendor and dev question sets measure CONTENT RECALL: given that the right
+# chapter was read, is the answer right? They all run in one host, so they
+# cannot see the failure the v2 rebuild was actually started for — an agent
+# that never loaded the skill, or loaded it and opened the wrong chapter.
+#
+# A probe scores three things, all observable from the agent's tool calls:
+#
+#   triggered   did the skill activate at all
+#   routed      did it open the expected chapter
+#   tiered      did it stop at a section, or read the whole chapter
+#
+# The third exists because reading a whole chapter where a section would do is
+# the defect the tiered contract was written to fix: a TDX question costs about
+# 26,000 tokens read whole and about 1,400 read properly. It is scored as a
+# PARTIAL failure, not a pass. See eval/RUNNER.md.
+#
+# Run this set ONCE PER TARGET HOST. It cannot run in CI: it needs several
+# hosts and it needs the agent's tool calls to be observable.
+#
+# Targets as of 2026-09-26: Claude Code, OpenAI Codex, Kimi Code CLI.
+#
+# Note on `vendor_named`. A probe marked `no` contains none of the words
+# "Intel", "AMD", or a vendor-specific instruction or register. Under the old
+# two-skill layout these were the questions with no answer: both skills claimed
+# them, both shared the trigger token, and the tie-break rule lived in a file
+# neither host loaded. They are the reason the skills were merged, so they are
+# the probes that matter most. If any of them fails to route, the merge did not
+# achieve what it was for.
+
+probes:
+
+# ---------------------------------------------------------------- ambiguous
+# No vendor named. These are the ones that used to have no answer.
+
+  - id: amb-hyperv-owns
+    question: "Why does my hypervisor driver fail to load on a machine where virtualization is enabled in BIOS?"
+    vendor_named: no
+    expect_subtree: dev
+    expect_chapter: 01-platform-ownership.md
+    expect_section: "1.1"
+
+  - id: amb-write-hypervisor
+    question: "How do I start writing a thin hypervisor for Windows?"
+    vendor_named: no
+    expect_subtree: dev
+    expect_chapter: 00-quickref.md
+    expect_section: "0.3"
+
+  - id: amb-vbs-cost
+    question: "How much performance does VBS cost me?"
+    vendor_named: no
+    expect_subtree: amd
+    expect_chapter: 18-performance.md
+    expect_section: "18.2"
+    note: "Either vendor's performance chapter is acceptable; the failure mode is not routing to a performance chapter at all."
+
+  - id: amb-iommu-passthrough
+    question: "A passthrough device's interrupts never arrive. Where do I look?"
+    vendor_named: no
+    expect_subtree: amd
+    expect_chapter: 10-iommu-interrupt-remapping.md
+    expect_section: "10.4"
+    note: "Intel's 11-vtd-interrupt-remapping.md §11.4 is an acceptable route; both are correct answers to an unqualified question."
+
+  - id: amb-wsl2-owner
+    question: "Does running WSL 2 stop me from using my own hypervisor?"
+    vendor_named: no
+    expect_subtree: dev
+    expect_chapter: 01-platform-ownership.md
+    expect_section: "1.1"
+
+  - id: amb-hvci-driver
+    question: "My driver is rejected after the user turned on memory integrity. Why?"
+    vendor_named: no
+    expect_subtree: intel
+    expect_chapter: 15-security.md
+    expect_section: "15.8"
+
+  - id: amb-kernel-dma
+    question: "What does Kernel DMA Protection actually protect against?"
+    vendor_named: no
+    expect_subtree: intel
+    expect_chapter: 12-vtd-faults-bios-siov.md
+
+  - id: amb-newer-cpu-slower
+    question: "My hypervisor got slower when I moved to a newer desktop CPU. Same code."
+    vendor_named: no
+    expect_subtree: dev
+    expect_chapter: 03-failures-by-model.md
+    expect_section: "3.2"
+
+# ------------------------------------------------------------------ Intel
+  - id: intel-vmcs-encoding
+    question: "I have a VMCS field encoding of 0x201A. What field is it?"
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 02-vmcs.md
+
+  - id: intel-vmxon-fails
+    question: "VMXON fails on an Intel machine. What do I check?"
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 01-vmx-intro.md
+    expect_section: "1.4"
+
+  - id: intel-ept-violation
+    question: "How do I decode an EPT violation exit qualification?"
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 06-address-translation.md
+    expect_section: "6.4"
+
+  - id: intel-seamcall
+    question: "SEAMCALL returned an error and I think my call order is wrong."
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 13-tdx.md
+    expect_section: "13.7"
+
+  - id: intel-apicv-lost-irq
+    question: "The guest is losing interrupts with APICv enabled."
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 07-apic-virtualization.md
+    expect_section: "7.6"
+
+# -------------------------------------------------------------------- AMD
+  - id: amd-exitinfo1
+    question: "I have an EXITINFO1 value and need the bit layout."
+    vendor_named: yes
+    expect_subtree: amd
+    expect_chapter: 05-exit-decoding.md
+    expect_section: "5.2"
+
+  - id: amd-vmrun-invalid
+    question: "VMRUN exits immediately with VMEXIT_INVALID."
+    vendor_named: yes
+    expect_subtree: amd
+    expect_chapter: 04-world-switch.md
+    expect_section: "4.2"
+
+  - id: amd-out-of-asids
+    question: "I ran out of ASIDs. What are my options?"
+    vendor_named: yes
+    expect_subtree: amd
+    expect_chapter: 06-nested-paging.md
+    expect_section: "6.7"
+
+  - id: amd-pvalidate-code
+    question: "PVALIDATE returned an unexpected code."
+    vendor_named: yes
+    expect_subtree: amd
+    expect_chapter: 14-sev-snp.md
+    expect_section: "14.4"
+
+  - id: amd-ciphertext-reads
+    question: "Reads of guest memory are coming back as ciphertext."
+    vendor_named: yes
+    expect_subtree: amd
+    expect_chapter: 11-memory-encryption.md
+    expect_section: "11.3"
+
+# ---------------------------------------------------------------- symmetric
+# The comparison rule: these route to Intel's comparison chapter by design.
+
+  - id: sym-ept-vs-npt
+    question: "What is the difference between EPT and NPT?"
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 18-comparison-amd-arm-riscv.md
+
+  - id: sym-snp-vs-tdx
+    question: "How does SEV-SNP compare to TDX?"
+    vendor_named: yes
+    expect_subtree: intel
+    expect_chapter: 18-comparison-amd-arm-riscv.md
+
+  - id: sym-arm-cca
+    question: "How does ARM CCA compare to what x86 does?"
+    vendor_named: no
+    expect_subtree: intel
+    expect_chapter: 18-comparison-amd-arm-riscv.md
+
+# --------------------------------------------------------------------- dev
+  - id: dev-trap-per-core-ept
+    question: "Should I allocate one EPT hierarchy per logical processor?"
+    vendor_named: no
+    expect_subtree: dev
+    expect_chapter: 02-known-traps.md
+    expect_section: "2.1"
+
+  - id: dev-avic-safe
+    question: "Is it safe to enable AVIC on a Ryzen desktop part?"
+    vendor_named: yes
+    expect_subtree: dev
+    expect_chapter: 03-failures-by-model.md
+    note: "03-failures-by-model.md §3.4 and §3.5 both apply; either is a pass. Routing to the AMD AVIC chapter alone is a partial failure, because it answers the architecture and not the question asked."
+
+  - id: dev-esxi-psod
+    question: "ESXi purple-screens with Fatal CPU mismatch on feature."
+    vendor_named: no
+    expect_subtree: dev
+    expect_chapter: 03-failures-by-model.md
+    expect_section: "3.6"

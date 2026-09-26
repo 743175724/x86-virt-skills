@@ -95,5 +95,5 @@
   "$comment_orphanExemptBelow": "IDs 1-25 are the preloaded Intel specification set; they are allowed to sit uncited.",
   "orphanExemptBelow": 26,
 
-  "eval": { "questions": "eval/intel-vt/questions.yaml", "expected": 80 }
+  "eval": { "questions": "eval/intel/questions.yaml", "expected": 80 }
 }

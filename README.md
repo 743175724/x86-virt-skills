@@ -53,6 +53,19 @@ mistaken for architecture.
 
 Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 
+**They measure content recall only, and v2 adds what they could not see.** Both
+sets ran in a single host, so neither could detect an agent that never loaded
+the skill or loaded it and opened the wrong chapter — which was the reported
+problem. [`eval/routing-probes.yaml`](eval/routing-probes.yaml) measures that
+directly, once per host, scoring whether the skill triggered, whether it routed
+to the expected chapter, and whether it stopped at a section or read the whole
+thing. Eight of its probes name no vendor at all: under the previous two-skill
+layout those questions had no defined answer, and they are why the skills were
+merged. [`eval/dev/questions.yaml`](eval/dev/questions.yaml) adds two more
+types — `build`, scored against the enumerated trap list rather than for
+resemblance and never compiled, and `gap`, where naming what the corpus cannot
+determine scores full marks. Neither new set has been run yet.
+
 **`references/intel/`**
 
 | Check | Result |
@@ -88,7 +101,7 @@ itself refuted by a primary source.
 
 The AMD eval was run twice: once, then again after its findings were fixed, so
 the fixes are measured rather than assumed. Both runs are written up under
-[`eval/amd-virtualization/results/`](eval/amd-virtualization/results/).
+[`eval/amd/results/`](eval/amd/results/).
 
 The headline numbers moved *down* slightly between runs, which is not a
 regression: correcting four wrong keys raised the bar and grew the denominator,

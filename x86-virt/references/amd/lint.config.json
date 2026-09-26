@@ -365,7 +365,7 @@
   "$comment_orphanExemptBelow": "IDs 1-40 are the preloaded AMD specification set and 41-99 the other official specifications; both may sit uncited.",
   "orphanExemptBelow": 100,
   "eval": {
-    "questions": "eval/amd-virtualization/questions.yaml",
+    "questions": "eval/amd/questions.yaml",
     "expected": 80
   },
   "$comment_terminology_quickref": "00-quickref.md is exempt from the terminology rules because its section 0.4 is a wrong-name to AMD-name mapping table - naming the wrong term is the whole function of that section, exactly as errata.md must quote a misconception to correct it. The exemption is scoped to terminology ONLY: quickref is still subject to the misconception rules, still forbidden from carrying claim lines (claimFreeFiles), and still holds no authoritative values, so it cannot become a second fact store the way the old appendix did."
