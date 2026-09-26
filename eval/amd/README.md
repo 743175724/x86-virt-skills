@@ -1,11 +1,11 @@
-# amd-virtualization evaluation set
+# AMD evaluation set
 
-`questions.yaml` is the skill's single behavioural test seam: 80 questions that a
-fresh agent answers from `amd-virtualization/SKILL.md` and whatever chapters its
-routing table sends it to. `../RUNNER.md` is the scoring protocol — read it
+`questions.yaml` is the AMD subtree's behavioural test seam: 80 questions that a
+fresh agent answers from `x86-virt/SKILL.md` and whatever chapters its routing
+table sends it to. `../RUNNER.md` is the scoring protocol — read it
 first; it defines `must_include`, `must_not_include`, `required_citation` and the
 pass bar (≥ 90% `must_include`, **zero** `must_not_include` violations, ≥ 95%
-citations). The schema matches the sibling `intel-vt` set exactly, and
+citations). The schema matches the Intel set exactly, and
 `tools/lint.mjs` validates this file against the same rules.
 
 ## What it covers
@@ -25,7 +25,7 @@ chain reads clean while VMRUN never runs, why a driver is rejected under memory
 integrity, why Kernel DMA Protection shows `Off`, how to enable nested Hyper-V on
 a Ryzen, whether VMware and VirtualBox need Hyper-V turned off, what GPU
 passthrough a client PC actually gets, and how to confirm VBS status. Chapter 16
-must answer all of them **without** the sibling `intel-vt` skill installed; that
+must answer all of them from `x86-virt/references/amd/`; that
 is its stated design criterion.
 
 **Nine questions have no numeric answer.** The honest response is "this knowledge
@@ -46,7 +46,7 @@ AMD-V Nested Paging white paper (`NP-WP §4.2.2`) and refuse an APM anchor on th
 ## The twelve traps
 
 Each is an error that circulates in real sources, and each ends the day as a
-`misconceptions` rule in `amd-virtualization/lint.config.json`.
+`misconceptions` rule in `x86-virt/references/amd/lint.config.json`.
 
 | Trap | The misconception | Erratum |
 |---|---|---|
@@ -74,14 +74,14 @@ on `diag-sev-es-disabled-on-snp-host`, E24 (`SEV_STATUS` bit 7 is Debug Swap) on
 `attestation-report-fields`.
 
 `diag-nested-hyperv-on-ryzen-7000` doubles as the cross-skill routing check: an
-AMD-primary Windows question must resolve here and not in `intel-vt`.
+AMD-primary Windows question must resolve in `x86-virt/references/amd/`.
 
 ## Running it against a host
 
 Same procedure for all three targets; only the way you load the skill differs.
 
 1. **Claude Code** — new session in this repo. `AGENTS.md` points at
-   `amd-virtualization/SKILL.md`; let the agent route itself, do not pre-load
+   `x86-virt/SKILL.md`; let the agent route itself, do not pre-load
    chapters.
 2. **Codex** — new session, same repo, `AGENTS.md` again. Confirm it reads
    `SKILL.md` before the first chapter; if it grep-searches `references/`
@@ -91,11 +91,11 @@ Same procedure for all three targets; only the way you load the skill differs.
 
 Ask the questions in file order, one per turn, with no follow-ups and no hints.
 Score literally against `must_include` (partial credit per item), then write
-`eval/amd-virtualization/results/<agent>-<YYYY-MM-DD>.md` from the template in
+`eval/amd/results/<agent>-<YYYY-MM-DD>.md` from the template in
 `RUNNER.md`, quoting the verbatim answer for every failed item.
 
 Every `must_not_include` that fires should end the day as a `misconceptions` rule
-in `amd-virtualization/lint.config.json`, so the same error cannot come back
+in `x86-virt/references/amd/lint.config.json`, so the same error cannot come back
 silently.
 
 ## A note on the answer keys

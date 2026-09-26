@@ -1,15 +1,16 @@
 # Deploying these skills
 
-> **中文速览**：本文讲怎么把 `intel-vt` 和 `amd-virtualization` 装进各个 AI 宿主。
+> **中文速览**：本文讲怎么把 `x86-virt` 装进各个 AI 宿主。
 > 一句话版本：`node tools/install.mjs`（项目级）或 `node tools/install.mjs --user`（全局）。
 > **但每个宿主找技能的地方不一样，而且 Hermes 不会扫描这个仓库**——它只读自己的
 > `<HERMES_HOME>/skills`，所以项目级安装对它无效，必须用 `--user` 或配 `external_dirs`。
 > 下面每条路径都是在本机实测过的，不是照抄文档。
 
-Two skills, one repository. Each is a directory holding `SKILL.md` plus a
+One skill, `x86-virt/`. It is a directory holding `SKILL.md` plus a
 `references/` folder, written to the [Agent Skills](https://agentskills.io/specification)
 specification, so the same directory is consumed by several hosts without
-translation.
+translation. Intel and AMD are subtrees inside it, `references/intel/` and
+`references/amd/`, and `SKILL.md` routes between them.
 
 ## Quick start
 
@@ -77,7 +78,7 @@ the stray `~/.hermes` and re-run.
 
 ```bash
 node tools/install.mjs          # prints one line per host and path
-node tools/lint.mjs             # must print "lint clean" for both skills
+node tools/lint.mjs             # must print "lint clean"
 node tools/build.mjs --check    # generated files must not have drifted
 ```
 
@@ -114,26 +115,26 @@ node tools/install.mjs --uninstall
 It removes only what it made. **It is not a no-op on a working setup** — if you
 run it to test something, re-run the install afterwards.
 
-## Installing one skill
+## Installing the skill
 
 ```bash
-node tools/install.mjs intel-vt
-node tools/install.mjs amd-virtualization --user
+node tools/install.mjs
+node tools/install.mjs x86-virt --user
 ```
 
-The two are independent. `intel-vt` answers Intel-primary questions and both
-sides of a comparison; `amd-virtualization` answers AMD-primary ones. Each
-`SKILL.md` names the other in its scope boundaries, so a host with only one
-installed will say when a question belongs to the other rather than guessing.
+There is one skill to install. Intel and AMD ship together because several
+chapters point across the two subtrees; installing one vendor alone is not a
+supported layout. `SKILL.md` routes a question to `references/intel/`,
+`references/amd/` or `references/dev/`.
 
 ## For a host that is not listed
 
-Start from `<name>/index.json`. It is generated from the chapters and carries,
+Start from `x86-virt/index.json`. It is generated from the chapters and carries,
 for every one of them: the path, title, a Chinese summary, the specification
 chapter it maps to, its section headings, its byte length and a SHA-256.
 
 ```bash
-node -e "const j=require('./amd-virtualization/index.json');
+node -e "const j=require('./x86-virt/index.json');
          console.log(j.chapters.map(c => c.path + '  ' + c.title).join('\n'))"
 ```
 

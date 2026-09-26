@@ -2,8 +2,7 @@
 // Zero-dependency linter for the specification-anchored skills in this repo.
 //
 //   node tools/lint.mjs                 lint every skill that has a lint.config.json
-//   node tools/lint.mjs intel-vt        lint one skill
-//   node tools/lint.mjs intel-vt amd-virtualization
+//   node tools/lint.mjs x86-virt        lint one skill
 //
 // Exit 0 = clean, 1 = errors found.
 //
@@ -117,8 +116,8 @@ function loadConfig(skillDir) {
 
 // A lint unit is one reference subtree plus the SKILL.md that governs it.
 //
-// In the v1 layout a unit is a whole skill: intel-vt/{SKILL.md, lint.config.json,
-// references/}. In v2 one SKILL.md governs several subtrees, each carrying its
+// In the v1 layout a unit was a whole skill, with SKILL.md and lint.config.json
+// beside references/. In v2 one SKILL.md governs several subtrees, each carrying its
 // own lint.config.json and its own bibliography, because the anchor grammars
 // are vendor-specific -- an SDM section and an APM section have nothing in
 // common but the word "section". Keeping one config per subtree means the
@@ -140,7 +139,7 @@ function lintSkill(unit) {
   const warn = (file, msg) => warnings.push(`${file}: ${msg}`)
 
   if (!cfg) {
-    err(skillName, 'no lint.config.json — every skill needs one; see intel-vt/lint.config.json')
+    err(skillName, 'no lint.config.json — every subtree needs one; see x86-virt/references/intel/lint.config.json')
     return { errors, warnings, noSpec, chapters: 0, bib: 0, claims: 0 }
   }
 
@@ -473,19 +472,23 @@ function lintSkill(unit) {
     if (!bibUsed.has(id) && id >= cfg.orphanExemptBelow) warn('references/bibliography.md', `entry [${id}] is never cited`)
   }
 
-  // ------------------------------------------- 14: cross-skill pointers resolve
+  // ------------------------------------------- 14: cross-subtree pointers resolve
   //
-  // A chapter that defers to the sibling skill writes `intel-vt/references/…`.
-  // Rule 8 below only validates pointers within this skill, and rule 9's
-  // ownership escape only looks for a bare `NN-name.md`, so a cross-skill
-  // pointer was checked by nothing at all. Eleven of them in the AMD corpus
-  // omitted the `references/` segment and pointed at paths that do not exist;
-  // both skills read fine in isolation, so nothing surfaced it.
+  // A chapter that defers to the other vendor writes `references/intel/…` or
+  // `references/amd/…`. Rule 8 below only validates pointers inside this
+  // subtree, and rule 9's ownership escape only looks for a bare `NN-name.md`,
+  // so a cross-subtree pointer was checked by nothing at all. The v1 form of
+  // this rule looked for `intel-vt/` and `amd-virtualization/`, which are the
+  // directories the merge deleted; a pointer written in that form now cannot
+  // resolve, and one written in the v2 form was invisible to the check.
   for (const f of chapterFiles) {
     const body = readFileSync(join(REFS, f), 'utf8')
     for (const m of body.matchAll(/`((?:intel-vt|amd-virtualization)\/[A-Za-z0-9/_-]+\.md)`/g)) {
-      if (!existsSync(join(ROOT, m[1]))) {
-        err(`${skillName}/references/${f}`, `cross-skill pointer \`${m[1]}\` does not resolve — sibling chapters live under <skill>/references/`)
+      err(`${skillName}/references/${f}`, `pointer \`${m[1]}\` names a pre-merge skill directory — use references/intel/ or references/amd/`)
+    }
+    for (const m of body.matchAll(/`(references\/(?:intel|amd|dev)\/[A-Za-z0-9/_-]+\.md)`/g)) {
+      if (!existsSync(join(SKILL_DIR, m[1]))) {
+        err(`${skillName}/references/${f}`, `cross-subtree pointer \`${m[1]}\` does not resolve`)
       }
     }
   }

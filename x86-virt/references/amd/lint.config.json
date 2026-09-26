@@ -1,5 +1,5 @@
 {
-  "$comment": "Lint rules for amd-virtualization. Anchor grammar comes from the verified document baseline in .scratch/amd-virt-refine/spec.md §D2; every misconception below came back CONFIRMED from a primary-source check (see recheck-findings.md appendix A). Claims that were REFUTED during that check are deliberately absent — encoding them would bake in a new error.",
+  "$comment": "Lint rules for references/amd/. Anchor grammar comes from the verified document baseline in .scratch/amd-virt-refine/spec.md §D2; every misconception below came back CONFIRMED from a primary-source check (see recheck-findings.md appendix A). Claims that were REFUTED during that check are deliberately absent — encoding them would bake in a new error.",
   "displayName": "AMD Virtualization",
   "$comment_archChapter": "01-14. Chapter 15 (nested virtualization) is deliberately outside the band: its only normative content is APM Vol.2 §15.33 and the rest is kernel and Windows Tier-2 material, so a blanket 'every claim needs a Tier-1 anchor' rule could never pass there.",
   "archChapter": {

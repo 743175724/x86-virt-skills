@@ -28,7 +28,7 @@ silently is the worst thing you can do to this repository.
 - **A negative claim needs the same evidence as a positive one**, scoped to a
   document and a date. This is now enforced by lint rule 4c, because it was
   written in the work contract for two defects and did not prevent a third —
-  see `amd-virtualization/references/errata.md` `E27`.
+  see `x86-virt/references/amd/errata.md` `E27`.
 - **Dated facts are quarantined.** Anything with a GA date, version number,
   price or market share lives in that skill's `90-dated-landscape.md` and
   nowhere else. Lint enforces it.
@@ -44,7 +44,7 @@ silently is the worst thing you can do to this repository.
 ## Before you commit
 
 ```bash
-node tools/lint.mjs          # must print "lint clean" for both skills
+node tools/lint.mjs          # must print "lint clean"
 node tools/build.mjs --check # must print "generated files are up to date"
 ```
 

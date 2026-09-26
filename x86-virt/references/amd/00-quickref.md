@@ -42,46 +42,23 @@ Three traps worth knowing before you go looking:
 
 ## 0.2 Symptom → chapter
 
-| Symptom | Start at |
-|---|---|
-| "AMD-V is disabled in BIOS" but BIOS says it is on | `16-windows-platform.md` §16.1 — a hypervisor already owns it |
-| My VMM/driver/debugger cannot execute VMRUN on Windows | `16-windows-platform.md` §16.1 |
-| CPUID says SVM is present, `VMRUN` still fails | `01-svm-intro.md` §1.5, then `04-world-switch.md` §4.2 |
-| VMRUN exits immediately with `VMEXIT_INVALID` (−1) | `04-world-switch.md` §4.2 — consistency checks |
-| I have an exit code and do not know what it means | `05-exit-decoding.md` §5.1 |
-| I have an `EXITINFO1` value and need the bit layout | `05-exit-decoding.md` §5.2 |
-| `#NPF` — is it a permission fault, an RMP fault, or a page-size mismatch? | `05-exit-decoding.md` §5.3 for the bits, `06-nested-paging.md` §6.5 for the ordering |
-| Guest TLB entries are stale after I changed a page table | `06-nested-paging.md` §6.8 |
-| I ran out of ASIDs | `06-nested-paging.md` §6.7 |
-| Interrupts stop being delivered to a guest vCPU | `07-virtual-interrupts-avic.md` §7.2 |
-| `AVIC_INCOMPLETE_IPI` (401h) or `AVIC_NOACCEL` (402h) in the exit log | `07-virtual-interrupts-avic.md` §7.8 |
-| A passthrough device's interrupts never arrive | `10-iommu-interrupt-remapping.md` §10.4 |
-| `IO_PAGE_FAULT` in the event log | `09-iommu-page-tables.md` §9.6 |
-| The IOMMU is not processing my commands | `08-iommu-architecture.md` §8.3 — and see `errata.md` E01 |
-| Reads of guest memory return ciphertext | `11-memory-encryption.md` §11.3 |
-| SEV guest fails to launch / firmware returns an error | `12-sev.md` §12.8 |
-| `#VC` storms, or a guest hangs in early boot under SEV-ES | `13-sev-es-ghcb.md` §13.2 |
-| `PVALIDATE` or `RMPUPDATE` returns an unexpected code | `14-sev-snp.md` §14.4 |
-| Attestation report fails to verify | `14-sev-snp.md` §14.11 |
-| Nested guest is extremely slow | `15-nested-virtualization.md` §15.5, then `18-performance.md` §18.5 |
-| Must I turn Hyper-V off to run VMware or VirtualBox? | `16-windows-platform.md` §16.6 — no; see `errata.md` E15 |
-| A firmware or microcode update **disabled a feature** that used to work | `17-security.md` §17.1 — mitigations disable features; check `errata.md` first |
-| "Is this CVE relevant to me?" | `17-security.md` §17.1 |
-| "How much does VBS cost me?" | `18-performance.md` §18.2 |
+The symptom table lives once, in `x86-virt/SKILL.md` under "Symptom → chapter",
+in the AMD block. This file does not keep a second copy.
 
-### Windows symptoms
+Three pointers that table does not carry, because they are narrower than a
+symptom row:
 
-These fall through to `16-windows-platform.md` more often than anything else,
-and its §16.1.3 has a symptom table of its own that resolves to a section.
-
-| Symptom | Start at |
-|---|---|
-| A driver is rejected, or fails to load, once memory integrity is on | `16-windows-platform.md` §16.3 |
-| Is VBS / memory integrity actually running on this machine? | `16-windows-platform.md` §16.10 |
-| A Thunderbolt or PCIe device is blocked before login | `16-windows-platform.md` §16.4 — Kernel DMA Protection |
-| Nested virtualization inside a Hyper-V VM will not enable | `16-windows-platform.md` §16.5 |
-| GPU passthrough to a VM is unavailable on a desktop Windows host | `16-windows-platform.md` §16.8 — DDA is server scope |
-| Is AVIC on by default on my kernel? | `90-dated-landscape.md` §90.6 — `V:dated`, re-verify |
+- An IOMMU that is not processing commands is `08-iommu-architecture.md` §8.3,
+  and `errata.md` E01.
+- "Must I turn Hyper-V off to run VMware or VirtualBox?" is
+  `16-windows-platform.md` §16.6, and `errata.md` E15 is the correction of the
+  "yes" answer.
+- `16-windows-platform.md` §16.1.3 has its own symptom table, and it resolves
+  two questions the routing table sends only as far as the chapter:
+  nested virtualization inside a Hyper-V VM will not enable (§16.5), and GPU
+  passthrough is unavailable on a desktop Windows host (§16.8 — DDA is server
+  scope). "Is AVIC on by default on my kernel?" is dated and lives in
+  `90-dated-landscape.md` §90.6.
 
 
 ## 0.3 Where the tables live

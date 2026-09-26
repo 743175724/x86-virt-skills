@@ -7,10 +7,10 @@ description: >
   AMD: AMD-V/SVM, VMCB, intercepts and #VMEXIT, nested paging and ASIDs, AVIC/x2AVIC,
   AMD-Vi/IVRS, SME/SEV/SEV-ES/SEV-SNP. Either: Hyper-V, VBS/HVCI, WSL2, Kernel DMA
   Protection, and who owns VMX root or SVM on Windows; writing a hypervisor, including a
-  thin or minimal one, and diagnosing a driver that will not load; per-CPU-model behaviour
-  across Intel 10th gen to Core Ultra 300 and AMD Zen 1 to Zen 5, keyed on CPUID
-  family/model plus microcode revision. Every architectural claim is anchored to a vendor
-  specification by document number and section.
+  thin or minimal one, and diagnosing a driver that will not load. Failures are scoped to
+  the silicon, firmware or platform setting that causes them, not to a CPU-model matrix.
+  Every architectural claim is anchored to a vendor specification by document number and
+  section.
 license: Apache-2.0
 metadata:
   target-platform: Windows PC
@@ -88,8 +88,8 @@ Start here when something is **broken**, rather than when you want to read about
 | How do I start writing a hypervisor? | `references/dev/00-quickref.md` §0.3 |
 | Copied a published implementation and it misbehaves | `references/dev/02-known-traps.md` |
 | Correct on an older CPU, degraded or broken on a recent one | `references/dev/03-failures-by-model.md` |
-| Blue screen on some machines only, same CPU family | `references/dev/03-failures-by-model.md` §3.1 |
-| Is this feature safe to enable on this part? | `references/dev/03-failures-by-model.md` §3.3, §3.4 |
+| Blue screen on some machines only, same CPU family | `references/dev/03-failures-by-model.md` §3.5 |
+| Is this feature safe to enable on this part? | `references/dev/03-failures-by-model.md` §3.2, §3.3 |
 
 ### Intel
 
@@ -109,6 +109,8 @@ Start here when something is **broken**, rather than when you want to read about
 | L1 hypervisor misbehaves under nesting | `references/intel/14-nested-virtualization.md` §14.4, §14.5 |
 | "VT-x is not available" on a Windows PC | `references/intel/17-windows-platform.md` §17.1 — almost always Hyper-V owning VMX root |
 | Driver rejected after enabling memory integrity | `references/intel/15-security.md` §15.8 |
+| Is VBS / memory integrity actually running? | `references/intel/17-windows-platform.md` §17.10 |
+| Thunderbolt or PCIe device blocked before login | `references/intel/17-windows-platform.md` §17.5 — Kernel DMA Protection |
 | A performance number needs defending | `references/intel/16-performance.md` §16.1 |
 
 ### AMD
@@ -136,6 +138,9 @@ Start here when something is **broken**, rather than when you want to read about
 | Attestation report fails to verify | `references/amd/14-sev-snp.md` §14.11 |
 | Nested guest extremely slow | `references/amd/15-nested-virtualization.md` §15.5, then `references/amd/18-performance.md` §18.5 |
 | Must Hyper-V be off to run VMware or VirtualBox? | `references/amd/16-windows-platform.md` §16.6 — no |
+| Driver rejected once memory integrity is on | `references/amd/16-windows-platform.md` §16.3 |
+| Is VBS / memory integrity actually running? | `references/amd/16-windows-platform.md` §16.10 |
+| Thunderbolt or PCIe device blocked before login | `references/amd/16-windows-platform.md` §16.4 — Kernel DMA Protection |
 | A firmware or microcode update **disabled a feature** | `references/amd/17-security.md` §17.1 — check `references/amd/errata.md` first |
 | "Is this CVE relevant to me?" | `references/amd/17-security.md` §17.1 |
 | "How much does VBS cost me?" | `references/amd/18-performance.md` §18.2 |
@@ -165,7 +170,8 @@ one you picked (T1), not this list expanded.
 `03-failures-by-model` · `bibliography`
 
 Each subtree's `00-quickref.md` holds the table-to-chapter map and the implementer's
-reading order. Its symptom table is reproduced above; the rest stays there.
+reading order. **The symptom table above is the only copy.** A subtree quickref points
+here instead of keeping its own, so a section number can change in one place.
 
 **`references/dev/` ships no skeleton source, by design** — it is not a starting
 template, and it carries no per-component walkthrough of driver entry, context

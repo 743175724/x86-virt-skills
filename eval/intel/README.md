@@ -1,8 +1,8 @@
-# intel-vt evaluation set
+# Intel evaluation set
 
-`questions.yaml` is the skill's single behavioural test seam: 80 questions that a
-fresh agent answers from `intel-vt/SKILL.md` and whatever chapters its routing
-table sends it to. `RUNNER.md` is the scoring protocol — read it first; it
+`questions.yaml` is the Intel subtree's behavioural test seam: 80 questions that a
+fresh agent answers from `x86-virt/SKILL.md` and whatever chapters its routing
+table sends it to. `../RUNNER.md` is the scoring protocol — read it first; it
 defines `must_include`, `must_not_include`, `required_citation` and the pass bar
 (≥ 90% `must_include`, **zero** `must_not_include` violations, ≥ 95% citations).
 
@@ -31,7 +31,7 @@ refused to guess. A skill that invents an answer to any of them fails.
 Same procedure for all three targets; only the way you load the skill differs.
 
 1. **Claude Code** — new session in this repo. `AGENTS.md` points at
-   `intel-vt/SKILL.md`; let the agent route itself, do not pre-load chapters.
+   `x86-virt/SKILL.md`; let the agent route itself, do not pre-load chapters.
 2. **Codex** — new session, same repo, `AGENTS.md` again. Confirm it reads
    `SKILL.md` before the first chapter; if it grep-searches `references/`
    instead, record that as a routing failure, not a content failure.

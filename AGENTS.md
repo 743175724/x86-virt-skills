@@ -7,7 +7,7 @@ skill. Every architectural claim in them is anchored to a vendor
 specification by document number and section, and time-sensitive facts are
 quarantined in a single dated file per skill.
 
-## AMD Virtualization — `x86-virt/`
+## x86-virt — `x86-virt/`
 
 x86 virtualization expert for Windows PCs, Intel and AMD.
 

@@ -19,8 +19,8 @@ carry theirs. An Intel fact anchored to the APM would resolve to a real section 
 unrelated subject, which is the single most common defect in cross-vendor material.
 
 **Depth lives with the owner.** This chapter states the correspondence and the consequence. The
-AMD bit-level detail is in the chapter that owns it here; the Intel bit-level detail is in the
-sibling `intel-vt` skill. Where the two skills state the same fact they are written to agree,
+AMD bit-level detail is in the chapter that owns it here; the Intel bit-level detail is in
+`references/intel/`. Where the two subtrees state the same fact they are written to agree,
 and a contradiction between them is a defect in whichever one is wrong, not a difference of
 opinion.
 
@@ -31,10 +31,10 @@ default, and who was first are all product history and belong to `90-dated-lands
 
 ### 19.1.1 Procedure for answering a cross-vendor question
 
-1. Decide which side of the question is AMD's. Anchor that side to an AMD document and name the chapter here that owns it; anchor the other side to that vendor's own specification and point at the sibling skill.
+1. Decide which side of the question is AMD's. Anchor that side to an AMD document and name the chapter here that owns it; anchor the other side to that vendor's own specification and point at `references/intel/`.
 2. Prefer a structural answer to a feature-list answer. "AMD has no VMCS shadowing" is useless without the reason, which is §19.7.
 3. Check `errata.md` before repeating a widely circulated comparison. Two of the most common — that Intel has no address-space identifiers, and that Hyper-V nested virtualization is Intel-only — are wrong, and the second is corrected in `16-windows-platform.md`.
-4. Keep the confidential-computing halves separate: AMD mechanisms in `12-sev.md`, `13-sev-es-ghcb.md` and `14-sev-snp.md`, Intel mechanisms in the sibling skill, and nothing but the trust-model correspondence here.
+4. Keep the confidential-computing halves separate: AMD mechanisms in `12-sev.md`, `13-sev-es-ghcb.md` and `14-sev-snp.md`, Intel mechanisms in `references/intel/13-tdx.md`, and nothing but the trust-model correspondence here.
 5. Send anything whose answer is a date, a version or a market position to `90-dated-landscape.md`, including "who was first" questions.
 
 ---
@@ -74,7 +74,7 @@ reaches that structure, and everything else follows.
 | Exit reporting | `EXITCODE` plus `EXITINFO1`/`EXITINFO2` | exit reason plus exit qualification |
 
 - **Claim.** The table's AMD column is sourced from the VMCB layout appendix and the VMRUN and #VMEXIT sections; the exit-reporting fields and their encodings are owned by `05-exit-decoding.md` and the entry and exit flows by `04-world-switch.md`.  `[APM2 App.B]` `[APM2 §15.5.1]` `[APM2 §15.6]` `[1]` `C:high` `V:durable`
-- **Claim.** The table's Intel column is sourced from the VMCS and VM-exit chapters of the SDM; the per-field depth belongs to the `intel-vt` skill.  `[SDM 3C §27.2]` `[SDM 3C §27.9.1]` `[49]` `C:high` `V:durable`
+- **Claim.** The table's Intel column is sourced from the VMCS and VM-exit chapters of the SDM; the per-field depth belongs to `references/intel/02-vmcs.md` and `references/intel/05-vm-exit.md`.  `[SDM 3C §27.2]` `[SDM 3C §27.9.1]` `[49]` `C:high` `V:durable`
 
 ### 19.2.4 Feature discovery
 
@@ -95,7 +95,7 @@ reaches that structure, and everything else follows.
 | Invalidate second-level translations | `TLB_CONTROL`, flush by ASID | INVEPT |
 | Invalidate tagged linear translations | `INVLPGA` | INVVPID |
 | Block all interrupts including NMI | `CLGI` / `STGI` | no single instruction |
-| Confidential-guest call | `VMGEXIT` | a module call; see the `intel-vt` skill |
+| Confidential-guest call | `VMGEXIT` | a module call; see `references/intel/13-tdx.md` |
 
 - **Claim.** The row that has no Intel entry is the interrupt-blocking row, and it is an architectural absence rather than an omission in this table: AMD's global interrupt flag has no Intel counterpart at all, which §19.6 develops.  `[APM2 §15.17]` `[SDM 3C §27.6]` `[1][49]` `C:high` `V:durable`
 - **Claim.** The invalidation rows differ in kind, not only in spelling: AMD expresses the bulk operation as **data** — a field of the VMCB evaluated at `VMRUN` — while Intel expresses it as an **instruction**; the AMD side is owned by `06-nested-paging.md`.  `[APM2 App.B]` `[SDM 3C Ch.33]` `[1][49]` `C:high` `V:durable`
@@ -118,13 +118,13 @@ reaches that structure, and everything else follows.
 
 This section exists mainly to kill one claim.
 
-- **Claim.** **"Intel has no ASID mechanism" is false**, and so is its mirror image, "AMD folds process and VM tagging into a single ASID namespace". Both architectures run two tag namespaces: a guest-managed process tag and a hypervisor-managed VM tag. The sibling chapter states the same correction from the Intel side.  `[APM2 §5.5.1]` `[SDM 3C §27.6.12]` `[1][49]` `C:high` `V:durable`
+- **Claim.** **"Intel has no ASID mechanism" is false**, and so is its mirror image, "AMD folds process and VM tagging into a single ASID namespace". Both architectures run two tag namespaces: a guest-managed process tag and a hypervisor-managed VM tag. `references/intel/18-comparison-amd-arm-riscv.md` states the same correction from the Intel side.  `[APM2 §5.5.1]` `[SDM 3C §27.6.12]` `[1][49]` `C:high` `V:durable`
 - **Claim.** AMD's VM-level tag is the guest ASID, a 32-bit field at VMCB offset 058h; ASID 0 is reserved for the host, `VMRUN` with a guest ASID of zero ends in `#VMEXIT(VMEXIT_INVALID)`, and the number of ASIDs an implementation provides is returned in EBX by CPUID `Fn8000_000A` — so the field width is not the usable range. Allocation, exhaustion and reuse are owned by `06-nested-paging.md`.  `[APM2 App.B]` `[APM2 §15.25.1]` `[APM2 §15.5.1]` `[1]` `C:high` `V:durable`
 - **Claim.** Intel's VM-level tag is the VPID, a 16-bit VMCS field in which value 0000H is reserved for VMX root operation, so a hypervisor must assign non-zero VPIDs to guests.  `[SDM 3C §27.6.12]` `[49]` `C:high` `V:durable`
 - **Claim.** The process-level tag is PCID on both: AMD defines it in the same terms Intel does — CR4.PCIDE (bit 17) enables it, the current 12-bit PCID is CR3[11:0], and `INVPCID` manages the tagged entries.  `[APM2 §5.5.1]` `[SDM 3A Ch.5]` `[1][580]` `C:high` `V:durable`
 - **Claim.** Under SVM the scope of "global" narrows: with SVM enabled, global page-table entries are global only within an ASID, not across ASIDs, and the current ASID is 0 whenever the processor is not inside a guest context; the TLB rules are owned by `06-nested-paging.md`.  `[APM2 §15.16]` `[1]` `C:high` `V:durable`
 - **Claim.** Invalidation exposes a real asymmetry rather than a naming difference. AMD's `INVLPGA` takes a linear address in rAX and an ASID in ECX, always interprets the input as a *guest virtual* address, and AMD states it "does not provide a means to invalidate a nested translation by guest physical address" — so there is no AMD instruction with INVEPT's job; that job is done by the `TLB_CONTROL` field of the VMCB, evaluated at `VMRUN`. Both are owned by `06-nested-paging.md`.  `[APM2 §15.16.2]` `[APM2 App.B]` `[1]` `C:high` `V:durable`
-- **Claim.** Intel's two invalidation instructions, INVEPT for second-level-derived entries and INVVPID for VPID-tagged linear translations, cover both jobs with instructions and are owned by the `intel-vt` skill.  `[SDM 3C Ch.33]` `[49]` `C:high` `V:durable`
+- **Claim.** Intel's two invalidation instructions, INVEPT for second-level-derived entries and INVVPID for VPID-tagged linear translations, cover both jobs with instructions and are owned by `references/intel/06-address-translation.md` and `references/intel/08-vmx-instructions.md`.  `[SDM 3C Ch.33]` `[49]` `C:high` `V:durable`
 
 | Role | AMD | Intel | ARM | RISC-V |
 |---|---|---|---|---|
@@ -197,7 +197,7 @@ correspondence, because it is the comparison readers arrive with.
 
 ## 19.9 Confidential computing: SEV-SNP and TDX
 
-The Intel side is owned by the `intel-vt` skill; the AMD mechanisms are owned by `12-sev.md`,
+The Intel side is owned by `references/intel/13-tdx.md`; the AMD mechanisms are owned by `12-sev.md`,
 `13-sev-es-ghcb.md` and `14-sev-snp.md`. Only the trust-model correspondence belongs here.
 
 - **Claim.** The decisive difference is where mediation happens. AMD puts it **inside the guest**: an encrypted-state guest takes its own `#VC` exception, vector 29, and its handler decides what to disclose through a shared communication page, so there is no vendor-supplied software layer between guest and hypervisor. Intel interposes a signed module running in a dedicated processor mode. Every other row of the comparison follows from that placement.  `[APM2 §8.2.22]` `[APM2 §15.35.5]` `[1][585]` `C:high` `V:durable`
@@ -215,7 +215,7 @@ The Intel side is owned by the `intel-vt` skill; the AMD mechanisms are owned by
 | Mediator | none | the guest's own handler | the guest's own handler | a signed module in its own mode |
 | Attestation root | platform security processor | same | same | vendor provisioning chain |
 
-- **Claim.** The table restates ownership rather than adding facts: each AMD column is owned by `12-sev.md`, `13-sev-es-ghcb.md` and `14-sev-snp.md` respectively, and the Intel column by the `intel-vt` skill.  `[APM2 §15.34]` `[APM2 §15.35]` `[APM2 §15.36]` `[1][585]` `C:high` `V:durable`
+- **Claim.** The table restates ownership rather than adding facts: each AMD column is owned by `12-sev.md`, `13-sev-es-ghcb.md` and `14-sev-snp.md` respectively, and the Intel column by `references/intel/13-tdx.md`.  `[APM2 §15.34]` `[APM2 §15.35]` `[APM2 §15.36]` `[1][585]` `C:high` `V:durable`
 - **Claim.** Both families are server-platform features and §19.12 states the client position precisely; the generational detail is `90-dated-landscape.md`'s.  `[APM2 §15.36.1]` `[1]` `C:medium` `V:durable`
 
 ---
@@ -283,7 +283,7 @@ what does not is worth stating precisely. The generational detail belongs to
 
 - **Claim.** Everything in §19.2 to §19.7 is present on client parts on both sides: the mode pair and its control structure, second-level translation, TLB tagging, interrupt-virtualization acceleration, an IOMMU, and — on AMD — both nesting accelerators, since virtualized VMLOAD/VMSAVE and virtual GIF are ordinary `Fn8000_000A` feature bits rather than platform features. A machine's actual answer is a CPUID read; the probing discipline is owned by `01-svm-intro.md`.  `[APM3 App.E]` `[2]` `C:high` `V:durable`
 - **Claim.** **Server scope for the confidential-computing row.** SEV is productised on EPYC. Zen 4 and later client parts expose Secure Memory Encryption only, and SEV-SNP has never been available on a client part — but "absent from all client silicon" is too strong for SEV itself, and `errata.md` `E12` records why. The client-relevant memory-encryption chapter is `11-memory-encryption.md`.  `[APM2 §15.34.1]` `[1][35]` `C:medium` `V:durable`
-- **Claim.** Intel's confidential-computing family is likewise a server-platform feature, so the §19.9 comparison is not reachable on either vendor's PC; the Intel side is owned by the `intel-vt` skill.  `[no-spec]` `[585]` `C:medium` `V:durable`
+- **Claim.** Intel's confidential-computing family is likewise a server-platform feature, so the §19.9 comparison is not reachable on either vendor's PC; the Intel side is owned by `references/intel/13-tdx.md`.  `[no-spec]` `[585]` `C:medium` `V:durable`
 - **Claim.** Secure AVIC is inside the SEV-SNP section of the manual rather than the AVIC section, which places it on the server side of the same line even though ordinary AVIC is not; it is owned by `14-sev-snp.md`.  `[APM2 §15.36]` `[1]` `C:medium` `V:durable`
 - **Claim.** Single-root I/O virtualization is a device and platform capability rather than a processor feature on either side, so its absence from a typical PC is a statement about the devices and the firmware, not about the CPU. The IOMMU's own share of it is a pair of virtual-function register blocks — control registers in §3.5 and per-function registers in §3.6 of the IOMMU specification — and those registers are owned by `08-iommu-architecture.md`.  `[IOMMU 3.11 §3.5]` `[IOMMU 3.11 §3.6]` `[7][53]` `C:medium` `V:durable`
 - **Claim.** The practical consequence is that the cross-vendor differences a Windows PC actually exercises are the control-structure model, second-level translation, TLB tagging, interrupt virtualization and nesting — because those are what the platform hypervisor described in `16-windows-platform.md` programs on every boot.  `[no-spec]` `[1][49]` `C:high` `V:durable`

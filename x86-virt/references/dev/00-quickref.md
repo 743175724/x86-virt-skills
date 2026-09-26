@@ -25,15 +25,9 @@ Three chapters, in the order a reader actually needs them:
 
 ## 0.2 Symptom → chapter
 
-| Symptom | Go to |
-|---|---|
-| Driver loads on one machine, refuses on another | `01-platform-ownership.md` §1.1 |
-| `VMXON` or `VMRUN` fails although CPUID says the feature is present | `01-platform-ownership.md` §1.1 |
-| Worked before a Windows update, does not now | `01-platform-ownership.md` §1.3 |
-| Correct on an older CPU, degraded or broken on a recent one | `03-failures-by-model.md` |
-| Blue screen only on some machines, same CPU family | `03-failures-by-model.md` §3.5 |
-| Copied a published implementation and it misbehaves | `02-known-traps.md` |
-| Need to know whether a feature is safe to enable on this part | `03-failures-by-model.md` §3.2, §3.3 |
+The symptom table lives once, in `x86-virt/SKILL.md` under "Symptom → chapter",
+in the block "Writing a hypervisor, or a driver that will not load". This file
+does not keep a second copy. A section number that changes is changed there.
 
 ## 0.3 Start here, in this order
 

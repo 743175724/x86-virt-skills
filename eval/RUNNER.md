@@ -56,7 +56,7 @@ interest. Two rules keep it usable:
   valid` and the answer said "bit 7 indicates the linear address is recorded",
   that is a hit. If the answer said "bit 7 indicates the physical address is
   valid", that is a miss *and* a trap violation. Do not argue the answer into
-  a hit. (That example is from `intel-vt`; the principle is the point.)
+  a hit. (That example is from the Intel subtree; the principle is the point.)
 - **A refutation is not a violation.** `must_not_include` catches an answer that
   *asserts* a misconception, not one that names it in order to correct it.
   "The claim that Intel has no ASID mechanism is wrong — it has PCID and VPID"

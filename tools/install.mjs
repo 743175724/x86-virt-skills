@@ -2,7 +2,7 @@
 // Installs this repository's skills where each host looks for them.
 //
 //   node tools/install.mjs              install every skill (project scope)
-//   node tools/install.mjs intel-vt     install one skill
+//   node tools/install.mjs x86-virt     install one skill
 //   node tools/install.mjs --user       also install into the user-level dirs
 //   node tools/install.mjs --copy       copy instead of linking
 //   node tools/install.mjs --uninstall  remove what this script created

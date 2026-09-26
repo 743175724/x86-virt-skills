@@ -191,7 +191,7 @@ the next dimension's terms, so it must itself be translated* — to a third dime
 - each of those, translated through a four-level npt01, costs up to 5 system accesses: 25 × 5 = 125;
 - the last of the 125 is the data access itself, leaving **124** for the walk.
 
-- **Claim.** A literal three-dimensional walk with four levels in each dimension would cost `(4+1)³ − 1 = 124` memory references per TLB miss. **This number is a derivation, not a published figure** — no AMD document states it — which is precisely why no x86 implementation offers a third translation dimension and why L0 collapses the third dimension into npt02 in software. The identical derivation appears on the Intel side, so the two skills agree on it.  `[no-spec]` `[56][434]` `C:medium` `V:durable`
+- **Claim.** A literal three-dimensional walk with four levels in each dimension would cost `(4+1)³ − 1 = 124` memory references per TLB miss. **This number is a derivation, not a published figure** — no AMD document states it — which is precisely why no x86 implementation offers a third translation dimension and why L0 collapses the third dimension into npt02 in software. The identical derivation appears on the Intel side, so the two subtrees agree on it.  `[no-spec]` `[56][434]` `C:medium` `V:durable`
 
 - **Claim.** What L2 actually pays on a hit is therefore the ordinary 24, because it is running on npt02 like any single-level guest; the nested penalty sits entirely in the npt02 fill path.  `[APM2 §15.25.5]` `[1]` `[56]` `C:medium` `V:durable`
 

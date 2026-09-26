@@ -34,24 +34,16 @@ What to cite, and what each document actually governs. Revisions were read from 
 ## 0.2 Symptom → chapter
 
 Start here when something is broken rather than when you want to read about a topic.
+The table itself lives once, in `x86-virt/SKILL.md` under "Symptom → chapter", in
+the Intel block. This file does not keep a second copy.
 
-| Symptom | Go to |
-|---|---|
-| VMXON fails | `01-vmx-intro.md` §1.4, §1.8 (IA32_FEATURE_CONTROL, CR4.VMXE) |
-| VMLAUNCH/VMRESUME fails, no VM entry | `08-vmx-instructions.md` §8.4 (VM-instruction error 1–28) |
-| VM entry fails with exit reason 33 or 34 | `04-vm-entry.md` §4.5, §4.9 |
-| Unexpected VM exit, need to decode it | `05-vm-exit.md` §5.3 then §5.4 |
-| EPT violation handling is wrong | `06-address-translation.md` §6.4 and `05-vm-exit.md` §5.4 |
-| EPT misconfiguration on entry to a mapping | `06-address-translation.md` §6.4 |
-| Guest loses or duplicates interrupts under APICv | `07-apic-virtualization.md` §7.6, §7.8 |
-| Device DMA is blocked or faulting | `12-vtd-faults-bios-siov.md` §12.2, §12.3 |
-| MSI/MSI-X not delivered after enabling remapping | `11-vtd-interrupt-remapping.md` §11.4, §11.8 |
-| TLB stale after changing a mapping | `06-address-translation.md` §6.7, `10-vtd-dma-remapping.md` §10.6 |
-| SEAMCALL returns an error / illegal sequence | `13-tdx.md` §13.7 |
-| L1 hypervisor misbehaves under nesting | `14-nested-virtualization.md` §14.4, §14.5 |
-| "VT-x is not available" on a Windows PC | `17-windows-platform.md` §17.1 — almost always Hyper-V owning VMX root |
-| Driver rejected after enabling memory integrity | `15-security.md` §15.8 |
-| A performance number needs defending | `16-performance.md` §16.1 |
+Two Intel rows there name a second chapter the first one does not:
+
+- An EPT violation that was handled wrongly is `06-address-translation.md` §6.4,
+  and the exit-qualification layout is `05-vm-exit.md` §5.4.
+- A stale TLB after a changed mapping is `06-address-translation.md` §6.7 for the
+  CPU, and `10-vtd-dma-remapping.md` §10.6 when the stale translation belongs to
+  the IOMMU.
 
 ---
 

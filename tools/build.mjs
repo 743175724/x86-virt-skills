@@ -2,7 +2,7 @@
 // Generates the per-host adapter files for every skill in this repo.
 //
 //   node tools/build.mjs                    write the adapters for all skills
-//   node tools/build.mjs intel-vt           write the adapters for one skill
+//   node tools/build.mjs x86-virt           write the adapters for one skill
 //   node tools/build.mjs --check            fail if any adapter has drifted (CI)
 //
 // Source of truth: <skill>/SKILL.md + <skill>/references/*.md
@@ -68,20 +68,12 @@ function readSkill(name) {
   const refs = join(dir, 'references')
   const text = readFileSync(join(dir, 'SKILL.md'), 'utf8')
   const fm = frontmatter(text)
-  // Only displayName is read from here, and in the v2 layout lint.config.json
-  // lives in each references/ subtree rather than beside SKILL.md. Look in both
-  // places and fall back to the directory name, so a missing or relocated
-  // config degrades to a sensible label instead of crashing the build.
-  const cfgPath = [
-    join(dir, 'lint.config.json'),
-    ...(existsSync(refs)
-      ? readdirSync(refs)
-          .filter((d) => { try { return statSync(join(refs, d)).isDirectory() } catch { return false } })
-          .sort()
-          .map((d) => join(refs, d, 'lint.config.json'))
-      : []),
-  ].find((p) => existsSync(p))
-  const cfg = cfgPath ? JSON.parse(readFileSync(cfgPath, 'utf8')) : {}
+  // displayName labels the whole skill. A subtree's lint.config.json names
+  // that subtree ("AMD Virtualization"), and taking the first one alphabetically
+  // labelled the merged skill as AMD. The skill directory is the label; a
+  // config beside SKILL.md may override it.
+  const cfgPath = join(dir, 'lint.config.json')
+  const cfg = existsSync(cfgPath) ? JSON.parse(readFileSync(cfgPath, 'utf8')) : {}
 
   const desc = fm.description ?? ''
   const shortDesc = (desc.split(/(?<=[.?!])\s/)[0] ?? desc).trim()
@@ -127,7 +119,7 @@ function readSkill(name) {
       }
     })
 
-  return { name, dir, fm, desc, shortDesc, triggers, chapters, fatal, displayName: cfg.displayName ?? name }
+  return { name, dir, fm, desc, shortDesc, triggers, chapters, fatal, displayName: cfg.displayName ?? fm.name ?? name }
 }
 
 const allLoaded = (named.length ? allSkills : skills).map(readSkill)
@@ -186,14 +178,9 @@ directory. \`${s.name}/index.json\` is the machine-readable table of contents.
 `).join('\n')}${loadedAll.length > 1 ? `
 ## Choosing between them
 
-Route by whose specification answers the question, not by the words in it. A
-question is AMD-primary when the answer is an AMD register, bit, exit code or
-instruction — **including when it is phrased in Windows terms** ("my Ryzen and
-Hyper-V", "AMD-V greyed out"); it is Intel-primary under the mirror rule.
-Symmetric comparisons ("Intel vs AMD", "SEV-SNP vs TDX") are answered by
-\`intel-vt/\`, which states the correspondence and defers bit-level AMD detail
-to \`amd-virtualization/\`. ARM- and RISC-V-primary questions are answered by
-\`intel-vt/\`; neither skill claims non-x86 depth beyond a comparison.
+Route by whose specification answers the question, not by the words in it.
+Each skill's SKILL.md is the tie-break, because a host does not arbitrate
+between skills.
 ` : ''}`
 
 outputs.push([join(ROOT, 'AGENTS.md'), agentsMd])

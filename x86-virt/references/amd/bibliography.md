@@ -76,7 +76,7 @@
 [48] Oracle. VirtualBox User Manual — Hyper-V support. 现行. https://www.virtualbox.org/manual/ — T2
       注：该路径在 **6.0** 落地（不是 6.1）；7.2 手册仍标实验性并附性能警告。
 [49] Intel. Intel 64 and IA-32 Architectures Software Developer's Manual, Vol.3C. Order 326019, rev 092. 2026-06 — T2
-      注：仅用于 `19-comparison-intel-arm-riscv.md` 的对照。Intel 侧的深度属 `intel-vt` 技能。
+      注：仅用于 `19-comparison-intel-arm-riscv.md` 的对照。Intel 侧的深度在 `references/intel/`。
 [50] Intel. Virtualization Technology for Directed I/O Architecture Specification. Rev 5.20, D51397-019. 2026-04 — T2
 [51] Arm. Arm Architecture Reference Manual for A-profile architecture. 现行 — T2
 [52] RISC-V International. RISC-V Privileged Architecture, Hypervisor Extension. 现行 — T2
