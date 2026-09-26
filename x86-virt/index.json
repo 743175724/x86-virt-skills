@@ -35,8 +35,8 @@
         "1.6 Probing discipline: firmware can mask individual bits",
         "1.7 Open items"
       ],
-      "bytes": 30142,
-      "sha256": "d97cc1c095d0ab14933cd1d48283a2d29c0427aeb3c9becb2b354a677901ee07"
+      "bytes": 30357,
+      "sha256": "ae6f78fdf1e1d53c31211c6962b8d107213b8d84311d79c0b946d916ee98ab9a"
     },
     {
       "path": "references/amd/02-vmcb.md",
@@ -286,8 +286,8 @@
         "14.13 VCEK, VLEK and the key distribution service",
         "14.14 Open items"
       ],
-      "bytes": 80626,
-      "sha256": "8cd3371e3d1dd4030311f2db44a944f2ed6463813e607cd9672b6ff39ac27cc8"
+      "bytes": 80747,
+      "sha256": "cea66ac1b27ed1d8e2ae445f7172a483ba9161a791697d09b502eb37a9ceb3b6"
     },
     {
       "path": "references/amd/15-nested-virtualization.md",
@@ -325,8 +325,8 @@
         "16.11 Linux-only: the VFIO path",
         "16.12 Open items"
       ],
-      "bytes": 49474,
-      "sha256": "70fd704da0d0c70f5bf0cf9efcbd7652dcb7b4cb899d59bffbf75203814bf68c"
+      "bytes": 49572,
+      "sha256": "e673c80d973aacdb5a8fb094211781d3645d1203b4d651e3546662304bea8acf"
     },
     {
       "path": "references/amd/17-security.md",
@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 61626,
-      "sha256": "947862f8a364fa7e3a2201e249cb4df553d457eef1d6572e4f69e7d825530c10"
+      "bytes": 61472,
+      "sha256": "d503e75ab6a4d4daead8236a29d39edcf89dd9dea9d837b44b72375a1fa75fc1"
     },
     {
       "path": "references/amd/18-performance.md",

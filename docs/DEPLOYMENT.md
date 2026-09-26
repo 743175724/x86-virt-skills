@@ -33,8 +33,28 @@ Every path below was verified on a Windows machine with the host installed.
 |---|---|---|---|
 | **Claude Code** | `<dir>/skills/<name>/SKILL.md` | `.claude/skills/` ✅ | `~/.claude/skills/` |
 | **OpenAI Codex** | `<dir>/skills/<name>/SKILL.md`, plus `AGENTS.md` at startup | `.agents/skills/` ✅ | `~/.agents/skills/` |
+| **Kimi Code CLI 2.x** | `.agents/skills/<name>/SKILL.md` and `~/.kimi-code/skills/<name>/SKILL.md`. **Does not read `.claude/skills/`** — the legacy `kimi-cli` did | `.agents/skills/` ✅ (same tree as Codex) | `~/.kimi-code/skills/` (`KIMI_HOME/skills` when that variable is set) |
 | **Hermes** | `<HERMES_HOME>/skills/<name>/` | **✗ does not scan the repo** | `%LOCALAPPDATA%\hermes\skills` on Windows, `~/.hermes/skills` elsewhere |
 | **Anything else** | `<name>/index.json` | — | — |
+
+One `node tools/install.mjs` writes the project rows. Add `--user` to write the
+user rows as well. Kimi's project install is the Codex directory; its user
+install is a separate directory, and a copy placed in `.claude/skills/` is
+invisible to Kimi Code CLI 2.x.
+
+### Kimi Code CLI 2.x
+
+Kimi 2.x reads two places: `.agents/skills/` in the project, and
+`~/.kimi-code/skills/` for every project. It does not read `.claude/skills/`.
+The 1.x `kimi-cli` did, which is why a skill that shows up in Claude Code can
+be missing in Kimi after the same install.
+
+```bash
+node tools/install.mjs            # project: .agents/skills/x86-virt
+node tools/install.mjs --user     # also ~/.kimi-code/skills/x86-virt
+```
+
+`KIMI_HOME`, when set, replaces `~/.kimi-code`. The installer follows it.
 
 ### Hermes needs care
 
@@ -161,7 +181,7 @@ clone whose skills load.
 
 | Symptom | Cause |
 |---|---|
-| Host does not offer the skill | Wrong directory for that host — check the table above. Hermes especially. |
+| Host does not offer the skill | Wrong directory for that host — check the table above. Kimi 2.x ignores `.claude/skills/`. Hermes ignores the repo entirely. |
 | Hermes still cannot see it after `--user` | Stale `~/.hermes` from an older checkout; the real path is `%LOCALAPPDATA%\hermes\skills` on Windows. |
 | Answers have no citations | The skill is installed but not being loaded; check the host lists it, and that `SKILL.md`'s frontmatter parsed. |
 | `lint.mjs` reports "missing YAML frontmatter" | `SKILL.md` has CRLF line endings. The frontmatter check tests for `---\n` exactly. Convert to LF. |

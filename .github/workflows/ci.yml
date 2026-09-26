@@ -67,10 +67,22 @@ jobs:
         shell: bash
         run: |
           node tools/install.mjs --copy
-          for skill in intel-vt amd-virtualization; do
-            for host in .agents .claude; do
-              test -f "$host/skills/$skill/SKILL.md" \
-                || { echo "missing $host/skills/$skill/SKILL.md"; exit 1; }
+          for host in .agents .claude; do
+            test -f "$host/skills/x86-virt/SKILL.md" \
+              || { echo "missing $host/skills/x86-virt/SKILL.md"; exit 1; }
+            grep -q '^name: x86-virt$' "$host/skills/x86-virt/SKILL.md" \
+              || { echo "$host installed a skill whose name is not x86-virt"; exit 1; }
+            for stale in intel-vt amd-virtualization; do
+              if test -e "$host/skills/$stale"; then
+                echo "pre-merge skill directory installed: $host/skills/$stale"
+                exit 1
+              fi
             done
           done
           node tools/install.mjs --uninstall
+          for host in .agents .claude; do
+            if test -e "$host/skills/x86-virt"; then
+              echo "uninstall left $host/skills/x86-virt behind"
+              exit 1
+            fi
+          done

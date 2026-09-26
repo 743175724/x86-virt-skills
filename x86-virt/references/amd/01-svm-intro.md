@@ -289,7 +289,7 @@ behaviour to per-product documentation.
 
 - **Claim.** APM Vol.2 §15.30 defers the implementation-specific details of the SVM MSRs to "the *BIOS and Kernel Developer's Guide* (BKDG) or *Processor Programming Reference Manual* (PPR) applicable to your product" — that is, the architecture manual deliberately does not fix them.  `[APM2 §15.30]` `[1]` `C:high` `V:durable`
 - **Claim.** The maximum ASID value supported by a processor is implementation specific and is discoverable only by executing `CPUID Fn8000_000A` and reading EBX — there is no architectural constant.  `[APM2 §15.5.1]` `[1]` `C:high` `V:durable`
-- **Claim.** AMD publishes no PPR and no revision guide for client Ryzen parts, so "this generation should have it" cannot be checked against a first-party document and must not be used as a substitute for a run-time probe; the third-party-circulated PPR 56713 is not in AMD's public index and is not citable.  `[no-spec]` `[30]` `C:medium` `V:durable`
+- **Claim.** As of 2026-09-26, no public revision guide covers a Family 19h or 1Ah client model range, and four client PPRs (56176, 56214, 56713, 57254) have no retrievable first-party copy — 56713 in particular is not in AMD's public index and is not citable. Family 17h client parts are covered: Revision Guide 55449 includes AM4, and client PPRs such as Cezanne 56569 are published. A generational guess is still not a substitute for the run-time probe; the refuted blanket form of this sentence is `errata.md` E27.  `[no-spec]` `[29][30]` `C:medium` `V:durable`
 
 Concrete consequences for initialization code:
 
