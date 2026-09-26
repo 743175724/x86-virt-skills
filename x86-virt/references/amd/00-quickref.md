@@ -118,8 +118,9 @@ All five resolve in one place; go straight there.
 4. **"Can I run VMware or VirtualBox with Hyper-V enabled?"** →
    `16-windows-platform.md` §16.6. Yes, with documented limits; the old
    "turn Hyper-V off first" advice is superseded (`errata.md` E15).
-5. **"Which BIOS setting is it?"** → `16-windows-platform.md` §16.7, which also
-   says plainly where AMD publishes nothing and the labels are OEM-specific.
+5. **"Which BIOS setting is it?"** → `16-windows-platform.md` §16.7. The menu
+   labels are OEM-specific. As of 2026-09-26 the document gap is a Family 19h
+   or 1Ah client model range, not "AMD publishes nothing" (`errata.md` E27).
 
 ## 0.6 Reading order for someone new to SVM
 

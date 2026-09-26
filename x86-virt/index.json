@@ -18,8 +18,8 @@
         "0.5 Windows PC: the questions that come up most",
         "0.6 Reading order for someone new to SVM"
       ],
-      "bytes": 8944,
-      "sha256": "42366653ccd64996fa1106ec6537d6a4656f89ac8577765bebff5ce76fb68f6c"
+      "bytes": 9020,
+      "sha256": "2f9f5c50ae50bfa938daa3854f950153703f008b91f4cc111f2a24428f63862b"
     },
     {
       "path": "references/amd/01-svm-intro.md",
@@ -74,8 +74,8 @@
         "3.11 SMI interception",
         "3.12 Open items"
       ],
-      "bytes": 55021,
-      "sha256": "052f2a2710acacef107f04019af0629f6039ee8f2c1c2012a99170ed3f5a6ab8"
+      "bytes": 54998,
+      "sha256": "0843b43b0e13057e9153cd444b216f00018ced90ee11f3fda0f7eccd0a61868c"
     },
     {
       "path": "references/amd/04-world-switch.md",
