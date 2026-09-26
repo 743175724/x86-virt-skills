@@ -68,7 +68,20 @@ function readSkill(name) {
   const refs = join(dir, 'references')
   const text = readFileSync(join(dir, 'SKILL.md'), 'utf8')
   const fm = frontmatter(text)
-  const cfg = JSON.parse(readFileSync(join(dir, 'lint.config.json'), 'utf8'))
+  // Only displayName is read from here, and in the v2 layout lint.config.json
+  // lives in each references/ subtree rather than beside SKILL.md. Look in both
+  // places and fall back to the directory name, so a missing or relocated
+  // config degrades to a sensible label instead of crashing the build.
+  const cfgPath = [
+    join(dir, 'lint.config.json'),
+    ...(existsSync(refs)
+      ? readdirSync(refs)
+          .filter((d) => { try { return statSync(join(refs, d)).isDirectory() } catch { return false } })
+          .sort()
+          .map((d) => join(refs, d, 'lint.config.json'))
+      : []),
+  ].find((p) => existsSync(p))
+  const cfg = cfgPath ? JSON.parse(readFileSync(cfgPath, 'utf8')) : {}
 
   const desc = fm.description ?? ''
   const shortDesc = (desc.split(/(?<=[.?!])\s/)[0] ?? desc).trim()

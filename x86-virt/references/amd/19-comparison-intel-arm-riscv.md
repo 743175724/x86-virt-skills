@@ -1,11 +1,11 @@
 # 19. AMD versus Intel, ARM and RISC-V
 
-> **中文速览**：本章给 AMD 侧的对照视角，与 `intel-vt/references/18-comparison-amd-arm-riscv.md` 互为镜像。**规则是：哪家的规范定义了这条事实，就归哪个技能**——本章陈述 AMD 侧并链接过去，不复述 Intel 侧的位级细节；反过来，Intel 事实一律锚到 Intel 文档，**永远不锚 APM**。覆盖 VMCB vs VMCS、NPT vs EPT、ASID vs PCID+VPID、AVIC vs APICv、GIF（Intel 无对应物）、**AMD 无 VMCS shadowing 对应物**（owner 是 `15-nested-virtualization.md`）、AMD 的 IOMMU vs VT-d、SEV-SNP vs TDX 的信任模型、ARM 两阶段翻译与 RISC-V H 扩展的对位。两处术语碰撞必须消歧：`SNP`（AMD 的 Secure Nested Paging vs VT-d 页表项里的 Snoop 位）与 `RVI`（AMD 营销名 Rapid Virtualization Indexing vs Intel APICv 的 Requesting Virtual Interrupt）。**本章按 lint 豁免使用 Intel 自己的术语描述 Intel**（"VM exit"、"host-physical address"），描述 AMD 时仍用 `#VMEXIT` 与 sPA。市场份额、GA 日期、产品状态见 `90-dated-landscape.md`。
+> **中文速览**：本章给 AMD 侧的对照视角，与 `references/intel/18-comparison-amd-arm-riscv.md` 互为镜像。**规则是：哪家的规范定义了这条事实，就归哪个技能**——本章陈述 AMD 侧并链接过去，不复述 Intel 侧的位级细节；反过来，Intel 事实一律锚到 Intel 文档，**永远不锚 APM**。覆盖 VMCB vs VMCS、NPT vs EPT、ASID vs PCID+VPID、AVIC vs APICv、GIF（Intel 无对应物）、**AMD 无 VMCS shadowing 对应物**（owner 是 `15-nested-virtualization.md`）、AMD 的 IOMMU vs VT-d、SEV-SNP vs TDX 的信任模型、ARM 两阶段翻译与 RISC-V H 扩展的对位。两处术语碰撞必须消歧：`SNP`（AMD 的 Secure Nested Paging vs VT-d 页表项里的 Snoop 位）与 `RVI`（AMD 营销名 Rapid Virtualization Indexing vs Intel APICv 的 Requesting Virtual Interrupt）。**本章按 lint 豁免使用 Intel 自己的术语描述 Intel**（"VM exit"、"host-physical address"），描述 AMD 时仍用 `#VMEXIT` 与 sPA。市场份额、GA 日期、产品状态见 `90-dated-landscape.md`。
 
 **Maps to:** Intel SDM Vol.3C and Vol.3A / Intel VT-d specification / Arm Architecture Reference Manual for A-profile, the GIC and SMMU architecture specifications / RISC-V privileged architecture "H" extension — all Tier-2 here and all primary for their own side [49][50][51][52][580]
 **Owns:** the AMD-side view of each correspondence, the statement of what has no counterpart on the other side, and the two terminology collisions
 **Scope:** comparison; marks which features are server-platform-only on each side. Exempt from this skill's `VM Exit` and `HPA` terminology rules, because Intel's vocabulary is the correct vocabulary for Intel.
-**See also:** `intel-vt/references/18-comparison-amd-arm-riscv.md` (the mirror) · `15-nested-virtualization.md` (owns the nesting story) · `02-vmcb.md` · `06-nested-paging.md` · `07-virtual-interrupts-avic.md` · `08-iommu-architecture.md` · `90-dated-landscape.md`
+**See also:** `references/intel/18-comparison-amd-arm-riscv.md` (the mirror) · `15-nested-virtualization.md` (owns the nesting story) · `02-vmcb.md` · `06-nested-paging.md` · `07-virtual-interrupts-avic.md` · `08-iommu-architecture.md` · `90-dated-landscape.md`
 
 ---
 

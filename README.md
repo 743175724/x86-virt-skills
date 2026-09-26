@@ -1,15 +1,29 @@
 # x86 virtualization skills
 
-Specification-anchored knowledge-base skills for AI coding agents, covering
-Intel and AMD hardware virtualization. Written to the
+A specification-anchored knowledge base for AI coding agents, covering Intel and
+AMD hardware virtualization. Written to the
 [Agent Skills](https://agentskills.io/specification) open standard, so the same
-directory works in **Claude Code**, **OpenAI Codex** and **Hermes** without
-translation.
+directory works in **Claude Code**, **OpenAI Codex**, **Kimi Code CLI**,
+**Cline**, **Gemini CLI**, **Windsurf** and **Hermes** without translation.
 
-| Skill | State | Scope |
+**One skill, [`x86-virt/`](x86-virt/), with one reference subtree per vendor.**
+It was two sibling skills until v2. They were merged because no host arbitrates
+between skills — every one of the eight surveyed hands the model a name and a
+`description` and lets it choose — so two siblings sharing eight trigger tokens
+had no tie-break an agent could see. Merging moves that routing into
+`SKILL.md`'s body, which loads whole and is never truncated.
+See [`docs/adr/0001-one-skill-two-reference-trees.md`](docs/adr/0001-one-skill-two-reference-trees.md).
+
+| Subtree | State | Scope |
 |---|---|---|
-| [`intel-vt/`](intel-vt/) | Rebuilt and verified | Intel VT-x/VMX, EPT/VPID, VT-d, APICv, nested VMX, TDX, and the Windows platform (Hyper-V, VBS/HVCI, WSL2) |
-| [`amd-virtualization/`](amd-virtualization/) | Rebuilt and verified | AMD-V/SVM, VMCB, intercepts and #VMEXIT decoding, nested paging, AVIC, the AMD IOMMU, SME/SEV/SEV-ES/SEV-SNP, and the Windows platform |
+| [`x86-virt/references/intel/`](x86-virt/references/intel/) | Rebuilt and verified | Intel VT-x/VMX, EPT/VPID, VT-d, APICv, nested VMX, TDX, and the Windows platform (Hyper-V, VBS/HVCI, WSL2) |
+| [`x86-virt/references/amd/`](x86-virt/references/amd/) | Rebuilt and verified | AMD-V/SVM, VMCB, intercepts and #VMEXIT decoding, nested paging, AVIC, the AMD IOMMU, SME/SEV/SEV-ES/SEV-SNP, and the Windows platform |
+
+**Read in tiers.** The corpus is about 561,000 tokens and a section is about
+1,100, so `SKILL.md` routes to a chapter, `index.json` describes it, and one
+section usually answers the question. A typical answer costs about 1,400 tokens
+beyond `SKILL.md`; reading a whole chapter costs 15,000–26,000. Never glob
+`references/`.
 
 Target platform is the **Windows PC**. The hardware chapters are CPU and chipset
 architecture and are OS-independent; the platform, security and performance
@@ -39,7 +53,7 @@ mistaken for architecture.
 
 Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 
-**`intel-vt`**
+**`references/intel/`**
 
 | Check | Result |
 |---|---|
@@ -49,7 +63,7 @@ Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 | Citation validity | **79/80 (98.75%)** |
 | Routing correct on first try | **80/80** |
 
-**`amd-virtualization`**
+**`references/amd/`**
 
 | Check | Result |
 |---|---|
@@ -60,8 +74,8 @@ Numbers below are from the checks in [`eval/`](eval/), all reproducible.
 | Misconceptions asserted, across two runs of 80 questions | **0** |
 | Citation validity | **100%** in both runs |
 
-Confidence is stated, not assumed. `intel-vt`: 2228 claims `C:high`, 423
-`C:medium`, 39 `C:low`, of 2650. `amd-virtualization`: 1913 `C:high`, 159
+Confidence is stated, not assumed. `references/intel/`: 2228 claims `C:high`, 423
+`C:medium`, 39 `C:low`, of 2650. `references/amd/`: 1913 `C:high`, 159
 `C:medium`, 10 `C:low`, of 2065. Where sources genuinely disagree — VBS overhead, SEV-SNP versus TDX
 memory overhead, TDX memory-encryption key length — the skills present both and
 refuse to average them.
@@ -124,10 +138,14 @@ This places each skill where its host looks for it, using directory junctions
 on Windows, which need no elevation. `AGENTS.md` at the repo root is a
 generated pointer, not a copy, so it cannot drift.
 
-**The hosts do not agree on where to look, and one of them does not look here
-at all.** Claude Code reads `.claude/skills/`, Codex reads `.agents/skills/`
-plus `AGENTS.md`, and **Hermes reads neither** — it scans `<HERMES_HOME>/skills`
-only, so it needs `--user` or an entry in its `skills.external_dirs`.
+**The hosts do not agree on where to look, and two of them do not look here at
+all.** Claude Code reads `.claude/skills/`; Codex reads `.agents/skills/` plus
+`AGENTS.md`; **Kimi Code CLI 2.x reads `.agents/skills/` and
+`~/.kimi-code/skills/` and does *not* read `.claude/skills/`** — the legacy
+`kimi-cli` did, which is the trap; and **Hermes scans `<HERMES_HOME>/skills`
+only**, so it needs `--user` or an entry in its `skills.external_dirs`.
+Cursor is the one host with a confirmed symlink defect, so prefer `--copy`
+there until it is fixed.
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the verified path for each host,
 the Hermes configuration, and troubleshooting.
 
@@ -176,8 +194,8 @@ must be done by different agents.
 
 ## Known limits
 
-- Dated facts are a snapshot: **2026-09-16** for `intel-vt`, **2026-09-21** for
-  `amd-virtualization`. Nothing later is covered, and each skill quarantines
+- Dated facts are a snapshot: **2026-09-16** for `references/intel/`, **2026-09-21** for
+  `references/amd/`. Nothing later is covered, and each subtree quarantines
   those facts in a single `90-dated-landscape.md`.
 - No modern (Ice Lake / Sapphire Rapids / Granite Rapids / any client part)
   public cycle-level VM-exit measurement exists in the Intel corpus either. The

@@ -128,7 +128,7 @@ function loadConfig(skillDir) {
 // Both shapes are supported so the migration can be verified in stages rather
 // than as one leap.
 function lintSkill(unit) {
-  const { name: skillName, skillDir: SKILL_DIR, refsDir: REFS, configDir } =
+  const { name: skillName, skillDir: SKILL_DIR, refsDir: REFS, configDir, primary: isPrimaryUnit = true } =
     typeof unit === 'string'
       ? { name: unit, skillDir: join(ROOT, unit), refsDir: join(ROOT, unit, 'references'), configDir: join(ROOT, unit) }
       : unit
@@ -181,11 +181,15 @@ function lintSkill(unit) {
   let skillText = ''
   let fm = {}
   if (!existsSync(skillPath)) {
-    err('SKILL.md', 'not found')
+    if (isPrimaryUnit) err('SKILL.md', 'not found')
   } else {
     skillText = readFileSync(skillPath, 'utf8')
     fm = parseFrontmatter(skillText, 'SKILL.md')
 
+    // One SKILL.md governs every subtree of a skill, so it is validated once,
+    // in the primary unit. Without this each frontmatter error is reported as
+    // many times as the skill has subtrees.
+    if (isPrimaryUnit) {
     for (const key of Object.keys(fm)) {
       if (!SPEC_FRONTMATTER_FIELDS.has(key)) {
         err('SKILL.md', `non-spec frontmatter field "${key}" — packaging rejects it. Allowed: ${[...SPEC_FRONTMATTER_FIELDS].join(', ')}`)
@@ -208,6 +212,7 @@ function lintSkill(unit) {
 
     const lineCount = skillText.split(/\r?\n/).length
     if (lineCount > 500) err('SKILL.md', `${lineCount} lines, limit is 500`)
+    }
   }
 
   // -------------------------------------------------- bibliography + chapters
@@ -257,7 +262,10 @@ function lintSkill(unit) {
       for (const entry of readdirSync(dir)) {
         const full = join(dir, entry)
         if (statSync(full).isDirectory()) walk(full, `${prefix}${entry}/`)
-        else if (!entry.endsWith('.md')) assets.push(`${prefix}${entry}`)
+        // lint.config.json is infrastructure, not an asset: in the v2 layout it
+        // sits inside the subtree it configures, and nothing references it by
+        // name because the linter finds it by path.
+        else if (!entry.endsWith('.md') && entry !== 'lint.config.json') assets.push(`${prefix}${entry}`)
       }
     }
     walk(REFS, '')
@@ -484,17 +492,25 @@ function lintSkill(unit) {
 
   // ----------------------------------------------------- 8: routing integrity
 
-  if (skillText) {
-    const refd = [...skillText.matchAll(/`(references\/)?(\d{2}-[a-z0-9-]+\.md|errata\.md|core-facts\.md|00-quickref\.md|bibliography\.md)`(\s*§([0-9]+(\.[0-9]+)*))?/g)]
+  // SKILL.md is shared by every subtree of a skill, so these checks run once,
+  // in the first unit. Running them per subtree would report each routing
+  // error as many times as there are subtrees.
+  if (skillText && isPrimaryUnit) {
+    // A route may name a chapter bare (v1, resolved inside this subtree) or
+    // carry its subtree (v2: `references/intel/02-vmcs.md`). The second form is
+    // what index.json records, so it is the one SKILL.md should use.
+    const refd = [...skillText.matchAll(/`(?:references\/)?((?:[a-z0-9-]+\/)?(?:\d{2}-[a-z0-9-]+\.md|errata\.md|core-facts\.md|00-quickref\.md|bibliography\.md))`(\s*§([0-9]+(\.[0-9]+)*))?/g)]
+    const REFS_ROOT = join(SKILL_DIR, 'references')
     for (const m of refd) {
-      const fname = m[2]
-      if (!existsSync(join(REFS, fname))) {
+      const fname = m[1]
+      const resolved = [join(REFS, fname), join(REFS_ROOT, fname)].find((p) => existsSync(p))
+      if (!resolved) {
         err('SKILL.md', `routing table points at references/${fname}, which does not exist`)
         continue
       }
-      if (m[4]) {
-        const body = readFileSync(join(REFS, fname), 'utf8')
-        const sec = m[4]
+      if (m[3]) {
+        const body = readFileSync(resolved, 'utf8')
+        const sec = m[3]
         const re = new RegExp(`^#{2,4}\\s+${sec.replace(/\./g, '\\.')}[\\s.]`, 'm')
         if (!re.test(body)) {
           err('SKILL.md', `routing anchor ${fname} §${sec} does not exist in that file`)
@@ -691,11 +707,13 @@ const unitsOf = (dirName) => {
     : []
 
   if (subtrees.length) {
-    return subtrees.map((sub) => ({
+    return subtrees.map((sub, i) => ({
       name: `${dirName}/${sub}`,
       skillDir,
       refsDir: join(refs, sub),
       configDir: join(refs, sub),
+      // SKILL.md is shared, so only the first subtree validates it.
+      primary: i === 0,
     }))
   }
   return [{ name: dirName, skillDir, refsDir: refs, configDir: skillDir }]

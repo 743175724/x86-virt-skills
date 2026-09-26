@@ -1,10 +1,15 @@
 # x86 virtualization skills
 
-This repository is **not application code**. It is two specification-anchored
-knowledge-base skills for AI coding agents — `intel-vt/` and
-`amd-virtualization/` — covering Intel and AMD hardware virtualization on the
-Windows PC. Roughly 16,000 lines of reference chapters carrying ~4,700 claims,
-each anchored to a vendor document by publication number and section.
+This repository is **not application code**. It is one specification-anchored
+knowledge-base skill for AI coding agents, `x86-virt/`, covering Intel and AMD
+hardware virtualization on the Windows PC, with one reference subtree per
+vendor: `x86-virt/references/intel/` and `x86-virt/references/amd/`. Roughly
+16,000 lines of chapters carrying ~4,700 claims, each anchored to a vendor
+document by publication number and section.
+
+**Read in tiers, and never glob `references/`.** The corpus is ~561k tokens; a
+section is ~1.1k. `SKILL.md` routes to a chapter, `index.json` describes it,
+one section usually answers the question. The protocol is in `SKILL.md`.
 
 **Read `AGENTS.md` at the repo root before answering anything these skills
 cover.** It is generated from each `SKILL.md` by `tools/build.mjs` — never edit

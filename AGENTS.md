@@ -2,42 +2,17 @@
 
 # Agent instructions
 
-This repository carries 2 specification-anchored virtualization
-skills. Every architectural claim in them is anchored to a vendor
+This repository carries 1 specification-anchored virtualization
+skill. Every architectural claim in them is anchored to a vendor
 specification by document number and section, and time-sensitive facts are
 quarantined in a single dated file per skill.
 
-## AMD Virtualization — `amd-virtualization/`
+## AMD Virtualization — `x86-virt/`
 
-AMD virtualization expert knowledge base for Windows PCs.
+x86 virtualization expert for Windows PCs, Intel and AMD.
 
-**Read `amd-virtualization/SKILL.md` before answering anything it covers.**
+**Read `x86-virt/SKILL.md` before answering anything it covers.**
 
-Triggers: AMD-V, SVM, VMRUN, VMCB, VMEXIT, EXITCODE, EXITINFO, intercept, NPT, nested paging, RVI, ASID, INVLPGA, AVIC, x2AVIC, vGIF, IOMMU, AMD-Vi, IVRS, DTE, IRTE, SME, TSME, C-bit, SEV, SEV-ES, SEV-SNP, GHCB, VMGEXIT, RMP, PVALIDATE, VMPL, SVSM, attestation, Hyper-V, VBS, HVCI, WSL2, Kernel DMA Protection, hypervisor.
-
-It routes to one chapter under `amd-virtualization/references/` per topic, each mapped to
+It routes to one chapter under `x86-virt/references/` per topic, each mapped to
 the specification chapter it covers. Load the chapter you need, not the whole
-directory. `amd-virtualization/index.json` is the machine-readable table of contents.
-
-## Intel VT — `intel-vt/`
-
-Intel VT expert knowledge base for Windows PCs.
-
-**Read `intel-vt/SKILL.md` before answering anything it covers.**
-
-Triggers: VT-x, VMX, VMCS, VM-exit, exit qualification, EPT, EPT violation, VPID, INVEPT, VT-d, DMAR, IOMMU, IRTE, SR-IOV, APICv, posted interrupt, VMCS shadowing, nested virtualization, Hyper-V, VBS, HVCI, WSL2, Kernel DMA Protection, TDX, SEAM, SEAMCALL, hypervisor, virtual machine escape.
-
-It routes to one chapter under `intel-vt/references/` per topic, each mapped to
-the specification chapter it covers. Load the chapter you need, not the whole
-directory. `intel-vt/index.json` is the machine-readable table of contents.
-
-## Choosing between them
-
-Route by whose specification answers the question, not by the words in it. A
-question is AMD-primary when the answer is an AMD register, bit, exit code or
-instruction — **including when it is phrased in Windows terms** ("my Ryzen and
-Hyper-V", "AMD-V greyed out"); it is Intel-primary under the mirror rule.
-Symmetric comparisons ("Intel vs AMD", "SEV-SNP vs TDX") are answered by
-`intel-vt/`, which states the correspondence and defers bit-level AMD detail
-to `amd-virtualization/`. ARM- and RISC-V-primary questions are answered by
-`intel-vt/`; neither skill claims non-x86 depth beyond a comparison.
+directory. `x86-virt/index.json` is the machine-readable table of contents.
