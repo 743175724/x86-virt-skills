@@ -450,6 +450,83 @@
       "sha256": "d5a31e54c92e2a1bb937dd866d86fdd6d1d0c037fc24487272a2020a9b0a0871"
     },
     {
+      "path": "references/dev/00-quickref.md",
+      "title": "00. Development quickref",
+      "summary_zh": "本子树是**开发轨道**，不是规范参考。它回答\"怎么写\"和\"为什么在这台机器上跑不起来\"，",
+      "maps_to": "nothing. This subtree cites implementations, kernel commits, vendor",
+      "headings": [
+        "0.1 What this subtree is for",
+        "0.2 Symptom → chapter",
+        "0.3 Start here, in this order",
+        "0.4 What is not here yet",
+        "0.5 Terminology (中英对照)"
+      ],
+      "bytes": 4374,
+      "sha256": "4702bac2d50a3323da1f6115ab31abf2bb570f769360ca67c903069fb4543138"
+    },
+    {
+      "path": "references/dev/01-platform-ownership.md",
+      "title": "01. Who owns the virtualization extension",
+      "summary_zh": "本章回答\"我的驱动到底能不能加载\"。在现代 Windows 上，",
+      "maps_to": "no single specification chapter; this is platform behaviour.",
+      "headings": [
+        "1.1 Detection comes first",
+        "1.2 Three paths, and what each costs",
+        "1.3 The wall is widening",
+        "1.4 PatchGuard is the low wall, not the high one",
+        "1.5 Open items"
+      ],
+      "bytes": 5240,
+      "sha256": "495cace15afde236ebf0e649f223b9dfb6605fb71426612a79d6586dbe77b3a7"
+    },
+    {
+      "path": "references/dev/02-known-traps.md",
+      "title": "02. Known traps",
+      "summary_zh": "本章是这个子树最有价值的部分——**在已发表的实现里流传、但现在是缺陷的做法**。",
+      "maps_to": "no specification chapter; these are defects found in implementations.",
+      "headings": [
+        "2.1 One EPT/NPT hierarchy per logical processor",
+        "2.2 An identity map that silently stops at 512 GB",
+        "2.3 Reading a capability bit once and caching it for the machine",
+        "2.4 Trusting an advertised feature bit on an affected part",
+        "2.5 Copying from an archived project",
+        "2.6 Open items"
+      ],
+      "bytes": 7288,
+      "sha256": "e0349bc8ae17d83672e756379f42750a1a2230fe4fc3e035fe16810e07cccc28"
+    },
+    {
+      "path": "references/dev/03-failures-by-model.md",
+      "title": "03. Failures, scoped to what actually causes them",
+      "summary_zh": "本章回答\"为什么在这台机器上跑不起来\"。",
+      "maps_to": "no specification chapter; entries cite whatever documents the cause.",
+      "headings": [
+        "3.1 How to read an entry, and why the shape matters",
+        "3.2 Per-core paging hierarchies degrade on Intel hybrid parts",
+        "3.3 Virtualized VMLOAD/VMSAVE reboots some AMD Family 19h client parts",
+        "3.4 AVIC availability follows the microcode, not the model",
+        "3.5 AVIC on Family 17h: AMD says do not enable it",
+        "3.6 ESXi refuses to install on Intel hybrid parts — and the silicon is fine",
+        "3.7 Open items"
+      ],
+      "bytes": 7267,
+      "sha256": "f003397920b5b8f10ad963d1391ef783d61c9fe6665b2520aeea77f5f054b69c"
+    },
+    {
+      "path": "references/dev/bibliography.md",
+      "title": "Bibliography",
+      "summary_zh": "开发子树的引用表。每条 claim 行用 `` `[N]` `` 指向这里的一条。",
+      "maps_to": null,
+      "headings": [
+        "1–39 · Implementations",
+        "40–69 · Kernel and upstream",
+        "70–99 · Vendor documents",
+        "100–129 · Platform"
+      ],
+      "bytes": 4747,
+      "sha256": "cd092303f4a35320cd68b864bb7ee5e2e3fc9f3f1f2a6b0112ee1be6546846e3"
+    },
+    {
       "path": "references/intel/00-quickref.md",
       "title": "00. Quick Reference",
       "summary_zh": "本章是导航层，不是事实层。它只回答\"这个东西在哪一章\"——文档号索引、症状→章节的排查路由、各类表格的归属、中英术语对照，以及 Windows PC 上最常被问到的几个问题的直达答案。**这里不重复任何数值**：权威值只存在于拥有它的章节里，避免两处数字漂移。要查具体位域、编码、错误码，按下面的指针跳过去。",

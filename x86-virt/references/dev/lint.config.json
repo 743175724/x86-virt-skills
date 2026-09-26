@@ -1,0 +1,43 @@
+{
+  "$comment": "The development subtree. Unlike the vendor subtrees this is not a specification reference: its sources are kernel commits, project issue trackers, vendor security bulletins and measurements taken on real silicon. archChapter is therefore deliberately unmatchable, so a claim here is not required to carry a Tier-1 specification anchor - it must still carry a resolvable [N], a confidence and a volatility, and it may carry a vendor anchor when one genuinely applies. Demanding an anchor a subject cannot supply is how ~90 fabricated anchors once entered this corpus; see README.",
+  "displayName": "Hypervisor Development",
+
+  "$comment_archChapter": "Never matches. See above - this subtree cites implementations and measurements, not specifications.",
+  "archChapter": { "re": "^$" },
+
+  "datedFile": "90-dated-landscape.md",
+  "navigational": ["00-quickref.md"],
+  "claimFreeFiles": ["00-quickref.md"],
+
+  "$comment_anchors": "Both vendors' grammars are legal here, because a development claim routinely cites one vendor's manual while discussing the other's divergence. The `measured` form is new in v2 and is the shape agreed for an on-metal observation: it must carry the CPUID signature, the firmware level and the date, because an observation missing any of the three cannot be reproduced and is therefore not evidence.",
+  "anchors": {
+    "prefix": { "re": "^(SDM [1234][ABCD]? |APM[123] |IOMMU |SEV-API |GHCB |SNP-ABI |PPR |RevGuide |AMD-SB-|VT-d |measured )" },
+    "unverified": { "re": "(Ch|§)\\.?\\?$" },
+    "grammar": [
+      { "re": "^SDM [1234][ABCD]? (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-Z]|Table [0-9A-Z]+-[0-9]+)$" },
+      { "re": "^APM[123] (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|App\\.[A-E]|Table [A-E0-9]+-[0-9]+)$" },
+      { "re": "^VT-d 5\\.20 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|Table [0-9]+)$" },
+      { "re": "^IOMMU 3\\.11 (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|Table [0-9]+)$" },
+      { "re": "^RevGuide [0-9]{5} (erratum [0-9]{3,4}|p\\.[0-9]+)$" },
+      { "re": "^PPR [0-9]{5}(-[A-Z0-9]+)? (§[0-9]+(\\.[0-9]+)*|Ch\\.[0-9]+|p\\.[0-9]+)$" },
+      { "re": "^AMD-SB-[0-9]{4}$" },
+      { "re": "^measured (fam[0-9a-f]{1,2}h_model[0-9a-f]{1,2}h|[0-9]{2}_[0-9A-F]{1,2}H)( st[0-9]+)?( µcode 0x[0-9A-Fa-f]+)? 20[0-9]{2}-[0-9]{2}-[0-9]{2}$" }
+    ]
+  },
+
+  "$comment_unscopedNegative": "Identical to the vendor subtrees. The defect class is not vendor-specific, and a development chapter is exactly where 'no public X exists' gets written carelessly about a tool or a project rather than a specification.",
+  "unscopedNegative": {
+    "patterns": {
+      "re": "(there (?:is|are) no public |\\b(?:AMD|Intel|Microsoft|the vendor) publishes no \\b|\\b(?:AMD|Intel|Microsoft) has no public \\b|\\bno public [a-z\\- ]{0,40}(?:guide|reference|PPR|document|documentation|specification|erratum|errata|copy|source) )",
+      "flags": "i"
+    },
+    "scopeEvidence": {
+      "re": "(\\b\\d{5}\\b|\\b20\\d{2}-\\d{2}(?:-\\d{2})?\\b|\\bas of\\b|\\bRev\\.? ?\\d|\\bin (?:this|the) corpus\\b|\\bsearched\\b|\\bmodel range\\b)",
+      "flags": "i"
+    },
+    "message": "a negative claim needs the same evidence as a positive one, scoped to a document and a date (see references/amd/errata.md E27)"
+  },
+
+  "deadTitles": [],
+  "orphanExemptBelow": 100
+}

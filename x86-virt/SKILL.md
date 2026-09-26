@@ -58,6 +58,12 @@ Route by whose specification answers the question, not by the words in it.
   ("my Core Ultra and Hyper-V", "VT-x greyed out").
 - **`references/amd/`** — the mirror rule, for an AMD register, bit, exit code or
   instruction.
+- **`references/dev/`** — the question is **"how do I write this"** or **"why does my
+  driver not load / behave differently on this machine"**, rather than what a bit means.
+  It covers who owns the extension on Windows, practices that circulate in published
+  implementations and are now defects, and failures scoped to the silicon, firmware or
+  platform setting that actually causes them. Start here for any hypervisor-writing
+  question, then go to the vendor subtree for the mechanism.
 - **Symmetric comparisons** ("Intel vs AMD", "SEV-SNP vs TDX") are answered from
   `references/intel/18-comparison-amd-arm-riscv.md`, which states the correspondence and
   defers bit-level AMD detail to the AMD subtree.
@@ -71,6 +77,19 @@ answer contradicts something you believe.
 
 Start here when something is **broken**, rather than when you want to read about a topic.
 （**故障排查从这里开始**，而不是从目录开始。）
+
+### Writing a hypervisor, or a driver that will not load
+
+| Symptom | Go to |
+|---|---|
+| Driver loads on one machine, refuses on another | `references/dev/01-platform-ownership.md` §1.1 |
+| `VMXON` / `VMRUN` fails although CPUID says the feature is present | `references/dev/01-platform-ownership.md` §1.1 |
+| Worked before a Windows update, does not now | `references/dev/01-platform-ownership.md` §1.3 |
+| How do I start writing a hypervisor? | `references/dev/00-quickref.md` §0.3 |
+| Copied a published implementation and it misbehaves | `references/dev/02-known-traps.md` |
+| Correct on an older CPU, degraded or broken on a recent one | `references/dev/03-failures-by-model.md` |
+| Blue screen on some machines only, same CPU family | `references/dev/03-failures-by-model.md` §3.1 |
+| Is this feature safe to enable on this part? | `references/dev/03-failures-by-model.md` §3.3, §3.4 |
 
 ### Intel
 
@@ -142,8 +161,18 @@ one you picked (T1), not this list expanded.
 `18-performance` · `19-comparison-intel-arm-riscv` · `90-dated-landscape` · `errata` ·
 `bibliography`
 
+**`references/dev/`** — `00-quickref` · `01-platform-ownership` · `02-known-traps` ·
+`03-failures-by-model` · `bibliography`
+
 Each subtree's `00-quickref.md` holds the table-to-chapter map and the implementer's
 reading order. Its symptom table is reproduced above; the rest stays there.
+
+**What `references/dev/` does not yet contain**, stated rather than implied: no skeleton
+source, and no per-component walkthrough of driver entry, per-processor context
+allocation, host GDT/IDT/stack, identity-map construction, the dispatch loop, CPUID/MSR
+emulation, SMP bring-up or teardown. `00-quickref.md` §0.4 says so too. Answer a
+"write me the skeleton" request from the architecture chapters and the trap list, and say
+which parts are not covered here.
 
 ## The Windows fact that resolves most questions
 
