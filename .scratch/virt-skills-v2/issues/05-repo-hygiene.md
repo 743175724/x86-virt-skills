@@ -1,7 +1,7 @@
 # 05 仓库卫生：修正失真声明与残留
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: —
 
 ## Question
@@ -75,3 +75,91 @@ Blocked by: —
 ## 交付物
 
 一次提交，commit message 逐条列出改了什么、依据是什么。
+
+---
+
+## Answer
+
+### 头等结论：第 2 / 3 / 4 条**不是缺陷**，是丢了 `.git` 造成的假象
+
+`gh` 查到**远程仓库仍然存在**：`743175724/x86-virt-skills`，PRIVATE，
+最后推送 **2026-09-21T01:02:49Z**，默认分支 `main`，HEAD 为 `490a927`。
+
+决定性的一步比对：
+
+```
+本地基线 9192e4c 的 tree : 36b3a7ba07dfdde77db2fb7a85bb8e53bfdeb4ba
+远程 HEAD 490a927 的 tree : 36b3a7ba07dfdde77db2fb7a85bb8e53bfdeb4ba   ← 完全相同
+```
+
+**丢的只是 `.git` 目录，一行工作都没丢。** 于是：
+
+| 原判 | 实际 |
+|---|---|
+| 2. README 声称 CI 每次 push/PR 都跑 —— 假 | **成立**。远程在、workflow 在。只是本地那条孤儿历史跑不了 |
+| 3. README 引用 `c40421e..736cc35` —— 无法验证 | **真实存在**。`c40421e` = "intel-vt: exhaustive PDF verification of all 2643 claims, 152 errors fixed"；`736cc35` = "lint: flag eval keys whose values are absent from the corpus" |
+| 4. `git clone` / `git pull` 会失败 —— 是 | **仓库存在且可 clone**。失败只因本地树当时没有 remote |
+
+**处置：嫁接，而不是删声明。**
+
+```
+git rebase --onto origin/main 9192e4c main
+```
+
+因为嫁接点两侧的 tree 完全一致，10 个提交**零冲突**重放完成。
+本地历史现在从真实的 `490a927` 续上，共 **40 个提交**，
+本地分支已由 `master` 改名为 `main` 与远程对齐。
+孤儿历史保留在 `backup-orphan-history` 分支上以防万一。
+
+> 顺带修好了 fetch 卡死：私有仓库走 HTTPS 会要凭据而 stdin 是关的，
+> `gh auth setup-git` 配上凭据助手后即通。
+
+**当前领先 `origin/main` 10 个提交，尚未推送**——推送是对外动作，等你的指令。
+
+### 逐条处置
+
+| # | 状态 | 处置 |
+|---|---|---|
+| 1 | ✅ | README 勘误计数 26/6 → **27/7**（在 ticket 12 中一并改） |
+| 2 | ✅ | 非缺陷，见上。CI 可跑 |
+| 3 | ✅ | 非缺陷，见上。commit 真实 |
+| 4 | ✅ | 非缺陷，见上。已接回远程 |
+| 5 | ✅ | 删掉无法验证的 "14 checks"，**不是改成 15**——工具不打印分项，任何数字都不可验证 |
+| 6 | ✅ | **5 张孤儿图删除**（384 KB）。理由见下 |
+| 7 | ✅ | AMD errata `O6` / `O7` 顺序已互换 |
+| 8 | ✅ | `CLAUDE.md` 重写 |
+| 9 | ✅ | `install.mjs` 纳管 Kimi + 替换实体副本时出声 |
+| 10 | ✅ | 补 `LICENSE`（Apache-2.0 全文，202 行）与 `NOTICE` |
+| 11 | ✅ | 基线**不改标签**，改为如实声明 |
+
+### 第 6 条：为什么是删除而不是补做归位
+
+原处置文档给 5 张图各指派了新归属，删除那半做了、归位那半没做。但**归位是错的**，
+理由是那份文档当时不可能权衡到的：
+
+> **这是面向 agent 的语料。** ticket 01 调查的 8 个宿主**没有一个会读 PNG**。
+> 而仓库自己的门槛是"图必须承载表无法承载的信息"——**对 agent 而言这个条件永远不成立**。
+
+而且信息并未丢失：图要承载的内容**在它们被指派去的那一节里已经是带引用的文字 claim**
+（90.6 有 13 条、90.3 有 8 条、90.4 有 16 条；`18-performance.md` 对 MASCOTS/7763 有 4 处、
+对 SIGMETRICS/8570 有 7 处）。
+
+**并补了 lint 规则防止再犯**：`references/` 下任何无人引用的非 Markdown 文件将导致 lint 失败。
+注入一张未被引用的 PNG → 规则触发 → 移除 → clean，非空转已证明。
+
+### 第 11 条：为什么不把基线直接改成 093
+
+章节**确实**是对着 rev 092 核的。把标签改成 093 而不重核，
+等于**用一条陈旧事实换一条虚假事实**——正是本仓库最该避免的操作。
+
+改为如实声明：frontmatter 与 Known limits 都写明 **093 是现行版且尚未纳入**，
+并点名其中最要紧的一项——**Vol.1 §21.1.4 的 CPUID Domains 分类**，
+它是 ticket 09 打算直接采用的判定程序。
+
+### 验收
+
+```
+node tools/lint.mjs          → 两个技能均 clean（2079 + 2650 claims）
+node tools/build.mjs --check → generated files are up to date
+git status                   → 干净
+```
