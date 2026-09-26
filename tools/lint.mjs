@@ -232,6 +232,36 @@ function lintSkill(skillName) {
     ? readdirSync(REFS).filter((f) => f.endsWith('.md') && f !== 'bibliography.md').sort()
     : []
 
+  // orphaned assets: a non-Markdown file under references/ that nothing cites.
+  // Five PNGs shipped in every install this way, 384 KB, referenced by no
+  // chapter -- the delete half of an earlier disposition ran and the re-home
+  // half did not, and nothing noticed because nothing checked. An asset the
+  // corpus does not reference is dead weight in every install.
+  if (existsSync(REFS)) {
+    const assets = []
+    const walk = (dir, prefix) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry)
+        if (statSync(full).isDirectory()) walk(full, `${prefix}${entry}/`)
+        else if (!entry.endsWith('.md')) assets.push(`${prefix}${entry}`)
+      }
+    }
+    walk(REFS, '')
+    if (assets.length) {
+      const haystack = [
+        ...chapterFiles.map((f) => readFileSync(join(REFS, f), 'utf8')),
+        existsSync(bibPath) ? readFileSync(bibPath, 'utf8') : '',
+        skillText ?? '',
+      ].join('\n')
+      for (const a of assets) {
+        const name = a.split('/').pop()
+        if (!haystack.includes(name)) {
+          err(`references/${a}`, `orphaned asset — no chapter, bibliography entry or SKILL.md references it; re-home it or delete it`)
+        }
+      }
+    }
+  }
+
   const claimIndex = new Map() // normalized claim text -> [files]
 
   for (const file of chapterFiles) {

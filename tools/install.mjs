@@ -71,8 +71,18 @@ const hermesSkillsDir = () => {
 for (const NAME of skills) {
   const SRC = join(ROOT, NAME)
 
+  // Kimi Code CLI 2.x reads .agents/skills/ and .kimi-code/skills/, and does
+  // NOT read .claude/skills/ -- the legacy kimi-cli did. The .agents/ target
+  // already covers it at project scope, but a user-scope Kimi install lives
+  // under ~/.kimi-code/skills/ and was previously not managed here at all, so
+  // anything placed there by hand drifted silently from this tree.
+  const kimiSkillsDir = () => {
+    const env = process.env.KIMI_HOME?.trim()
+    return join(env || join(homedir(), '.kimi-code'), 'skills')
+  }
+
   const targets = [
-    { host: 'Codex + Hermes', path: join(ROOT, '.agents', 'skills', NAME) },
+    { host: 'Codex + Hermes + Kimi', path: join(ROOT, '.agents', 'skills', NAME) },
     { host: 'Claude Code', path: join(ROOT, '.claude', 'skills', NAME) },
   ]
   if (USER) {
@@ -80,6 +90,7 @@ for (const NAME of skills) {
       { host: 'Codex (user)', path: join(homedir(), '.agents', 'skills', NAME) },
       { host: 'Hermes (user)', path: join(hermesSkillsDir(), NAME) },
       { host: 'Claude Code (user)', path: join(homedir(), '.claude', 'skills', NAME) },
+      { host: 'Kimi Code CLI (user)', path: join(kimiSkillsDir(), NAME) },
     )
   }
 
@@ -87,6 +98,14 @@ for (const NAME of skills) {
     const label = path.replace(ROOT, '.').replace(homedir(), '~')
 
     if (existsSync(path) || isLink(path)) {
+      // Say so when we are replacing a real directory rather than a link. A
+      // copy does not track this tree, so it drifts with no error anywhere --
+      // which is exactly what happened to a hand-placed Kimi install that sat
+      // byte-identical for four days and would have gone stale on the next
+      // edit. Naming it is the only signal the user gets.
+      if (!isLink(path) && !UNINSTALL) {
+        console.log(`  replacing ${label} — was a real directory, not a link; a copy drifts silently`)
+      }
       // Only remove what we would have made: a link, or a directory holding a copy.
       rmSync(path, { recursive: true, force: true })
       if (UNINSTALL) { console.log(`  removed   ${label}`); continue }
@@ -122,6 +141,8 @@ ${list}
 
   Claude Code   reads .claude/skills/<name>/SKILL.md
   Codex         reads .agents/skills/<name>/SKILL.md, plus AGENTS.md at startup
+  Kimi Code CLI reads .agents/skills/ and ~/.kimi-code/skills/ — NOT .claude/skills/
+                (the legacy kimi-cli did read .claude/skills/; 2.x does not)
   Hermes        does NOT scan this repo. It reads <HERMES_HOME>/skills — which is
                 ${hermesSkillsDir().replace(homedir(), '~')}
                 Use --user to install there, or add this repo's .agents/skills to

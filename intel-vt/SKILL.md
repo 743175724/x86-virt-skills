@@ -15,7 +15,7 @@ description: >
 license: Apache-2.0
 metadata:
   target-platform: Windows PC
-  normative-baseline: Intel SDM rev 092 (2026-06), VT-d Rev 5.20 (2026-04), TDX module docs (2026-05/08)
+  normative-baseline: Intel SDM rev 092 (2026-06) — rev 093 is current and NOT yet incorporated, see Known limits; VT-d Rev 5.20 (2026-04), TDX module docs (2026-05/08)
   dated-snapshot: 2026-09-16
 ---
 
@@ -136,6 +136,15 @@ running nested through the Windows Hypervisor Platform. See
 ## Known limits
 
 - The dated snapshot is **2026-09-16**. Nothing after it is covered.
+- **The chapters are verified against SDM rev 092. Rev 093 is current and has
+  not been incorporated**, and one of its additions is directly load-bearing
+  here: Vol.1 §21.1.4 introduces a **CPUID Domains** classification that decides,
+  mechanically, which leaves may differ between a P-core and an E-core. ISA
+  feature bits — `CPUID.01H:ECX[5]` VMX among them — are Platform domain and
+  must be identical on every logical processor; cache `04H`, topology `1FH` and
+  native model `1AH` are Logical Processor domain, where the SDM permits
+  divergence and names hybrid as the reason. Until rev 093 is folded in, treat
+  any hybrid-asymmetry answer here as incomplete and check §21.1.4 directly.
 - No modern (Ice Lake / Sapphire Rapids / Granite Rapids / any client part)
   public cycle-level VM-exit measurement exists in this knowledge base. The
   newest hard figure is Westmere-era, 2010. `16-performance.md` says so rather

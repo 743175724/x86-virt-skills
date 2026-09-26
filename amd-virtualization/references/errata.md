@@ -298,12 +298,12 @@ The entry is kept under its original number because the wrong map circulated in 
 
 Note also that 55766 covers **SEV and SEV-ES only** — SNP firmware commands are in 56860.
 
+### O6 · The five-level (LA57) two-dimensional walk figure
+
+Applying `nm + n + m` to five-level paging in both dimensions gives 35, and mixed four/five-level cases give 29. **No published source states either number** — they are derivations. Any chapter using them must say so and carry `C:medium`.
+
 ### O7 · `AUTHOR_KEY_DIGEST` — AMD's Table 27 contradicts itself
 
 - **Claim.** `AUTHOR_KEY_EN`, bit 0 at offset `48h`, reads "Indicates that the digest of the author key is **present** in AUTHOR_KEY_DIGEST. Set to the value of GCTX.AuthorKeyEn." The `AUTHOR_KEY_DIGEST` row at offset `110h` reads "SHA-384 digest of the Author public key that certified the ID key, if provided in … **Zeroes if AUTHOR_KEY_EN is 1**." Those cannot both be true.  `[SNP-ABI 1.59 Table 27]` `[10]` `C:high` `V:durable`
 - **Do not resolve it by picking the sensible reading.** The bit-0 description is the one that makes operational sense, and an earlier draft of `14-sev-snp.md` asserted it as settled. That is the failure this file exists to prevent: a specification contradicting itself is an open conflict, not an invitation to choose. Anything relying on this field for attestation policy should treat it as unreliable and say so.
 - **Owner:** `14-sev-snp.md` §14.11, which now states both halves.
-
-### O6 · The five-level (LA57) two-dimensional walk figure
-
-Applying `nm + n + m` to five-level paging in both dimensions gives 35, and mixed four/five-level cases give 29. **No published source states either number** — they are derivations. Any chapter using them must say so and carry `C:medium`.
