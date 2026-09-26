@@ -69,7 +69,7 @@ x86-virt/
 
 ---
 
-## 3. `description`（816 字符，低于最严的 1024 上限）
+## 3. `description`（**实际落地 777 字符**）
 
 ```
 x86 hardware virtualization expert knowledge base for Windows PCs, covering Intel
@@ -84,12 +84,18 @@ Zen 5, keyed on CPUID family/model plus microcode revision. Every architectural 
 is anchored to a vendor specification by document number and section.
 ```
 
+> ⚠️ **实现时发现规划遗漏了一条硬约束**：lint 要求 **description 的第一句 ≤ 60 字符**
+> （Hermes 会截断到那里，所以第一句必须独立成立）。
+> 规划中那版 816 字符的开头是一个约 170 字符的长句，**会直接 lint 失败**。
+> 落地版把开头改成 `x86 virtualization expert for Windows PCs, Intel and AMD.`（**57 字符**），
+> 其余内容不变，总长 **777 字符**。
+
 比旧的两个都短（844 / 925），却多覆盖一家厂商和**两条新轨道**——
 旧 description **一个开发类词都没有**，这就是"怎么写 hypervisor"触发不了的机械原因。
 
 ---
 
-## 4. `SKILL.md` 的内容（估算 ~3.9k tok）
+## 4. `SKILL.md` 的内容（估算 ~3.9k tok，**实测 3,982 tok**）
 
 | 节 | 来源 | 估算 |
 |---|---|---|
@@ -178,7 +184,7 @@ teardown · **VM entry 失败怎么调**。
 | # | 步骤 | 状态 |
 |---|---|---|
 | 1 | **迁移**：建子树、改路径、合并配置、修 11 处跨技能路径。**先立 `sha256` 回归门** | ✅ `3d7c885` + `8157871` |
-| 2 | **入口**：新 `SKILL.md` | ✅ `8157871`，body **3,258 tok**（目标 < 5000） |
+| 2 | **入口**：新 `SKILL.md` | ✅ `8157871` + `5ca0d1c`，body **3,982 tok** / 270 行（目标 < 5000 / 500） |
 | 3 | **验证**：`lint` / `build --check` clean | ✅ 三棵子树全 clean；**路由探针未跑**（需多宿主人工） |
 | 4 | **开发轨道**：已知陷阱 → 骨架 | 🟡 `7eabf17`。陷阱、平台所有权已写；**骨架未写**（且已在 `SKILL.md` 明确声明） |
 | 5 | **故障轨道**：开张 5 条 → 身份表 | 🟡 `7eabf17`。**6 条**已写；**身份表未建**（卡 265KF） |
@@ -188,11 +194,13 @@ teardown · **VM entry 失败怎么调**。
 
 ```
 x86-virt/
-  SKILL.md                  3,258 tok · 229 行
+  SKILL.md                  3,982 tok · 270 行
   references/
     intel/  23 章 + bibliography(318) + lint.config.json
     amd/    23 章 + bibliography(198) + lint.config.json
     dev/     4 章 + bibliography(20)  + lint.config.json
+eval/
+  intel/ 80 题 · amd/ 80 题 · dev/ 20 题 · routing-probes.yaml 24 条
 ```
 
 **回归门结果**：`44 chapter(s) hash-identical`，2 章为有意编辑（那 11 处路径修复）。
