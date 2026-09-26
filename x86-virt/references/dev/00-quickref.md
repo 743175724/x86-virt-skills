@@ -25,9 +25,8 @@ Three chapters, in the order a reader actually needs them:
 
 ## 0.2 Symptom → chapter
 
-The symptom table lives once, in `x86-virt/SKILL.md` under "Symptom → chapter",
-in the block "Writing a hypervisor, or a driver that will not load". This file
-does not keep a second copy. A section number that changes is changed there.
+`x86-virt/SKILL.md`, heading "Symptom → chapter", block "Writing a hypervisor,
+or a driver that will not load". One copy.
 
 ## 0.3 Start here, in this order
 

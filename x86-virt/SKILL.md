@@ -7,8 +7,8 @@ description: >
   AMD: AMD-V/SVM, VMCB, intercepts and #VMEXIT, nested paging and ASIDs, AVIC/x2AVIC,
   AMD-Vi/IVRS, SME/SEV/SEV-ES/SEV-SNP. Either: Hyper-V, VBS/HVCI, WSL2, Kernel DMA
   Protection, and who owns VMX root or SVM on Windows; writing a hypervisor, including a
-  thin or minimal one, and diagnosing a driver that will not load. Failures are scoped to
-  the silicon, firmware or platform setting that causes them, not to a CPU-model matrix.
+  thin or minimal one, and diagnosing a driver that will not load. A failure is
+  recorded by the silicon, firmware or platform setting that causes it.
   Every architectural claim is anchored to a vendor specification by document number and
   section.
 license: Apache-2.0
@@ -109,7 +109,7 @@ Start here when something is **broken**, rather than when you want to read about
 | L1 hypervisor misbehaves under nesting | `references/intel/14-nested-virtualization.md` §14.4, §14.5 |
 | "VT-x is not available" on a Windows PC | `references/intel/17-windows-platform.md` §17.1 — almost always Hyper-V owning VMX root |
 | Driver rejected after enabling memory integrity | `references/intel/15-security.md` §15.8 |
-| Is VBS / memory integrity actually running? | `references/intel/17-windows-platform.md` §17.10 |
+| Is VBS / memory integrity actually running? | `references/intel/17-windows-platform.md` §17.9.1 |
 | Thunderbolt or PCIe device blocked before login | `references/intel/17-windows-platform.md` §17.5 — Kernel DMA Protection |
 | A performance number needs defending | `references/intel/16-performance.md` §16.1 |
 
@@ -170,8 +170,7 @@ one you picked (T1), not this list expanded.
 `03-failures-by-model` · `bibliography`
 
 Each subtree's `00-quickref.md` holds the table-to-chapter map and the implementer's
-reading order. **The symptom table above is the only copy.** A subtree quickref points
-here instead of keeping its own, so a section number can change in one place.
+reading order. The symptom table above is the only copy; a quickref points here.
 
 **`references/dev/` ships no skeleton source, by design** — it is not a starting
 template, and it carries no per-component walkthrough of driver entry, context

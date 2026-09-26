@@ -475,12 +475,10 @@ function lintSkill(unit) {
   // ------------------------------------------- 14: cross-subtree pointers resolve
   //
   // A chapter that defers to the other vendor writes `references/intel/…` or
-  // `references/amd/…`. Rule 8 below only validates pointers inside this
-  // subtree, and rule 9's ownership escape only looks for a bare `NN-name.md`,
-  // so a cross-subtree pointer was checked by nothing at all. The v1 form of
-  // this rule looked for `intel-vt/` and `amd-virtualization/`, which are the
-  // directories the merge deleted; a pointer written in that form now cannot
-  // resolve, and one written in the v2 form was invisible to the check.
+  // `references/amd/…`. Rule 8 only validates pointers inside this subtree, and
+  // rule 9's ownership escape only looks for a bare `NN-name.md`, so neither
+  // sees a cross-subtree pointer. A backtick path using a pre-merge directory
+  // name is rejected here too: those directories are gone.
   for (const f of chapterFiles) {
     const body = readFileSync(join(REFS, f), 'utf8')
     for (const m of body.matchAll(/`((?:intel-vt|amd-virtualization)\/[A-Za-z0-9/_-]+\.md)`/g)) {

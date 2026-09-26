@@ -6,7 +6,7 @@
   "datedFile": "90-dated-landscape.md",
   "navigational": ["errata.md", "00-quickref.md"],
 
-  "$comment_claimFreeFiles": "Empty on purpose. core-facts.md carries claim lines and is a sourced fact layer, not a pure index. references/amd/ made the opposite choice and has no core-facts.md; the rule is per subtree for exactly that reason.",
+  "$comment_claimFreeFiles": "Empty on purpose. core-facts.md carries claim lines and is a sourced fact layer, not a pure index. references/amd/ has no core-facts.md; the rule is per subtree.",
   "claimFreeFiles": [],
 
   "anchors": {
@@ -22,7 +22,7 @@
     ]
   },
 
-  "$comment_unscopedNegative": "Three fabricated negatives have reached this repository's corpora. README records the first two; references/amd/errata.md E27 records the third, which stood in eight places and was refuted by that subtree's own bibliography three lines below the assertion. The work contract already said a negative claim needs the same evidence as a positive one, and it did not prevent a third - so the rule is mechanical rather than advisory. A blanket 'no such document exists' must name a publication number, carry an as-of date, or live in 90-dated-landscape.md where it is re-checked. Applied to every subtree because the defect class is not vendor-specific. Proved non-vacuous by injection before being committed.",
+  "$comment_unscopedNegative": "Three fabricated negatives have reached this corpus. README records the first two; references/amd/errata.md E27 records the third. A blanket 'no such document exists' must name a publication number, carry an as-of date, or live in 90-dated-landscape.md. Proved non-vacuous by injection.",
   "unscopedNegative": {
     "patterns": {
       "re": "(there (?:is|are) no public |\\b(?:AMD|Intel|Microsoft|the vendor) publishes no \\b|\\b(?:AMD|Intel|Microsoft) has no public \\b|\\bno public [a-z\\- ]{0,40}(?:guide|reference|PPR|document|documentation|specification|erratum|errata|copy|source) )",

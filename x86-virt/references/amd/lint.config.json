@@ -228,7 +228,7 @@
     "$note": "Phrases are deliberately narrow, not single broad words. A line that NAMES a misconception in order to correct it must not be flagged - the corpus has to be able to quote a wrong claim to refute it, the same principle eval/RUNNER.md states as 'a refutation is not a violation'. But a hint like a bare 'rejected' would exempt any line containing it, including one that genuinely asserts the misconception, so each addition is a phrase specific to the correction it unblocks."
   },
   "ownership": {
-    "$comment": "The escape clause accepts only an explicit `NN-file.md` cross-reference. A bare 'see' silenced 71 of 73 hits in the sibling skill, which made the whole rule a no-op.",
+    "$comment": "The escape clause accepts only an explicit `NN-file.md` cross-reference. A bare 'see' silenced 71 of 73 hits in the Intel subtree, which made the whole rule a no-op.",
     "crossRefEscape": {
       "re": "`\\d\\d-[a-z0-9-]+\\.md`"
     },

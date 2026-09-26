@@ -42,23 +42,9 @@ Three traps worth knowing before you go looking:
 
 ## 0.2 Symptom → chapter
 
-The symptom table lives once, in `x86-virt/SKILL.md` under "Symptom → chapter",
-in the AMD block. This file does not keep a second copy.
-
-Three pointers that table does not carry, because they are narrower than a
-symptom row:
-
-- An IOMMU that is not processing commands is `08-iommu-architecture.md` §8.3,
-  and `errata.md` E01.
-- "Must I turn Hyper-V off to run VMware or VirtualBox?" is
-  `16-windows-platform.md` §16.6, and `errata.md` E15 is the correction of the
-  "yes" answer.
-- `16-windows-platform.md` §16.1.3 has its own symptom table, and it resolves
-  two questions the routing table sends only as far as the chapter:
-  nested virtualization inside a Hyper-V VM will not enable (§16.5), and GPU
-  passthrough is unavailable on a desktop Windows host (§16.8 — DDA is server
-  scope). "Is AVIC on by default on my kernel?" is dated and lives in
-  `90-dated-landscape.md` §90.6.
+`x86-virt/SKILL.md`, heading "Symptom → chapter", AMD block. One copy.
+`16-windows-platform.md` §16.1.3 is the finer AMD Windows table. "Is AVIC on
+by default?" is dated: `90-dated-landscape.md` §90.6.
 
 
 ## 0.3 Where the tables live

@@ -33,17 +33,7 @@ What to cite, and what each document actually governs. Revisions were read from 
 
 ## 0.2 Symptom → chapter
 
-Start here when something is broken rather than when you want to read about a topic.
-The table itself lives once, in `x86-virt/SKILL.md` under "Symptom → chapter", in
-the Intel block. This file does not keep a second copy.
-
-Two Intel rows there name a second chapter the first one does not:
-
-- An EPT violation that was handled wrongly is `06-address-translation.md` §6.4,
-  and the exit-qualification layout is `05-vm-exit.md` §5.4.
-- A stale TLB after a changed mapping is `06-address-translation.md` §6.7 for the
-  CPU, and `10-vtd-dma-remapping.md` §10.6 when the stale translation belongs to
-  the IOMMU.
+`x86-virt/SKILL.md`, heading "Symptom → chapter", Intel block. One copy.
 
 ---
 
