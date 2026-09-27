@@ -2,7 +2,7 @@
 
 > **中文速览**：本文件收录关于 AMD 虚拟化的常见讹传及其纠正。很多讹传以中文流传，因此每条都给出中英双语表述。**动笔或回答前必查本文件**：如果你要写的内容与这里某一条相冲突，按本文件改口径。每条都附真实出处。文末 "Open conflicts" 一节列出证据相互矛盾、本次重构**不做裁决**的条目——引用这些话题时必须同时给出两种说法。
 
-**How to use.** Each entry gives the misconception in Chinese and English, the correction as a claim line with a real citation, and the chapter that owns the underlying fact. Entries `E01`–`E26` are settled. Of the seven open conflicts, **`O1` and `O5` were resolved during the rebuild and `O3` was reframed** — all three keep their original numbers because the wrong version still circulates — **`O2` is half-bounded**, `O4` and `O6` remain genuinely open, and **`O7` was added after the second eval run** when a scorer found the corpus asserting one side of a contradiction in AMD's own Table 27. On the genuinely open ones: do not pick a side, state both.
+**How to use.** Each entry gives the misconception in Chinese and English, the correction as a claim line with a real citation, and the chapter that owns the underlying fact. Entries `E01`–`E26` are settled. Of the seven open conflicts, **`O1` and `O5` were resolved during the rebuild and `O3` was reframed** — all three keep their original numbers because the wrong version still circulates — **`O2` was settled on 2026-09-26** from Revision Guide 55449 rev 1.17 (2019-07), `O4` and `O6` remain genuinely open, and **`O7` was added after the second eval run** when a scorer found the corpus asserting one side of a contradiction in AMD's own Table 27. On the genuinely open ones: do not pick a side, state both.
 
 **Citations.** Every entry carries at least one `[N]`. Where the only available source is weak, the entry says so and carries `C:low`.
 

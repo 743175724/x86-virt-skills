@@ -343,8 +343,8 @@
         "17.7 Erratum-driven feature masking",
         "17.8 Open items"
       ],
-      "bytes": 61546,
-      "sha256": "db0dc8b529be5b4b8b42dc0fa96aface993e045342cd72ac8d481eab899413ee"
+      "bytes": 61585,
+      "sha256": "c77772c24e8d74a721ec3ba08345fe3d13b6d6a848eb8f964241bdd898082895"
     },
     {
       "path": "references/amd/18-performance.md",
@@ -403,8 +403,8 @@
         "90.7 Roadmap",
         "90.8 Open items"
       ],
-      "bytes": 54620,
-      "sha256": "9d0a2d7f6018edefdb30362051a5a6c467662bc1355a57287420b79c0b2967cf"
+      "bytes": 54569,
+      "sha256": "9dd6a500fdc429ae546da6631686c59b09c63a9505991a56d103b57bfb4d5494"
     },
     {
       "path": "references/amd/bibliography.md",
@@ -446,8 +446,8 @@
         "Settled corrections",
         "Open conflicts"
       ],
-      "bytes": 28635,
-      "sha256": "d5a31e54c92e2a1bb937dd866d86fdd6d1d0c037fc24487272a2020a9b0a0871"
+      "bytes": 28690,
+      "sha256": "efb39f176069281edef2e528823c3638708b34068040949de069f301c328e52d"
     },
     {
       "path": "references/dev/00-quickref.md",

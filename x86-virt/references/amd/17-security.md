@@ -5,7 +5,7 @@
 **Maps to:** AMD security bulletins (AMD-SB-xxxx) + per-family Revision Guides + APM Vol.2 §15.27 "Secure Startup with SKINIT" + §15.37 Speculation Control Virtualization + App.D "SMM Containerization" + App.E "OS-Visible Workarounds" [1][18]
 **Owns:** §17.1–§17.4 the CVE → mechanism → mitigation matrix and the attack-surface taxonomy; §17.5–§17.7 SKINIT/DRTM, SMM containerization and the erratum-driven feature-masking discipline
 **Scope:** mixed — SEV CVEs are server scope; transient-execution and nested-SVM issues apply to client parts too.
-**See also:** `12-sev.md` (key hierarchy, threat model) · `13-sev-es-ghcb.md` (`#VC`, GHCB) · `14-sev-snp.md` (RMP, VMPL, attestation report) · `16-windows-platform.md` (Windows security features) · `90-dated-landscape.md` (current firmware and microcode levels) · `errata.md` (`E16`, `E17`, `E20`, `E23`, and open conflict `O2`)
+**See also:** `12-sev.md` (key hierarchy, threat model) · `13-sev-es-ghcb.md` (`#VC`, GHCB) · `14-sev-snp.md` (RMP, VMPL, attestation report) · `16-windows-platform.md` (Windows security features) · `90-dated-landscape.md` (current firmware and microcode levels) · `errata.md` (`E16`, `E17`, `E20`, `E23`, and `O2`, settled from Revision Guide 55449 rev 1.17, 2019-07)
 
 ---
 
