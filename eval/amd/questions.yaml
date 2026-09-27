@@ -35,9 +35,9 @@
     - "55766 is the Secure Encrypted Virtualization API, Rev 3.24 (2020-04), and it covers SEV and SEV-ES only"
     - "APM Vol.3 Chapter 4 is alphabetical and has page numbers, not subsection numbers, so an instruction is cited by mnemonic - `[APM3 §4.7.2 VMRUN]` is invented"
     - "the IOMMU specification has five chapters and no appendices, so `[IOMMU 3.11 App.x]` is always wrong; IVRS is §5.2"
-    - "there is no public PPR or revision guide for client Ryzen, so a claim about a client part says so rather than citing a document that does not exist"
+    - "client PPRs and a client-covering revision guide exist: PPR 56569 (Cezanne), 57019 (Phoenix), 57930 (Strix Halo), and Revision Guide 55449 Rev 1.21 covers Family 17h client parts and holds erratum 1235"
   required_citation: "00-quickref.md §0.1"
-  notes: "Quickref section 0.1, including the 'Three traps worth knowing' list. This question tests whether the agent can cite AMD correctly at all; every other citation in the set depends on it. 70363 (memory encryption) and 70366 (SEV-SNP) are non-normative white papers - a bonus."
+  notes: "Quickref section 0.1, including the 'Three traps worth knowing' list. This question tests whether the agent can cite AMD correctly at all; every other citation in the set depends on it. The third trap is the scoped gap in errata E27, not a blanket absence of client documents. 70363 (memory encryption) and 70366 (SEV-SNP) are non-normative white papers - a bonus."
 
 - id: vm-cr-msr-layout
   chapter: 01-svm-intro.md

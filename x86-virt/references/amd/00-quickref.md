@@ -26,7 +26,8 @@ below are the ones this knowledge base was verified against.
 | 58019 | SVSM Guest Communication Interface | 1.01 (2026-03) | `[SVSM 1.01 §x]` |
 | 70363 | AMD Memory Encryption white paper — **non-normative** | 2021-10 | `[MEM-WP 70363 p.n]` |
 | 70366 | SEV-SNP white paper — **non-normative** | 2020-01 | `[SNP-WP 70366 p.n]` |
-| 57095 / 58251 | Revision Guides, EPYC Fam 19h / 1Ah — **the only public AMD errata** | 1.05 / 1.30 | `[RevGuide 57095 erratum 1458]` |
+| 57095 / 58251 | Revision Guides, EPYC Fam 19h / 1Ah | 1.05 / 1.30 | `[RevGuide 57095 erratum 1458]` |
+| 55449 | Revision Guide, Family 17h Models 00h–0Fh — **covers client parts, including AM4** | 1.21 (2023-08) | `[RevGuide 55449 erratum 1235]` |
 
 Three traps worth knowing before you go looking:
 

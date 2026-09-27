@@ -22,14 +22,15 @@ as the stated fallback. `errata.md` checked before writing, per SKILL.md step 3.
 | 58019 | SVSM Guest Communication Interface | 1.01 (2026-03) | `[SVSM 1.01 §x]` |
 | 70363 | AMD Memory Encryption white paper — **non-normative** | 2021-10 | `[MEM-WP 70363 p.n]` |
 | 70366 | SEV-SNP white paper — **non-normative** | 2020-01 | `[SNP-WP 70366 p.n]` |
-| 57095 / 58251 | Revision Guides, EPYC Fam 19h / 1Ah — **the only public AMD errata** | 1.05 / 1.30 | `[RevGuide 57095 erratum 1458]` |
+| 57095 / 58251 | Revision Guides, EPYC Fam 19h / 1Ah | 1.05 / 1.30 | `[RevGuide 57095 erratum 1458]` |
+| 55449 | Revision Guide, Family 17h Models 00h–0Fh — **covers client parts, including AM4** | 1.21 (2023-08) | `[RevGuide 55449 erratum 1235]` |
 
 The skill's metadata states the normative baseline as APM Vol.2 rev 3.45 / Vol.3 rev 3.38 (2026-07), IOMMU 48882 rev 3.11 (2026-04), SEV-SNP ABI 56860 rev 1.59 (2026-08), with a dated snapshot of 2026-09-21.
 
 Three citation traps, stated verbatim in §0.1:
 1. **APM Vol.3 Chapter 4 is alphabetical and has page numbers, not subsection numbers.** Cite an instruction by mnemonic. `[APM3 §4.7.2 VMRUN]` is invented. (SKILL.md repeats this: the correct form is `[APM3 §4 "PVALIDATE"]`.)
 2. **The IOMMU specification has five chapters and no appendices.** `[IOMMU 3.11 App.x]` is always wrong. IVRS is §5.2.
-3. **There is no public PPR or revision guide for client Ryzen.** A claim about a client part that needs one says so rather than citing a document that does not exist.
+3. **Client PPRs and a client-covering revision guide exist — cite them.** PPR 56569 (Cezanne), 57019 (Phoenix), 57930 (Strix Halo); Revision Guide 55449 Rev 1.21 covers Family 17h client parts and holds erratum 1235. As of 2026-09-26 the gap is narrower: no public revision guide for a Family 19h or 1Ah client model range, and client PPRs 56176, 56214, 56713 and 57254 have no retrievable first-party copy (`errata.md` E27).
 
 Two further traps SKILL.md's Output standards add: do not invent section numbers (AMD appends rather than renumbers, so the risk is invented *recent* numbers, `§15.36`'s subsections especially); and Windows, CVE and performance facts have no APM section at all — cite Microsoft Learn, the Hypervisor TLFS, kernel.org, NVD, the paper, or an `[AMD-SB-nnnn]` bulletin instead. `01-svm-intro.md` §1.7 adds that AMD's own cross-references inside the CPUID tables are unreliable (Vol.3 points PML at "§15.24.25", which does not exist; Vol.2 places it at §15.25.15), and that Appendix A's cross-reference for `SEV_STATUS` points at §15.35.10 when the section is §15.34.10 — never use Appendix A's page cross-references as section authorities.
 **Confidence:** high; navigation file only — §0.1 is explicitly a document index and holds no architectural values.
