@@ -11,7 +11,7 @@
 // or "APM" here, it belongs in a config instead.
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
-import { join, basename, dirname } from 'node:path'
+import { join, basename, dirname, relative } from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
@@ -587,6 +587,49 @@ function lintSkill(unit) {
       //
       // must_not_include is excluded on purpose: those values are *supposed* to
       // be absent, so checking them would fire on every trap question.
+      //
+      // 13b. the unscoped "no client PPR and no client revision guide" sentence.
+      //
+      // Rule 13 cannot see this. The sentence contains no numeric token, and a
+      // copy of it inside a correction still counts as "present in the corpus",
+      // so a must_include can demand a claim the chapters have withdrawn and
+      // lint stays clean. errata E27 refuted the blanket form. A live assertion
+      // must carry the Family 19h/1Ah scope and the as-of date on the same line.
+      // A line that names the sentence in order to mark it false is allowed.
+      // The archived run-1 transcripts are the record of that run and are not
+      // scanned. This runs once, with the AMD eval set, because the sentence is
+      // an AMD claim and the Intel and dev sets do not state it.
+      if (evalRel === 'eval/amd/questions.yaml') {
+        const UNSCOPED = /no public (?:revision guide or PPR|PPR or revision guide) for client|publishes no PPR (?:or|and) no revision guide for client/i
+        const scoped = (line) => /Family 19h/.test(line) && /1Ah/.test(line) && /2026-09-26/.test(line)
+        const refuted = (line) => /false|refuted|superseded|was false|E27/.test(line)
+        const scan = (relPath, text, onlyMustInclude) => {
+          let inMust = !onlyMustInclude
+          text.split(/\r?\n/).forEach((line, i) => {
+            if (onlyMustInclude) {
+              const k = /^  ([a-z_]+):/.exec(line)
+              if (k) inMust = k[1] === 'must_include'
+              if (!inMust) return
+            }
+            if (!UNSCOPED.test(line) || scoped(line) || refuted(line)) return
+            err(relPath, `line ${i + 1} asserts the unscoped client-document negative — state the Family 19h/1Ah gap as of 2026-09-26, or mark the sentence as the wording E27 refuted`)
+          })
+        }
+        scan(evalRel, lines.join('\n'), true)
+        const walk = (dir) => {
+          for (const name of readdirSync(dir)) {
+            const path = join(dir, name)
+            if (statSync(path).isDirectory()) {
+              if (name === 'run-1') continue
+              walk(path)
+            } else if (name.endsWith('.md')) {
+              scan(relative(ROOT, path).replace(/\\/g, '/'), readFileSync(path, 'utf8'), false)
+            }
+          }
+        }
+        walk(join(ROOT, 'eval/amd/answers'))
+        walk(join(ROOT, 'x86-virt/references/amd'))
+      }
       const evalNorm = (t) => t.replace(/[‐-―−]/g, '-').replace(/\s+/g, ' ')
       const corpusText = evalNorm(
         chapterFiles.map((f) => readFileSync(join(REFS, f), 'utf8')).join('\n'),

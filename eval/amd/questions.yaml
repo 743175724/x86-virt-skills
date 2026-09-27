@@ -1075,9 +1075,10 @@
     - "AVIC also requires nested paging, and is refused on an SNP-enabled host that lacks `HvInUseWrAllowed`"
     - "current mainline still disables IPI virtualization - not AVIC as a whole - on AMD Family 17h (Zen 1 and Zen 2) and Hygon Family 18h, attributed to erratum 1235"
     - "the getter resolves auto mode to N, so `/sys/module/kvm_amd/parameters/avic` can read N on a machine where AVIC is in fact enabled"
-    - "whether a given client part has AVIC at all cannot be settled from AMD primary sources - there is no public revision guide or PPR for client Ryzen, so only `CPUID Fn8000_000A` on the machine settles it"
+    - "whether a given client part has AVIC at all is a microcode property: as of 2026-09-26 no public revision guide covers a Family 19h or 1Ah client model range, and client PPRs 56176, 56214, 56713 and 57254 have no retrievable first-party copy, so only `CPUID Fn8000_000A` on the machine settles the bit"
+    - "Family 17h client parts have Revision Guide 55449, and client PPRs 56569, 57019 and 57930 are published"
   required_citation: "[610] kernel.org — arch/x86/kvm/svm/avic.c"
-  notes: "Chapter 90 section 90.6; chapter 07 section 7.9 states the scope split. Every claim in chapter 90 is `V:dated` and carries no APM anchor by rule. Erratum 1235 is named in `avic.c` from v5.17 and is absent at v5.16, which rules out a 2025-2026 disclosure but does not date AMD's own publication - `errata.md` O2 stays open."
+  notes: "Chapter 90 section 90.6 and section 90.2; chapter 07 section 7.9 states the scope split. Every claim in chapter 90 is `V:dated` and carries no APM anchor by rule. Erratum 1235 is named in `avic.c` from v5.17 and is absent at v5.16. AMD's publication is Revision Guide 55449 rev 1.17 (2019-07); `errata.md` O2 was settled on 2026-09-26."
 
 # ===========================================================================
 # TRAP  (12) - one per high-value erratum; every one must be present
